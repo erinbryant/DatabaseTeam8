@@ -1,2 +1,2 @@
-CREATE DATABASE courier_db;
-USE courier_db;
+CREATE DATABASE postoffice_db;
+USE postoffice_db;
