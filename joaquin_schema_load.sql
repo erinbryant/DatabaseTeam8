@@ -13,7 +13,7 @@ CREATE TABLE Role (
 CREATE TABLE Status_Code (
 	Status_Code INT AUTO_INCREMENT PRIMARY KEY,
     Status_Name VARCHAR(25) NOT NULL UNIQUE,
-    Is_Final_Status BOOLEAN NOT NULL DEFAULT 0
+    Is_Final_Status BOOLEAN NOT NULL
 );
 
 CREATE TABLE Delivery (
@@ -21,7 +21,7 @@ CREATE TABLE Delivery (
     -- Change TrackingNumber to VARCHAR if including letters
 	TrackingNumber INT NOT NULL,
     Delivered_Date DATETIME,
-    Signature_Required BOOLEAN NOT NULL DEFAULT 0,
+    Signature_Required BOOLEAN NOT NULL,
     Signature_Received VARCHAR(25),
     Delivery_Status_Code INT NOT NULL,
     Delivered_By INT,
