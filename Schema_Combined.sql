@@ -1,4 +1,3 @@
-
 create table Post_Office(
 
 Post_Office_ID int auto_increment primary key,
@@ -28,7 +27,7 @@ Thu_Finish_Time time not null default '00:00:00' check(Thu_Finish_Time >= '00:00
 Fri_Start_Time time not null default '00:00:00' check(Fri_Start_Time >= '00:00:00' and Fri_Start_Time <= '23:59:59'),
 Fri_Finish_Time time not null default '00:00:00' check(Fri_Finish_Time >= '00:00:00' and Fri_Finish_Time <= '23:59:59'),
 Sat_Start_Time time not null default '00:00:00' check(Sat_Start_Time >= '00:00:00' and Sat_Start_Time <= '23:59:59'),
-Sat_Finish_Time time not null default '00:00:00' check(Sat_Finish_Time >= '00:00:00' and Sat_Finish_Time <= '23:59:59'),
+Sat_Finish_Time time not null default '00:00:00' check(Sat_Finish_Time >= '00:00:00' and Sat_Finish_Time <= '23:59:59')
 );
 
 create table Store(
@@ -42,7 +41,7 @@ CREATE TABLE Product (
     Store_ID int NOT NULL,
     Product_name VARCHAR(255) NOT NULL,
     Price DECIMAL(10, 2) NOT NULL,
-    Quantity INT NOT NULL DEFAULT 0
+    Quantity INT NOT NULL DEFAULT 0,
     FOREIGN KEY(Store_ID) REFERENCES Store(Store_ID)
 );
 
@@ -100,7 +99,7 @@ Birth_Year year not null,
 
 Password_Hash varchar(255) not null,
 Email_Address varchar(255) not null unique,
-Phone_Number varchar(20) null
+Phone_Number varchar(20) null,
 
 Sex char(1) not null,
 Salary decimal(10,2) not null,
@@ -151,6 +150,13 @@ foreign key (Sender_ID) references Customer(Customer_ID),
 foreign key (Recipient_ID) references customer(Customer_ID),
 foreign key (Package_Type_Code) references Package_Type(Package_Type_Code)
 );
+
+CREATE TABLE Status_Code (
+	Status_Code INT AUTO_INCREMENT PRIMARY KEY,
+    Status_Name VARCHAR(25) NOT NULL UNIQUE,
+    Is_Final_Status BOOLEAN NOT NULL
+);
+
 
 create table Shipment(
 Shipment_ID int auto_increment primary key,
@@ -221,13 +227,6 @@ CREATE TABLE Payment (
 );
 
 
-CREATE TABLE Status_Code (
-	Status_Code INT AUTO_INCREMENT PRIMARY KEY,
-    Status_Name VARCHAR(25) NOT NULL UNIQUE,
-    Is_Final_Status BOOLEAN NOT NULL
-);
-
-
 CREATE TABLE Delivery (
 	Delivery_ID INT PRIMARY KEY AUTO_INCREMENT,
    
@@ -291,3 +290,21 @@ create table package_pricing (
         ON DELETE CASCADE
 );
 
+alter table post_office modify Phone_Number varchar(20) not null;
+alter table post_office drop check post_office_chk_1;
+
+alter table post_office modify Sun_Start_Time time not null default '00:00:00' check(Sun_Start_Time >= '00:00:00' and Sun_Start_Time <= '23:59:59');
+alter table post_office modify Sun_Finish_Time time not null default '00:00:00' check(Sun_Finish_Time >= '00:00:00' and Sun_Finish_Time <= '23:59:59');
+alter table post_office modify Mon_Start_Time time not null default '00:00:00' check(Mon_Start_Time >= '00:00:00' and Mon_Start_Time <= '23:59:59');
+alter table post_office modify Mon_Finish_Time time not null default '00:00:00' check(Mon_Finish_Time >= '00:00:00' and Mon_Finish_Time <= '23:59:59');
+alter table post_office RENAME column Tue_Start_Time TO Tue_Start_Time;
+alter table post_office modify Tue_Start_Time time not null default '00:00:00' check(Tue_Start_Time >= '00:00:00' and Tue_Start_Time <= '23:59:59');
+alter table post_office modify Tue_Finish_Time time not null default '00:00:00' check(Tue_Finish_Time >= '00:00:00' and Tue_Finish_Time <= '23:59:59');
+alter table post_office modify Wed_Start_Time time not null default '00:00:00' check(Wed_Start_Time >= '00:00:00' and Wed_Start_Time <= '23:59:59');
+alter table post_office modify Wed_Finish_Time time not null default '00:00:00' check(Wed_Finish_Time >= '00:00:00' and Wed_Finish_Time <= '23:59:59');
+alter table post_office modify Thu_Start_Time time not null default '00:00:00' check(Thu_Start_Time >= '00:00:00' and Thu_Start_Time <= '23:59:59');
+alter table post_office modify Thu_Finish_Time time not null default '00:00:00' check(Thu_Finish_Time >= '00:00:00' and Thu_Finish_Time <= '23:59:59');
+alter table post_office modify Fri_Start_Time time not null default '00:00:00' check(Fri_Start_Time >= '00:00:00' and Fri_Start_Time <= '23:59:59');
+alter table post_office modify Fri_Finish_Time time not null default '00:00:00' check(Fri_Finish_Time >= '00:00:00' and Fri_Finish_Time <= '23:59:59');
+alter table post_office modify Sat_Start_Time time not null default '00:00:00' check(Sat_Start_Time >= '00:00:00' and Sat_Start_Time <= '23:59:59');
+alter table post_office modify Sat_Finish_Time time not null default '00:00:00' check(Sat_Finish_Time >= '00:00:00' and Sat_Finish_Time <= '23:59:59');
