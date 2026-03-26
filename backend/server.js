@@ -3,6 +3,10 @@ const { Sequelize, DataTypes } = require('sequelize');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const cors = require('cors');
+const http = require('http');
+const mysql = require('mysql2');
+const path = require('path');
+const fs = require('fs');
 require('dotenv').config();
 
 const app = express();
@@ -11,15 +15,79 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// ── MYSQL CONNECTION (Sequelize) ──
 const sequelize = new Sequelize({
   dialect: 'mysql',
   host: process.env.DB_HOST || 'localhost',
   port: process.env.DB_PORT || 3306,
-  database: process.env.DB_NAME || 'employee_db',
+  database: process.env.DB_NAME || 'post_office_8',
   username: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || '',
+  password: process.env.DB_PASSWORD || 'Rzv#gf+T8crMV',
   logging: false
 });
+
+// Test connection
+sequelize.authenticate().then(() => {
+  console.log('Connected to MySQL via Sequelize!');
+}).catch(err => {
+  console.error('MySQL connection failed:', err.message);
+});
+
+// ── MYSQL CONNECTION (mysql2 pool for legacy queries) ──
+const db = mysql.createPool({
+  host: process.env.DB_HOST || 'localhost',
+  port: process.env.DB_PORT || 3306,
+  user: process.env.DB_USER || 'root',
+  password: process.env.DB_PASSWORD || 'Rzv#gf+T8crMV',
+  database: process.env.DB_NAME || 'post_office_8',
+  waitForConnections: true,
+  connectionLimit: 10
+});
+
+db.getConnection((err, connection) => {
+  if (err) {
+    console.error('MySQL connection failed:', err.message);
+  } else {
+    console.log('Connected to MySQL via mysql2!');
+    connection.release();
+  }
+});
+
+// ── HELPERS ──
+function getContentType(filePath) {
+  if (filePath.endsWith('.html')) return 'text/html';
+  if (filePath.endsWith('.css')) return 'text/css';
+  if (filePath.endsWith('.js')) return 'application/javascript';
+  return 'text/plain';
+}
+
+function sendFile(res, filePath) {
+  fs.readFile(filePath, (err, data) => {
+    if (err) {
+      res.writeHead(404);
+      res.end('Not found');
+      return;
+    }
+    res.writeHead(200, { 'Content-Type': getContentType(filePath) });
+    res.end(data);
+  });
+}
+
+function sendJSON(res, status, data) {
+  res.writeHead(status, {
+    'Content-Type': 'application/json',
+    'Access-Control-Allow-Origin': '*'
+  });
+  res.end(JSON.stringify(data));
+}
+
+function getBody(req) {
+  return new Promise((resolve) => {
+    let body = '';
+    req.on('data', chunk => body += chunk);
+    req.on('end', () => resolve(JSON.parse(body || '{}')));
+  });
+}
 
 // User Model
 const User = sequelize.define('User', {
@@ -78,7 +146,7 @@ sequelize.sync().then(() => {
   console.error('Database sync error:', err);
 });
 
-// Middleware to verify JWT token
+// ── MIDDLEWARE ──
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
@@ -96,19 +164,53 @@ const authenticateToken = (req, res, next) => {
   });
 };
 
-// Routes
+// ── ROUTES ──
+
+// PAGE ROUTES
+app.get('/', (req, res) => {
+  sendFile(res, path.join(__dirname, '../frontend/public/html/home.html'));
+});
+
+app.get('/customer_home', (req, res) => {
+  sendFile(res, path.join(__dirname, '../frontend/public/html/customer/customer_home.html'));
+});
+
+app.get('/employee_home', (req, res) => {
+  sendFile(res, path.join(__dirname, '../frontend/public/html/employee/employee_home.html'));
+});
+
+app.get('/package_list', (req, res) => {
+  sendFile(res, path.join(__dirname, '../frontend/public/html/employee/package_list.html'));
+});
+
+// STATIC FILES
+app.use('/css', express.static(path.join(__dirname, '../frontend/public/css')));
+app.use('/js', express.static(path.join(__dirname, '../frontend/public/js')));
+
+// QUERY ROUTES
+app.get('/qry_all_packages', (req, res) => {
+  db.query('SELECT * FROM packages', (err, results) => {
+    if (err) {
+      return res.status(500).json({ error: 'Database error' });
+    }
+    if (results.length === 0) {
+      return res.status(404).json({ message: 'No packages found' });
+    }
+    res.status(200).json(results);
+  });
+});
+
+// AUTH ROUTES
 
 // Register Route
 app.post('/api/auth/register', async (req, res) => {
   try {
     const { name, email, employeeId, department, position, phoneNumber, workAddress, hireDate, password } = req.body;
 
-    // Validation
     if (!name || !email || !employeeId || !department || !position || !phoneNumber || !workAddress || !hireDate || !password) {
       return res.status(400).json({ message: 'All fields are required' });
     }
 
-    // Check if user already exists
     const existingUser = await User.findOne({
       where: {
         [Sequelize.Op.or]: [{ email }, { employeeId }]
@@ -119,10 +221,8 @@ app.post('/api/auth/register', async (req, res) => {
       return res.status(400).json({ message: 'Email or Employee ID already exists' });
     }
 
-    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create new user
     const newUser = await User.create({
       name,
       email,
@@ -135,14 +235,12 @@ app.post('/api/auth/register', async (req, res) => {
       password: hashedPassword
     });
 
-    // Create JWT token
     const token = jwt.sign(
       { userId: newUser.id, email: newUser.email },
       process.env.JWT_SECRET || 'your-secret-key',
       { expiresIn: '24h' }
     );
 
-    // Return user data (without password)
     const userWithoutPassword = {
       id: newUser.id,
       name: newUser.name,
@@ -171,12 +269,10 @@ app.post('/api/auth/login', async (req, res) => {
   try {
     const { employeeId, password, department } = req.body;
 
-    // Validation
     if (!employeeId || !password || !department) {
       return res.status(400).json({ message: 'Employee ID, password, and department are required' });
     }
 
-    // Find user by employeeId and department
     const user = await User.findOne({
       where: { employeeId, department }
     });
@@ -185,20 +281,17 @@ app.post('/api/auth/login', async (req, res) => {
       return res.status(401).json({ message: 'Invalid Employee ID, password, or department' });
     }
 
-    // Compare password
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
       return res.status(401).json({ message: 'Invalid Employee ID, password, or department' });
     }
 
-    // Create JWT token
     const token = jwt.sign(
       { userId: user.id, email: user.email },
       process.env.JWT_SECRET || 'your-secret-key',
       { expiresIn: '24h' }
     );
 
-    // Return user data (without password)
     const userWithoutPassword = {
       id: user.id,
       name: user.name,
@@ -262,7 +355,6 @@ app.put('/api/auth/profile', authenticateToken, async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Update user
     if (name) user.name = name;
     if (email) user.email = email;
     if (phoneNumber) user.phoneNumber = phoneNumber;
@@ -297,7 +389,6 @@ app.post('/api/auth/change-password', authenticateToken, async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
 
-    // Validation
     if (!currentPassword || !newPassword) {
       return res.status(400).json({ message: 'Current password and new password are required' });
     }
@@ -306,22 +397,18 @@ app.post('/api/auth/change-password', authenticateToken, async (req, res) => {
       return res.status(400).json({ message: 'New password must be at least 6 characters long' });
     }
 
-    // Find user
     const user = await User.findByPk(req.user.userId);
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Verify current password
     const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
     if (!isPasswordValid) {
       return res.status(401).json({ message: 'Current password is incorrect' });
     }
 
-    // Hash new password
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-    // Update password
     user.password = hashedPassword;
     await user.save();
 
@@ -351,6 +438,17 @@ app.post('/api/auth/forgot-password', async (req, res) => {
     console.error('Forgot password error:', error);
     res.status(500).json({ message: 'An error occurred' });
   }
+});
+
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({ message: 'Page not found' });
+});
+
+// ── START SERVER ──
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+  console.log(`Server running on http://localhost:${PORT}`);
 });
 
 // Start server
