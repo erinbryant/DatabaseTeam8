@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import "./css/packages.css";
+import React from "react";
+
 
 export default function AllPackages() {
   const [packages, setPackages] = useState([]);
@@ -160,7 +162,7 @@ export default function AllPackages() {
                 </thead>
                 <tbody>
                   {filtered.map((p) => (
-                    <>
+                    <React.Fragment key={p.Tracking_Number}>
                       <tr key={p.Tracking_Number}>
                         <td><code>{p.Tracking_Number}</code></td>
                         <td>{p.Package_Type_Code}</td>
@@ -211,7 +213,7 @@ export default function AllPackages() {
                           </td>
                         </tr>
                       )}
-                    </>
+                    </React.Fragment>
                   ))}
                 </tbody>
               </table>

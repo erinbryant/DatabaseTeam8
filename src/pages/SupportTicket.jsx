@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import './SupportTicket.css';
+import './css/SupportTicket.css';
 
 function SupportTicket() {
   const [formData, setFormData] = useState({

@@ -3,6 +3,8 @@ import './css/home.css'
 // import Layout from '../layout'
 // import '../components/button.css'
 
+
+
  export default function Home() {
   const navigate = useNavigate();
     return (
@@ -13,7 +15,7 @@ import './css/home.css'
           <nav className="top-nav">
             <a onClick={() => navigate('/customer_home')}>Customer</a>
             <a onClick={() => navigate('/employee_home')}>Employee</a>
-            <a onClick={() => navigate('/Login')}>Login</a>
+            <a onClick={() => navigate('/login')}>Login</a>
             <a href="#services">Services</a>
             <a href="#track">Track</a>
           </nav>
