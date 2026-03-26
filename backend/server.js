@@ -3,7 +3,6 @@ const { Sequelize, DataTypes } = require('sequelize');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const cors = require('cors');
-const path = require('path');
 require('dotenv').config();
 
 const app = express();
@@ -12,10 +11,13 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Initialize SQLite Database
 const sequelize = new Sequelize({
-  dialect: 'sqlite',
-  storage: path.join(__dirname, 'database.sqlite'),
+  dialect: 'mysql',
+  host: process.env.DB_HOST || 'localhost',
+  port: process.env.DB_PORT || 3306,
+  database: process.env.DB_NAME || 'employee_db',
+  username: process.env.DB_USER || 'root',
+  password: process.env.DB_PASSWORD || '',
   logging: false
 });
 
