@@ -1,0 +1,85 @@
+body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    margin: 0;
+}
+
+.page-wrapper {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+.support-main {
+    flex: 1;
+    padding: 30px;
+}
+
+.support-title {
+    text-align: center;
+    margin-bottom: 25px;
+    color: #3333cc;
+    font-size: 1.8rem;
+}
+
+.table-wrapper {
+    overflow-x: auto;
+    border-radius: 12px;
+    box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.ticket-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95rem;
+    background-color: white;
+}
+
+.ticket-table th {
+    background-color: #3333cc;
+    color: white;
+    padding: 14px 18px;
+    text-align: left;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.ticket-table td {
+    padding: 12px 18px;
+    border-bottom: 1px solid #e0e0e0;
+    color: #333;
+    vertical-align: middle;
+}
+
+.ticket-table tr:last-child td {
+    border-bottom: none;
+}
+
+.ticket-table tr:hover td {
+    background-color: #f0f0ff;
+}
+
+/* Status badges */
+.badge {
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: bold;
+    white-space: nowrap;
+}
+
+.status-0 { background-color: #ffdddd; color: #cc0000; }  /* Open */
+.status-1 { background-color: #fff3cd; color: #856404; }  /* Pending */
+.status-2 { background-color: #d4edda; color: #155724; }  /* Closed */
+
+.status-msg {
+    text-align: center;
+    font-size: 1.1rem;
+    color: #555;
+    margin-top: 40px;
+}
+
+.status-msg.error {
+    color: red;
+}

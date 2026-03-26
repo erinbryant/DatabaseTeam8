@@ -275,6 +275,30 @@ app.post('/api/tickets', (req, res) => {
   // Send success response
   res.status(201).json({ message: 'Ticket submitted successfully' });
 });
+
+// ── GET all support tickets ────────────────────────────────────────────────
+app.get('/api/tickets', async (req, res) => {
+  try {
+    const [rows] = await pool.query(`
+      SELECT st.Ticket_ID,
+             c.First_Name AS Customer_First, c.Last_Name AS Customer_Last,
+             p.Tracking_Number,
+             e.First_Name AS Employee_First, e.Last_Name AS Employee_Last,
+             st.Issue_Type, st.Description, st.Resolution_Note, st.Ticket_Status_Code
+      FROM Support_Ticket st
+      JOIN Customer c ON st.User_ID = c.Customer_ID
+      JOIN Employee e ON st.Assigned_Employee_ID = e.Employee_ID
+      JOIN Package p ON st.Package_ID = p.Tracking_Number
+      ORDER BY st.Ticket_ID DESC
+    `);
+
+    res.json(rows);
+  } catch (err) {
+    console.error('Error fetching tickets:', err);
+    res.status(500).json({ message: 'Database error', error: err.message });
+  }
+});
+
 // ── Start ─────────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 5000
 app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`))

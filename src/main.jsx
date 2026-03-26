@@ -13,6 +13,7 @@ import Register from './pages/Register'
 import Profile from './pages/Profile'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import SupportTicket from './pages/SupportTicket'
+import EmployeeSupport from './pages/EmployeeSupport';
 // global styles
 import './pages/css/index.css'
 import AllPackages from './pages/package_list'
@@ -25,6 +26,7 @@ function App() {
         <Route path="/customer_home" element={<CustomerHome />} />
         <Route path="/employee_home" element={<EmployeeHome />} />
         <Route path="/package_list" element={<PackageList />} />
+        <Route path="/employee/support" element={<EmployeeSupport />} />
 
         {/* ── PLACEHOLDER ROUTES ── build these pages and add imports above */}
         <Route path="/login" element={<Login/>} />

@@ -39,33 +39,44 @@ body {
 
 .hero {
     width: 100%;
+    max-width: 100%;
     margin: 0;
     padding: 0;
     line-height: 0;
+    overflow: hidden;
+    display: block;
 }
 
 .hero img{
     width: 100%;
     max-width: 100%;
-    height: 400px;
+    height: 500px;
     border-radius: 0;
     box-shadow: 0 5px 15px rgba(0,0,0,0.2);
     object-fit: cover;
+    object-position: center top;
+    display: block;
+    margin: 0;
+    padding: 0;
 }
 
 main {
     flex: 1;
+    padding: 0;
+    margin: 0;
+    width: 100%;
 }
 
 .welcome{
     text-align: center;
+    margin: 15px 0 5px 0;
 }
 
 .dashboard {
     display: flex;
     justify-content: space-around;
     flex-wrap: wrap;
-    padding: 30px;
+    padding: 20px 30px 30px 30px;
     gap: 20px;
     align-items: stretch;
 }
@@ -76,8 +87,10 @@ main {
     justify-content: space-between;
     background-color: #f0f0f0;
     border-radius: 15px;
-    padding: 20px;
-    width: 250px;
+    padding: 30px;
+    width: 300px;
+    flex: 1;
+    max-width: 380px;
     text-align: center;
     box-shadow: 0px 5px 15px rgba(0,0,0,0.1);
 }
@@ -106,4 +119,19 @@ footer {
     color: white;
     text-align: center;
     padding: 5px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
+}
+
+.footer-link {
+    color: white;
+    text-decoration: underline;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
+.footer-link:hover {
+    color: #ccccff;
 }
