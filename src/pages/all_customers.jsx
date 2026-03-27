@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import "./css/packages.css";
 import skyline from "../assets/houston-skyline.jpeg";
+import React from 'react'
 
 export default function AllCustomers() {
   const [customers, setCustomers] = useState([]);
@@ -9,6 +10,7 @@ export default function AllCustomers() {
   const [search, setSearch] = useState("");
   const [sortValue, setSortValue] = useState("");
   const [expanded, setExpanded] = useState(null);
+  const [customerPackages, setCustomerPackages] = useState({});
 
   useEffect(() => {
     fetch("http://localhost:5000/api/customers")
@@ -39,7 +41,7 @@ export default function AllCustomers() {
     if (sortValue === "name_asc")  filtered = [...filtered].sort((a, b) => a.Full_Name.localeCompare(b.Full_Name));
     if (sortValue === "name_desc") filtered = [...filtered].sort((a, b) => b.Full_Name.localeCompare(a.Full_Name));
 
-    const [customerPackages, setCustomerPackages] = useState({});
+    
 
 function toggleExpand(id) {
     if (expanded === id) {
@@ -124,7 +126,7 @@ function toggleExpand(id) {
                 </thead>
                 <tbody>
                   {filtered.map((c) => (
-                    <>
+                    <React.Fragment key={c.Customer_ID}>
                       <tr key={c.Customer_ID}>
                         <td><code>{c.Customer_ID}</code></td>
                         <td>{c.Full_Name}</td>
@@ -178,7 +180,7 @@ function toggleExpand(id) {
                             </td>
                         </tr>
                     )}
-                    </>
+                    </React.Fragment>
                   ))}
                 </tbody>
               </table>

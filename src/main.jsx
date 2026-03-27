@@ -1,6 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { RequireEmployee, RequireCustomer, RequireAuth } from './AuthGuard'
 
 // pages
 import Home from './pages/home'
@@ -15,6 +16,7 @@ import SupportTicket from './pages/SupportTicket'
 import EmployeeSupport from './pages/EmployeeSupport'
 import AdminRegister from './pages/AdminRegister'
 import AllCustomers from './pages/all_customers'
+import CustomerProfile from './pages/CustomerProfile'
 import TestQuery from './pages/test'
 
 // global styles
@@ -24,26 +26,26 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Public */}
         <Route path="/" element={<Home />} />
-        <Route path="/customer_home" element={<CustomerHome />} />
-        <Route path="/employee_home" element={<EmployeeHome />} />
-
-        {/* Core Features */}
-        <Route path="/package_list" element={<AllPackages />} />
-        <Route path="/inventory" element={<Inventory />} />
-        <Route path="/customers" element={<AllCustomers />} />
-        <Route path="/employee/support" element={<EmployeeSupport />} />
-
-        {/* Auth */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        <Route path="/admin-register" element={<AdminRegister />} />
 
-        {/* User */}
-        <Route path="/profile" element={<Profile />} />
+        {/* Customer Routes */}
+        <Route path="/customer_home" element={<RequireCustomer><CustomerHome /></RequireCustomer>} />
+        <Route path="/customer_profile" element={<RequireCustomer><CustomerProfile /></RequireCustomer>} />
 
-        {/* Support */}
-        <Route path="/support" element={<SupportTicket />} />
+        {/* Employee Routes */}
+        <Route path="/employee_home" element={<RequireEmployee><EmployeeHome /></RequireEmployee>} />
+        <Route path="/employee/support" element={<RequireEmployee><EmployeeSupport /></RequireEmployee>} />
+        <Route path="/customers" element={<RequireEmployee><AllCustomers /></RequireEmployee>} />
+        <Route path="/admin-register" element={<RequireEmployee><AdminRegister /></RequireEmployee>} />
+        <Route path="/profile" element={<RequireEmployee><Profile /></RequireEmployee>} />
+
+        {/* Shared / Authenticated */}
+        <Route path="/package_list" element={<RequireAuth><AllPackages /></RequireAuth>} />
+        <Route path="/inventory" element={<RequireAuth><Inventory /></RequireAuth>} />
+        <Route path="/support" element={<RequireAuth><SupportTicket /></RequireAuth>} />
 
         {/* Optional/Test */}
         <Route path="/test" element={<TestQuery />} />
@@ -53,7 +55,6 @@ function App() {
         <Route path="/package_history" element={<p>Package History — coming soon</p>} />
         <Route path="/submit_ticket" element={<p>Submit Ticket — coming soon</p>} />
         <Route path="/support_tickets" element={<p>Support Tickets — coming soon</p>} />
-        <Route path="/customer_profile" element={<p>Customer Profile — coming soon</p>} />
         <Route path="/ship_package" element={<p>Ship Package — coming soon</p>} />
 
         {/* 404 */}

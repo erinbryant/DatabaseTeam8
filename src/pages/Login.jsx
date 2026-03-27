@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import '../components/Auth.css';
 
@@ -13,6 +13,14 @@ const Login = () => {
   const [resetEmail, setResetEmail] = useState('');
   const [resetMessage, setResetMessage] = useState('');
   const navigate = useNavigate();
+
+  useEffect(() => {
+  const token = localStorage.getItem('token');
+  const userType = localStorage.getItem('userType');
+  if (token) {
+    navigate(userType === 'employee' ? '/employee_home' : '/customer_home');
+  }
+}, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -51,7 +59,7 @@ const Login = () => {
         localStorage.setItem('email', email);
       }
 
-      navigate(userType === 'employee' ? '/profile' : '/customer-dashboard');
+      navigate(userType === 'employee' ? '/employee_home' : '/customer_home');
     } catch (err) {
       setError('An error occurred. Please try again.');
       console.error('Login error:', err);
