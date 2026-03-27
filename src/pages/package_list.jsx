@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import "./css/packages.css";
 import React from "react";
 
+import skyline from "../assets/houston-skyline.jpeg";
 
 export default function AllPackages() {
   const [packages, setPackages] = useState([]);
@@ -78,7 +79,7 @@ export default function AllPackages() {
       <main>
         {/* Hero image */}
         <div className="hero">
-          <img src="houston-skyline.jpeg" alt="Post Office" />
+          <img src={skyline} alt="Post Office" />
         </div>
 
         <div className="page-content">

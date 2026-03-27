@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import "./css/customer_home.css";
-import skyline from "../components/houston-skyline.jpeg";
+import skyline from "../assets/houston-skyline.jpeg";
 
 export default function CustomerHome() {
   const navigate = useNavigate();
@@ -20,7 +20,6 @@ export default function CustomerHome() {
       </header>
 
       <main>
-        {/* Top Image */}
         <div className="hero">
           <img src={skyline} alt="Post Office" />
         </div>
@@ -29,7 +28,6 @@ export default function CustomerHome() {
           <h2>Welcome, Customer!</h2>
         </div>
 
-        {/* Dashboard Cards */}
         <div className="dashboard">
           <div className="card">
             <h2>Track a Package</h2>

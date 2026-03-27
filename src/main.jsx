@@ -14,6 +14,8 @@ import Profile from './pages/Profile'
 import SupportTicket from './pages/SupportTicket'
 import EmployeeSupport from './pages/EmployeeSupport'
 import AdminRegister from './pages/AdminRegister'
+import AllCustomers from './pages/all_customers'
+import TestQuery from './pages/test'
 
 // global styles
 import './pages/css/index.css'
@@ -25,25 +27,36 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/customer_home" element={<CustomerHome />} />
         <Route path="/employee_home" element={<EmployeeHome />} />
+
+        {/* Core Features */}
         <Route path="/package_list" element={<AllPackages />} />
+        <Route path="/inventory" element={<Inventory />} />
+        <Route path="/customers" element={<AllCustomers />} />
         <Route path="/employee/support" element={<EmployeeSupport />} />
 
-        {/* ── PLACEHOLDER ROUTES ── */}
+        {/* Auth */}
         <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/admin-register" element={<AdminRegister />} />
+
+        {/* User */}
+        <Route path="/profile" element={<Profile />} />
+
+        {/* Support */}
+        <Route path="/support" element={<SupportTicket />} />
+
+        {/* Optional/Test */}
+        <Route path="/test" element={<TestQuery />} />
+
+        {/* Placeholders */}
         <Route path="/package_tracking" element={<p>Package Tracking — coming soon</p>} />
         <Route path="/package_history" element={<p>Package History — coming soon</p>} />
-        <Route path="/inventory" element={<Inventory />} />
         <Route path="/submit_ticket" element={<p>Submit Ticket — coming soon</p>} />
         <Route path="/support_tickets" element={<p>Support Tickets — coming soon</p>} />
         <Route path="/customer_profile" element={<p>Customer Profile — coming soon</p>} />
-        <Route path="/profile" element={<Profile />} />
         <Route path="/ship_package" element={<p>Ship Package — coming soon</p>} />
-        <Route path="/customers" element={<p>Customers — coming soon</p>} />
-        <Route path="/register" element={<p>Register not here yet</p>} />
-        <Route path="/admin-register" element={<AdminRegister />} />
-        <Route path="/support" element={<SupportTicket />} />
 
-        {/* ── 404 ── */}
+        {/* 404 */}
         <Route path="*" element={<p>Page not found</p>} />
       </Routes>
     </BrowserRouter>

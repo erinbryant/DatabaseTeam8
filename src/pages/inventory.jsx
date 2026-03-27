@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import "./css/packages.css";
+import skyline from "../assets/houston-skyline.jpeg";
 
 const LOW_STOCK = 15;
 
@@ -74,7 +75,7 @@ export default function Inventory() {
       <main>
         {/* Hero image */}
         <div className="hero">
-          <img src="houston-skyline.jpeg" alt="Post Office" />
+          <img src={skyline} alt="Post Office" />
         </div>
 
         <div className="page-content">

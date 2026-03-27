@@ -1,3 +1,4 @@
+
 const express = require('express')
 const cors    = require('cors')
 const mysql   = require('mysql2/promise')
@@ -7,6 +8,7 @@ require('dotenv').config()
 
 const packagesDB  = require('./db/packages')
 const inventoryDB = require('./db/inventory')
+const customerDB = require('./db/customers')
 
 const app = express()
 app.use(cors())
@@ -18,14 +20,14 @@ const pool = mysql.createPool({
   port:               process.env.DB_PORT     || 3306,
   user:               process.env.DB_USER     || 'root',
   password:           process.env.DB_PASSWORD || '',
-  database:           process.env.DB_NAME     || 'post_office_8',
+  database:           process.env.DB_NAME     || 'post_office_8', 
   waitForConnections: true,
   connectionLimit:    10,
 })
 
 pool.getConnection()
   .then(c => { console.log('✅ MySQL connected'); c.release() })
-  .catch(e => console.error('❌ MySQL connection failed:', e.message))
+  .catch(e => console.error('❌ MySQL connection failed:', e))
 
 // ── Auth middleware ───────────────────────────────────────────────────────
 const authenticate = (req, res, next) => {
@@ -297,6 +299,23 @@ app.get('/api/tickets', async (req, res) => {
     console.error('Error fetching tickets:', err);
     res.status(500).json({ message: 'Database error', error: err.message });
   }
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+//  CUSTOMERS ROUTES
+// ════════════════════════════════════════════════════════════════════════════
+app.get('/api/customers', (req, res) => {
+  customerDB.getAllCustomers(pool, (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(results);
+  });
+});
+
+app.get('/api/customers/:id/packages', (req, res) => {
+  customerDB.getCustomerPackages(pool, req.params.id, (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(results);
+  });
 });
 
 // ── Start ─────────────────────────────────────────────────────────────────
