@@ -3,6 +3,8 @@ import "./css/packages.css";
 import skyline from "../assets/houston-skyline.jpeg";
 import React from 'react'
 
+const API_BASE = import.meta.env.VITE_API_URL || ''
+
 export default function AllCustomers() {
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -13,7 +15,7 @@ export default function AllCustomers() {
   const [customerPackages, setCustomerPackages] = useState({});
 
   useEffect(() => {
-    fetch("http://localhost:5000/api/customers")
+    fetch(`${API_BASE}/api/customers`)
       .then((res) => {
         if (!res.ok) throw new Error("Failed to load customers");
         return res.json();
@@ -49,7 +51,7 @@ function toggleExpand(id) {
     return;
     }
     setExpanded(id);
-    fetch(`http://localhost:5000/api/customers/${id}/packages`)
+    fetch(`${API_BASE}/api/customers/${id}/packages`)
     .then(res => res.json())
     .then(data => setCustomerPackages(prev => ({ ...prev, [id]: data })))
     .catch(() => setCustomerPackages(prev => ({ ...prev, [id]: [] })));
@@ -160,7 +162,7 @@ function toggleExpand(id) {
                                          <label>Sending</label>
                                         <p>
                                             {(customerPackages[c.Customer_ID] || [])
-                                            .filter(p => p.Role === 'Sending')
+                                            .filter(p => p.role === 'Sending')
                                             .map(p => <code key={p.Tracking_Number} style={{ display: 'block' }}>{p.Tracking_Number}</code>)
                                             }
                                             {!(customerPackages[c.Customer_ID] || []).some(p => p.Role === 'Sending') && "—"}
@@ -170,7 +172,7 @@ function toggleExpand(id) {
                                         <label>Receiving</label>
                                         <p>
                                         {(customerPackages[c.Customer_ID] || [])
-                                        .filter(p => p.Role === 'Receiving')
+                                        .filter(p => p.role === 'Receiving')
                                         .map(p => <code key={p.Tracking_Number} style={{ display: 'block' }}>{p.Tracking_Number}</code>)
                                         }
                                         {!(customerPackages[c.Customer_ID] || []).some(p => p.Role === 'Receiving') && "—"}

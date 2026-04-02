@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../components/Auth.css';
 
+const API_BASE = import.meta.env.VITE_API_URL || ''
+
 export default function CustomerProfile() {
   const [user, setUser]           = useState(null);
   const [loading, setLoading]     = useState(true);
@@ -25,7 +27,7 @@ export default function CustomerProfile() {
     const token = localStorage.getItem('token');
     if (!token) { navigate('/login'); return; }
 
-    fetch('http://localhost:5000/api/customer/profile', {
+    fetch(`${API_BASE}/api/customer/profile`, {
       headers: { 'Authorization': `Bearer ${token}` }
     })
       .then(r => r.json())
@@ -57,7 +59,7 @@ export default function CustomerProfile() {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/customer/profile', {
+      const response = await fetch(`${API_BASE}/api/customer/profile`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

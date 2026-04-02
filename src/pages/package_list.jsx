@@ -4,6 +4,8 @@ import React from "react";
 
 import skyline from "../assets/houston-skyline.jpeg";
 
+const API_BASE = import.meta.env.VITE_API_URL || ''
+
 export default function AllPackages() {
   const [packages, setPackages] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -14,7 +16,7 @@ export default function AllPackages() {
   const [expanded, setExpanded] = useState(null);
 
   useEffect(() => {
-    fetch("http://localhost:5000/api/packages")
+    fetch(`${API_BASE}/api/packages`)
       .then((res) => {
         if (!res.ok) throw new Error("Failed to load packages");
         return res.json();

@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../components/Auth.css';
 
+const API_BASE = import.meta.env.VITE_API_URL || ''
+
 const AdminRegister = () => {
   const [formData, setFormData] = useState({
     name: '',
@@ -36,7 +38,7 @@ const AdminRegister = () => {
     setLoading(true);
 
     try {
-      const response = await fetch('http://localhost:5000/api/auth/admin-register', {
+      const response = await fetch(`${API_BASEL}/api/auth/admin-register`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',

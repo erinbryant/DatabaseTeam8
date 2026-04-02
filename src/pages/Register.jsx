@@ -68,6 +68,7 @@ const Register = () => {
 
     try {
       const url = `${API_BASE}/api/customer/register`
+      console.log('Fetching:', url)
       const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

@@ -19,7 +19,7 @@ function getAllCustomers(pool, callback) {
       Country,
       Email_Address,
       Phone_Number
-    FROM Customer
+    FROM customer
     ORDER BY Last_Name, First_Name ASC
   `)
   .then(([results]) => callback(null, results))
@@ -35,8 +35,8 @@ function getCustomerPackages(pool, customerID, callback) {
       CASE 
         WHEN Sender_ID = ? THEN 'Sending'
         WHEN Recipient_ID = ? THEN 'Receiving'
-      END AS Role
-    FROM Package
+      END AS role
+    FROM package
     WHERE Sender_ID = ? OR Recipient_ID = ?
   `, [customerID, customerID, customerID, customerID])
   .then(([results]) => callback(null, results))
@@ -58,7 +58,7 @@ function getCustomerByID(pool, customerID, callback) {
       Country,
       Email_Address,
       Phone_Number
-    FROM Customer
+    FROM customer
     WHERE Customer_ID = ?
   `, [customerID])
   .then(([results]) => callback(null, results[0] || null))
@@ -181,7 +181,7 @@ async function registerCustomer(pool, rawBody) {
   }
 
   const [exists] = await pool.query(
-    'SELECT Customer_ID FROM Customer WHERE Email_Address = ?',
+    'SELECT Customer_ID FROM customer WHERE Email_Address = ?',
     [email.trim().toLowerCase()]
   )
   if (exists.length) {
@@ -217,7 +217,7 @@ async function registerCustomer(pool, rawBody) {
   const countryVal = (country?.toString().trim() || 'USA').slice(0, 50)
 
   const [result] = await pool.query(
-    `INSERT INTO Customer (
+    `INSERT INTO customer (
       First_Name, Middle_Name, Last_Name,
       Apt_Number, House_Number, Street, City, State,
       Zip_First3, Zip_Last2, Zip_Plus4,
@@ -254,7 +254,7 @@ async function registerCustomer(pool, rawBody) {
             Apt_Number, House_Number, Street, City, State, Zip_First3, Zip_Last2, Zip_Plus4,
             Country,
             Birth_Day, Birth_Month, Birth_Year, Sex
-     FROM Customer WHERE Customer_ID = ?`,
+     FROM customer WHERE Customer_ID = ?`,
     [customerId]
   )
   const user = rows[0]

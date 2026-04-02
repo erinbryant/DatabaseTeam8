@@ -37,12 +37,12 @@ function getAllPackages(pool, callback) {
       d.Signature_Required,
       d.Signature_Received
 
-    FROM Package p
-    JOIN Package_Type pt  ON p.Package_Type_Code = pt.Package_Type_Code
-    JOIN Customer cs      ON p.Sender_ID         = cs.Customer_ID
-    LEFT JOIN Customer cr ON p.Recipient_ID       = cr.Customer_ID
-    LEFT JOIN Delivery d  ON p.Tracking_Number    = d.Tracking_Number
-    LEFT JOIN Status_Code sc ON d.Delivery_Status_Code = sc.Status_Code
+    FROM package p
+    JOIN package_type pt  ON p.Package_Type_Code = pt.Package_Type_Code
+    JOIN customer cs      ON p.Sender_ID         = cs.Customer_ID
+    LEFT JOIN customer cr ON p.Recipient_ID       = cr.Customer_ID
+    LEFT JOIN delivery d  ON p.Tracking_Number    = d.Tracking_Number
+    LEFT JOIN status_code sc ON d.Delivery_Status_Code = sc.Status_Code
     ORDER BY p.Date_Created DESC
   `)
   .then(([results]) => callback(null, results))
@@ -58,16 +58,18 @@ function getPackageByTracking(pool, trackingNumber, callback) {
       CONCAT(cr.First_Name,' ',cr.Last_Name) AS Recipient_Name,
       sc.Status_Name, sc.Is_Final_Status,
       d.Delivered_Date, d.Signature_Required, d.Signature_Received
-    FROM Package p
-    JOIN Package_Type pt  ON p.Package_Type_Code = pt.Package_Type_Code
-    JOIN Customer cs      ON p.Sender_ID         = cs.Customer_ID
-    LEFT JOIN Customer cr ON p.Recipient_ID       = cr.Customer_ID
-    LEFT JOIN Delivery d  ON p.Tracking_Number    = d.Tracking_Number
-    LEFT JOIN Status_Code sc ON d.Delivery_Status_Code = sc.Status_Code
+    FROM package p
+    JOIN package_type pt  ON p.Package_Type_Code = pt.Package_Type_Code
+    JOIN customer cs      ON p.Sender_ID         = cs.Customer_ID
+    LEFT JOIN customer cr ON p.Recipient_ID       = cr.Customer_ID
+    LEFT JOIN delivery d  ON p.Tracking_Number    = d.Tracking_Number
+    LEFT JOIN status_code sc ON d.Delivery_Status_Code = sc.Status_Code
     WHERE p.Tracking_Number = ?
   `, [trackingNumber])
   .then(([results]) => callback(null, results[0] || null))
   .catch(err => callback(err, null))
 }
+
+Function 
 
 module.exports = { getAllPackages, getPackageByTracking }

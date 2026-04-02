@@ -3,6 +3,8 @@ import './css/home.css'
 import './css/customer_home.css'
 import skyline from '../assets/houston-skyline.jpeg'
 
+const API_BASE = import.meta.env.VITE_API_URL || ''
+
 /** Name from localStorage `user` (customer login / register API shape). */
 function getStoredCustomerFullName() {
   try {
@@ -49,16 +51,16 @@ export default function CustomerHome() {
               href="#"
               onClick={(e) => {
                 e.preventDefault()
-                navigate('/package_history')
+                navigate('/customer_packages')
               }}
             >
-              History
+              My Packages
             </a>
             <a
               href="#"
               onClick={(e) => {
                 e.preventDefault()
-                navigate('/package_list')
+                navigate('/inventory')
               }}
             >
               Store
@@ -96,13 +98,13 @@ export default function CustomerHome() {
               </button>
             </div>
 
-            <div className="card">
+            {/* <div className="card">
               <h3>Send a package</h3>
               <p>Ship your packages quickly and safely.</p>
               <button type="button" className="btn primary" onClick={() => navigate('/ship_package')}>
                 Send now
               </button>
-            </div>
+            </div> */}
 
             <div className="card">
               <h3>Account info</h3>
@@ -115,6 +117,30 @@ export default function CustomerHome() {
                 View account
               </button>
             </div>
+            <div className="card">
+              <h3>Submit Support Ticket</h3>
+              <p>Submit a Support ticket for issues with your package.</p>
+              <button
+                type="button"
+                className="btn primary"
+                onClick={() => navigate('/submit_ticket')}
+              >
+                Send now
+              </button>
+            </div>
+
+            <div className="card">
+              <h3>Package Pricing</h3>
+              <p>Submit your package's information and recieve an estemated shipping price.</p>
+              <button
+                type="button"
+                className="btn primary"
+                onClick={() => navigate('/price_calculator')}
+              >
+                Calculate
+              </button>
+            </div>
+            
           </div>
         </section>
       </main>

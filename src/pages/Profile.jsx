@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../components/Auth.css';
+
+const API_BASE = import.meta.env.VITE_API_URL || ''
  
 export default function Profile() {
   const [user, setUser]                             = useState(null);
@@ -29,7 +31,7 @@ export default function Profile() {
       const token = localStorage.getItem('token');
       if (!token) { navigate('/login'); return; }
  
-      const response = await fetch('http://localhost:5000/api/auth/profile', {
+      const response = await fetch(`${API_BASE}/api/auth/profile`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
  
@@ -69,7 +71,7 @@ export default function Profile() {
     setError(''); setSuccess('');
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/auth/profile', {
+      const response = await fetch(`${API_BASE}/api/auth/profile`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify(formData)
@@ -94,7 +96,7 @@ export default function Profile() {
     }
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/auth/change-password', {
+      const response = await fetch(`${API_BASE}/api/auth/change-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({

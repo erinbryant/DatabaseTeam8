@@ -13,9 +13,9 @@ function getAllInventory(pool, callback) {
       po.City                    AS city,
       po.State                   AS state,
       CONCAT(po.House_Number, ' ', po.Street) AS office_address
-    FROM Product pr
-    JOIN Store s        ON pr.Store_ID      = s.Store_ID
-    JOIN Post_Office po ON s.Post_Office_ID = po.Post_Office_ID
+    FROM product pr
+    JOIN store s        ON pr.Store_ID      = s.Store_ID
+    JOIN post_office po ON s.Post_Office_ID = po.Post_Office_ID
     ORDER BY po.City, pr.Product_name
   `)
   .then(([results]) => callback(null, results))

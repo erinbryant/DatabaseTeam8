@@ -1,11 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import './css/home.css'
-// import Layout from '../layout'
-// import '../components/button.css'
-// export default function Home() {
-//   return <h1>Hello from Home</h1>
-// }
+
+const API_BASE = import.meta.env.VITE_API_URL || ''
 
 export default function Home() {
   const navigate = useNavigate()

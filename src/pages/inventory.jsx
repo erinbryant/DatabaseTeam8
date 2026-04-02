@@ -2,8 +2,12 @@ import { useState, useEffect } from "react";
 import "./css/packages.css";
 import skyline from "../assets/houston-skyline.jpeg";
 
-const LOW_STOCK = 15;
+const API_BASE = import.meta.env.VITE_API_URL || '';
 
+const LOW_STOCK = 15;
+console.log("VITE_API_URL =", import.meta.env.VITE_API_URL);
+console.log(import.meta.env.VITE_TEST);
+console.log(import.meta.env.VITE_API_URL);
 export default function Inventory() {
   const [inventory, setInventory] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -13,7 +17,9 @@ export default function Inventory() {
   const [stockFilter, setStockFilter] = useState("");
 
   useEffect(() => {
-    fetch("http://localhost:5000/api/inventory")
+    fetch(`${API_BASE}/api/inventory`)
+    //fetch(`${API_BASE}/api/inventory`)
+    
       .then((res) => {
         if (!res.ok) throw new Error("Failed to load inventory");
         return res.json();
