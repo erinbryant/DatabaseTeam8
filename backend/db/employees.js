@@ -159,7 +159,7 @@ async function employeeByTickets(pool) {
     ORDER BY ticket_count ASC
     LIMIT 1;
   `);
-  console.log
+//   console.log
   return results
 }
 

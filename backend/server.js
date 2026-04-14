@@ -14,6 +14,7 @@ const priceDB = require('./db/package_type')
 const packagePickupStorageJob = require('./db/package_pickup_storage_job')
 const revenueReportDB = require('./db/revenue_report')
 const { report } = require('process')
+const shipmentDB = require('./db/shipments')
 
 // ── DB pool ───────────────────────────────────────────────────────────────
 const pool = mysql.createPool({
@@ -1405,6 +1406,40 @@ if (method === 'GET' && pathname === '/api/packages/full') {
         if (err) return send(res, 500, { error: err.message })
         return send(res, 200, results)
       })
+      return
+    }
+  }
+
+  // ── GET /api/shipments (employee+admin) ──────────────────────────────────
+  if (method === 'GET' && pathname === '/api/shipments') {
+    const user = authenticate(req, res)
+    if (!user) return
+    if (!requireEmployee(user, res)) return
+
+    try {
+      const results = await shipmentDB.allShipments(pool)
+      return send(res, 200, results)
+    } catch (err) {
+      return send(res, 500, { error: err.message })
+    }
+    return
+  }
+
+  // ── GET /api/shipment/:id/packages (employee+admin) ─────────────────────
+  {
+    const m = matchPath('/api/shipment/:id/packages', pathname)
+    // console.log("at customer/packages")
+    if (method === 'GET' && m.matched) {
+      const user = authenticate(req, res)
+      if (!user) return
+      if (!requireEmployee(user, res)) return
+
+      try {
+        const results = await shipmentDB.packageByShipment(pool, m.params.id)
+        return send(res, 200, results)
+      } catch (err) {
+        return send(res, 500, { error: err.message })
+      }
       return
     }
   }
