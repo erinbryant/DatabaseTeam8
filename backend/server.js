@@ -413,10 +413,11 @@ async function router(req, res) {
 
     try {
       const [rows] = await pool.query(
-        `SELECT e.Employee_ID, po.Street AS Post_Office_Street, d.Department_Name, r.Role_Name,
+        `SELECT e.Employee_ID, a.Street AS Post_Office_Street, d.Department_Name, r.Role_Name,
                 e.First_Name, e.Last_Name, e.Email_Address, e.Sex, e.Phone_Number, e.Is_Active
          FROM employee e
          JOIN post_office po ON e.Post_Office_ID = po.Post_Office_ID
+         JOIN address a      ON po.Address_ID    = a.Address_ID
          JOIN department d   ON e.Department_ID  = d.Department_ID
          JOIN role r         ON e.Role_ID        = r.Role_ID
          WHERE e.Is_Active IN ('1', 1)
@@ -465,13 +466,14 @@ async function router(req, res) {
                 e.Email_Address, e.Phone_Number, e.Salary, e.Hours_Worked, e.Supervisor_ID,
                 CONCAT(s.First_Name, ' ', s.Last_Name) AS Supervisor,
                 r.Role_Name, d.Department_Name,
-                po.City AS Office_City, po.State AS Office_State
-         FROM employee e
-         JOIN role r         ON e.Role_ID        = r.Role_ID
-         JOIN department d   ON e.Department_ID  = d.Department_ID
-         JOIN post_office po ON e.Post_Office_ID = po.Post_Office_ID
-         LEFT JOIN employee s ON e.Supervisor_ID = s.Employee_ID
-         WHERE e.Employee_ID = ?`,
+                a.City AS Office_City, a.State AS Office_State
+        FROM employee e
+        JOIN role r         ON e.Role_ID        = r.Role_ID
+        JOIN department d   ON e.Department_ID  = d.Department_ID
+        JOIN post_office po ON e.Post_Office_ID = po.Post_Office_ID
+        JOIN address a      ON po.Address_ID    = a.Address_ID
+        LEFT JOIN employee s ON e.Supervisor_ID = s.Employee_ID
+        WHERE e.Employee_ID = ?`,
         [user.employee_id]
       )
       if (!rows.length) return send(res, 404, { message: 'Employee not found' })
@@ -482,7 +484,6 @@ async function router(req, res) {
     }
   }
 
-  // ── PUT /api/auth/profile ────────────────────────────────────────────────
   if (method === 'PUT' && pathname === '/api/auth/profile') {
     const user = authenticate(req, res)
     if (!user) return
@@ -499,16 +500,16 @@ async function router(req, res) {
                 e.Email_Address, e.Phone_Number, e.Salary, e.Hours_Worked, e.Supervisor_ID,
                 CONCAT(s.First_Name, ' ', s.Last_Name) AS Supervisor,
                 r.Role_Name, d.Department_Name,
-                po.City AS Office_City, po.State AS Office_State
-         FROM employee e
-         JOIN role r         ON e.Role_ID        = r.Role_ID
-         JOIN department d   ON e.Department_ID  = d.Department_ID
-         JOIN post_office po ON e.Post_Office_ID = po.Post_Office_ID
-         LEFT JOIN employee s ON e.Supervisor_ID = s.Employee_ID
-         WHERE e.Employee_ID = ?`,
+                a.City AS Office_City, a.State AS Office_State
+        FROM employee e
+        JOIN role r         ON e.Role_ID        = r.Role_ID
+        JOIN department d   ON e.Department_ID  = d.Department_ID
+        JOIN post_office po ON e.Post_Office_ID = po.Post_Office_ID
+        JOIN address a      ON po.Address_ID    = a.Address_ID
+        LEFT JOIN employee s ON e.Supervisor_ID = s.Employee_ID
+        WHERE e.Employee_ID = ?`,
         [user.employee_id]
       )
-
       return send(res, 200, { message: 'Profile updated successfully', user: rows[0] })
     } catch (err) {
       console.error(err)
@@ -547,17 +548,20 @@ async function router(req, res) {
     }
   }
 
-  // ── GET /api/customer/profile ────────────────────────────────────────────
+// ── GET /api/customer/profile ────────────────────────────────────────────
   if (method === 'GET' && pathname === '/api/customer/profile') {
     const user = authenticate(req, res)
     if (!user) return
 
     try {
       const [rows] = await pool.query(
-        `SELECT Customer_ID, First_Name, Last_Name, Email_Address,
-                Phone_Number, House_Number, Street, City, State,
-                Zip_First3, Zip_Last2
-         FROM customer WHERE Customer_ID = ?`,
+        `SELECT c.Customer_ID, c.First_Name, c.Last_Name, c.Email_Address,
+                c.Phone_Number,
+                a.House_Number, a.Street, a.City, a.State,
+                a.Zip_First3, a.Zip_Last2
+         FROM customer c
+         JOIN address a ON c.Address_ID = a.Address_ID
+         WHERE c.Customer_ID = ?`,
         [user.customer_id]
       )
       if (!rows.length) return send(res, 404, { message: 'Customer not found' })
@@ -585,29 +589,32 @@ async function router(req, res) {
     } = await getBody(req)
 
     try {
+      // Update email/phone on customer
       await pool.query(
-        `UPDATE customer SET Email_Address=?, Phone_Number=?, House_Number=?, Street=?, City=?, State=?, Zip_First3=?, Zip_Last2=? WHERE Customer_ID=?`,
-        [
-          Email_Address,
-          Phone_Number,
-          House_Number,
-          Street,
-          City,
-          State,
-          Zip_First3,
-          Zip_Last2,
-          user.customer_id,
-        ]
+        `UPDATE customer SET Email_Address = ?, Phone_Number = ? WHERE Customer_ID = ?`,
+        [Email_Address, Phone_Number, user.customer_id]
+      )
+
+      // Update address fields on address table via JOIN
+      await pool.query(
+        `UPDATE address a
+        JOIN customer c ON c.Address_ID = a.Address_ID
+        SET a.House_Number = ?, a.Street = ?, a.City = ?,
+            a.State = ?, a.Zip_First3 = ?, a.Zip_Last2 = ?
+        WHERE c.Customer_ID = ?`,
+        [House_Number, Street, City, State, Zip_First3, Zip_Last2, user.customer_id]
       )
 
       const [rows] = await pool.query(
-        `SELECT Customer_ID, First_Name, Last_Name, Email_Address,
-                Phone_Number, House_Number, Street, City, State,
-                Zip_First3, Zip_Last2
-         FROM customer WHERE Customer_ID = ?`,
+        `SELECT c.Customer_ID, c.First_Name, c.Last_Name, c.Email_Address,
+                c.Phone_Number,
+                a.House_Number, a.Street, a.City, a.State,
+                a.Zip_First3, a.Zip_Last2
+        FROM customer c
+        JOIN address a ON c.Address_ID = a.Address_ID
+        WHERE c.Customer_ID = ?`,
         [user.customer_id]
       )
-
       return send(res, 200, { message: 'Profile updated successfully', user: rows[0] })
     } catch (err) {
       console.error(err)
@@ -718,7 +725,7 @@ async function router(req, res) {
     return
   }
 
-  // ── POST /api/employee/packages ──────────────────────────────────────────
+// ── POST /api/employee/packages ──────────────────────────────────────────
   if (method === 'POST' && pathname === '/api/employee/packages') {
     const user = authenticate(req, res)
     if (!user) return
@@ -726,37 +733,15 @@ async function router(req, res) {
 
     const b = await getBody(req)
     const {
-      sender_email,
-      sender_first_name,
-      sender_last_name,
-      sender_house_number,
-      sender_street,
-      sender_city,
-      sender_state,
-      sender_zip_first3,
-      sender_zip_last2,
-      sender_apt_number,
-      sender_country,
-      sender_phone,
-      recipient_email,
-      recipient_first_name,
-      recipient_last_name,
-      recipient_house_number,
-      recipient_street,
-      recipient_city,
-      recipient_state,
-      recipient_zip_first3,
-      recipient_zip_last2,
-      recipient_apt_number,
-      recipient_country,
-      recipient_phone,
-      package_type,
-      weight,
-      zone,
-      excess_fee,
-      dim_x,
-      dim_y,
-      dim_z,
+      sender_email, sender_first_name, sender_last_name,
+      sender_house_number, sender_street, sender_city, sender_state,
+      sender_zip_first3, sender_zip_last2, sender_apt_number,
+      sender_country, sender_phone,
+      recipient_email, recipient_first_name, recipient_last_name,
+      recipient_house_number, recipient_street, recipient_city, recipient_state,
+      recipient_zip_first3, recipient_zip_last2, recipient_apt_number,
+      recipient_country, recipient_phone,
+      package_type, weight, zone, excess_fee, dim_x, dim_y, dim_z,
     } = b
 
     const pt = normalizePackageTypeName(package_type)
@@ -783,26 +768,20 @@ async function router(req, res) {
     }
 
     const senderEmail = (sender_email || '').trim().toLowerCase()
-    if (!senderEmail || !sender_first_name?.trim() || !sender_last_name?.trim()) {
+    if (!senderEmail || !sender_first_name?.trim() || !sender_last_name?.trim())
       return send(res, 400, { message: 'Sender email, first name, and last name are required' })
-    }
-    if (!sender_house_number || !sender_street || !sender_city || !sender_state || !sender_zip_first3 || !sender_zip_last2) {
+    if (!sender_house_number || !sender_street || !sender_city || !sender_state || !sender_zip_first3 || !sender_zip_last2)
       return send(res, 400, { message: 'Sender address fields are required' })
-    }
 
     let recipientEmail = (recipient_email || '').trim().toLowerCase()
-    if (!recipient_first_name?.trim() || !recipient_last_name?.trim()) {
+    if (!recipient_first_name?.trim() || !recipient_last_name?.trim())
       return send(res, 400, { message: 'Recipient first and last name are required' })
-    }
-    if (!recipient_house_number || !recipient_street || !recipient_city || !recipient_state || !recipient_zip_first3 || !recipient_zip_last2) {
+    if (!recipient_house_number || !recipient_street || !recipient_city || !recipient_state || !recipient_zip_first3 || !recipient_zip_last2)
       return send(res, 400, { message: 'Recipient address fields are required' })
-    }
-    if (!recipientEmail) {
+    if (!recipientEmail)
       recipientEmail = `recipient.${Date.now()}.${Math.random().toString(36).slice(2, 8)}@pkg.internal`
-    }
-    if (recipientEmail === senderEmail) {
+    if (recipientEmail === senderEmail)
       return send(res, 400, { message: 'Sender and recipient must be different people (different emails)' })
-    }
 
     const conn = await pool.getConnection()
     try {
@@ -811,40 +790,23 @@ async function router(req, res) {
       let senderId = (await customerDB.getCustomerByEmail(conn, senderEmail))?.Customer_ID
       if (!senderId) {
         const created = await customerDB.createCustomerMinimal(conn, {
-          first_name: sender_first_name,
-          last_name: sender_last_name,
-          email: senderEmail,
-          house_number: sender_house_number,
-          street: sender_street,
-          city: sender_city,
-          state: sender_state,
-          zip_first3: sender_zip_first3,
-          zip_last2: sender_zip_last2,
-          apt_number: sender_apt_number,
-          zip_plus4: b.sender_zip_plus4,
-          country: sender_country,
-          phone_number: sender_phone,
+          first_name: sender_first_name, last_name: sender_last_name, email: senderEmail,
+          house_number: sender_house_number, street: sender_street, city: sender_city,
+          state: sender_state, zip_first3: sender_zip_first3, zip_last2: sender_zip_last2,
+          apt_number: sender_apt_number, zip_plus4: b.sender_zip_plus4,
+          country: sender_country, phone_number: sender_phone,
         })
         senderId = created.customerId
-        // created.initialPassword exists but unused in this server
       }
 
       let recipientId = (await customerDB.getCustomerByEmail(conn, recipientEmail))?.Customer_ID
       if (!recipientId) {
         const created = await customerDB.createCustomerMinimal(conn, {
-          first_name: recipient_first_name,
-          last_name: recipient_last_name,
-          email: recipientEmail,
-          house_number: recipient_house_number,
-          street: recipient_street,
-          city: recipient_city,
-          state: recipient_state,
-          zip_first3: recipient_zip_first3,
-          zip_last2: recipient_zip_last2,
-          apt_number: recipient_apt_number,
-          zip_plus4: b.recipient_zip_plus4,
-          country: recipient_country,
-          phone_number: recipient_phone,
+          first_name: recipient_first_name, last_name: recipient_last_name, email: recipientEmail,
+          house_number: recipient_house_number, street: recipient_street, city: recipient_city,
+          state: recipient_state, zip_first3: recipient_zip_first3, zip_last2: recipient_zip_last2,
+          apt_number: recipient_apt_number, zip_plus4: b.recipient_zip_plus4,
+          country: recipient_country, phone_number: recipient_phone,
         })
         recipientId = created.customerId
       }
@@ -900,15 +862,12 @@ async function router(req, res) {
         [tracking, sigRequired ? 1 : 0, pendingCode]
       )
 
-      const [shipRes] = await conn.query(
-        `INSERT INTO shipment (Status_Code, Employee_ID,
-          From_Apt_Number, From_House_Number, From_Street, From_City, From_State, From_Zip_First3, From_Zip_Last2, From_Zip_Plus4, From_Country,
-          To_Apt_Number, To_House_Number, To_Street, To_City, To_State, To_Zip_First3, To_Zip_Last2, To_Zip_Plus4, To_Country,
-          Departure_Time_Stamp, Arrival_Time_Stamp)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NULL,NULL)`,
+      // Insert FROM address
+      const [fromAddrRes] = await conn.query(
+        `INSERT INTO address (Apt_Number, House_Number, Street, City, State,
+          Zip_First3, Zip_Last2, Zip_Plus4, Country)
+         VALUES (?,?,?,?,?,?,?,?,?)`,
         [
-          pendingCode,
-          actingEmployeeId,
           sender_apt_number || null,
           String(sender_house_number).slice(0, 10),
           String(sender_street).slice(0, 100),
@@ -918,6 +877,16 @@ async function router(req, res) {
           String(sender_zip_last2).replace(/\D/g, '').slice(0, 2),
           b.sender_zip_plus4 ? String(b.sender_zip_plus4).replace(/\D/g, '').slice(0, 4) : null,
           (sender_country || 'USA').toString().slice(0, 50),
+        ]
+      )
+      const fromAddressId = fromAddrRes.insertId
+
+      // Insert TO address
+      const [toAddrRes] = await conn.query(
+        `INSERT INTO address (Apt_Number, House_Number, Street, City, State,
+          Zip_First3, Zip_Last2, Zip_Plus4, Country)
+         VALUES (?,?,?,?,?,?,?,?,?)`,
+        [
           recipient_apt_number || null,
           String(recipient_house_number).slice(0, 10),
           String(recipient_street).slice(0, 100),
@@ -929,9 +898,21 @@ async function router(req, res) {
           (recipient_country || 'USA').toString().slice(0, 50),
         ]
       )
+      const toAddressId = toAddrRes.insertId
+
+      // Insert shipment using the new address IDs
+      const [shipRes] = await conn.query(
+        `INSERT INTO shipment (Status_Code, Employee_ID, From_Address_ID, To_Address_ID,
+          Departure_Time_Stamp, Arrival_Time_Stamp)
+         VALUES (?,?,?,?,NULL,NULL)`,
+        [pendingCode, actingEmployeeId, fromAddressId, toAddressId]
+      )
 
       const shipmentId = shipRes.insertId
-      await conn.query(`INSERT INTO shipment_package (Shipment_ID, Tracking_Number) VALUES (?,?)`, [shipmentId, tracking])
+      await conn.query(
+        `INSERT INTO shipment_package (Shipment_ID, Tracking_Number) VALUES (?,?)`,
+        [shipmentId, tracking]
+      )
 
       await conn.commit()
       return send(res, 201, {
@@ -943,97 +924,96 @@ async function router(req, res) {
     } catch (err) {
       await conn.rollback()
       console.error(err)
-      if (err.code === 'ER_DUP_ENTRY') {
+      if (err.code === 'ER_DUP_ENTRY')
         return send(res, 400, { message: 'Duplicate email or tracking conflict; try again' })
-      }
       return send(res, 500, { message: err.message || 'Could not create package' })
     } finally {
       conn.release()
     }
   }
 
-  // ── GET /api/reports/employee-performance ────────────────────────────────
+// ── GET /api/reports/employee-performance ────────────────────────────────
+  if (method === 'GET' && pathname === '/api/reports/employee-performance') {
+    const user = authenticate(req, res)
+    if (!user) return
+    if (!requireEmployee(user, res)) return
 
-if (method === 'GET' && pathname === '/api/reports/employee-performance') {
-  const user = authenticate(req, res)
-  if (!user) return
-  if (!requireEmployee(user, res)) return
+    const { department_id, post_office_id, date_from, date_to } = query
 
-  const { department_id, post_office_id, date_from, date_to } = query
+    try {
+      const conditions = ['e.Role_ID NOT IN (SELECT Role_ID FROM role WHERE Role_Name IN (\'Manager\', \'Admin\', \'Supervisor\'))']
+      const params = []
 
-  try {
-    const conditions = ['e.Role_ID NOT IN (SELECT Role_ID FROM role WHERE Role_Name IN (\'Manager\', \'Admin\', \'Supervisor\'))']
-    const params = []
+      if (department_id)  { conditions.push('e.Department_ID = ?');         params.push(Number(department_id)) }
+      if (post_office_id) { conditions.push('e.Post_Office_ID = ?');        params.push(Number(post_office_id)) }
+      if (date_from)      { conditions.push('s.Departure_Time_Stamp >= ?'); params.push(date_from) }
+      if (date_to)        { conditions.push('s.Departure_Time_Stamp <= ?'); params.push(date_to + ' 23:59:59') }
 
-    if (department_id)  { conditions.push('e.Department_ID = ?');               params.push(Number(department_id)) }
-    if (post_office_id) { conditions.push('e.Post_Office_ID = ?');              params.push(Number(post_office_id)) }
-    if (date_from)      { conditions.push('s.Departure_Time_Stamp >= ?');       params.push(date_from) }
-    if (date_to)        { conditions.push('s.Departure_Time_Stamp <= ?');       params.push(date_to + ' 23:59:59') }
+      const whereClause = `WHERE ${conditions.join(' AND ')}`
 
-    const whereClause = `WHERE ${conditions.join(' AND ')}`
-
-    const [rows] = await pool.query(
-      `SELECT
-        e.Employee_ID,
-        CONCAT(e.First_Name, ' ', e.Last_Name) AS Employee_Name,
-        e.Email_Address,
-        r.Role_Name,
-        d.Department_Name,
-        po.City AS Office_City,
-        po.State AS Office_State,
-        COUNT(DISTINCT s.Shipment_ID) AS Total_Shipments,
-        COUNT(DISTINCT sp.Tracking_Number) AS Total_Packages,
-        ROUND(COUNT(DISTINCT sp.Tracking_Number) / NULLIF(COUNT(DISTINCT s.Shipment_ID), 0), 1) AS Avg_Packages_Per_Shipment,
-        (
-          SELECT COALESCE(SUM(pkg2.Price), 0)
-          FROM shipment s2
-          JOIN shipment_package sp2 ON sp2.Shipment_ID = s2.Shipment_ID
-          JOIN package pkg2 ON pkg2.Tracking_Number = sp2.Tracking_Number
-          WHERE s2.Employee_ID = e.Employee_ID
-        ) AS Total_Revenue,
-        (
-          SELECT COALESCE(AVG(pkg2.Price), 0)
-          FROM shipment s2
-          JOIN shipment_package sp2 ON sp2.Shipment_ID = s2.Shipment_ID
-          JOIN package pkg2 ON pkg2.Tracking_Number = sp2.Tracking_Number
-          WHERE s2.Employee_ID = e.Employee_ID
-        ) AS Avg_Revenue_Per_Shipment,
-        (
-          SELECT ROUND(
-            COUNT(CASE WHEN d2.Delivery_Status_Code = 4 THEN 1 END) * 100.0 /
-            NULLIF(COUNT(*), 0), 1)
-          FROM shipment s2
-          JOIN shipment_package sp2 ON sp2.Shipment_ID = s2.Shipment_ID
-          JOIN delivery d2 ON d2.Tracking_Number = sp2.Tracking_Number
-          WHERE s2.Employee_ID = e.Employee_ID
-        ) AS Delivery_Success_Rate,
-        (
-          SELECT COUNT(*)
-          FROM shipment s2
-          JOIN shipment_package sp2 ON sp2.Shipment_ID = s2.Shipment_ID
-          JOIN package pkg2 ON pkg2.Tracking_Number = sp2.Tracking_Number
-          WHERE s2.Employee_ID = e.Employee_ID AND pkg2.Oversize = 1
-        ) AS Oversize_Packages,
-        MAX(s.Departure_Time_Stamp) AS Last_Shipment_Date
-      FROM employee e
-      JOIN role r ON e.Role_ID = r.Role_ID
-      JOIN department d ON e.Department_ID = d.Department_ID
-      JOIN post_office po ON e.Post_Office_ID = po.Post_Office_ID
-      LEFT JOIN shipment s ON s.Employee_ID = e.Employee_ID
-      LEFT JOIN shipment_package sp ON sp.Shipment_ID = s.Shipment_ID
-      LEFT JOIN package pkg ON pkg.Tracking_Number = sp.Tracking_Number
-      ${whereClause}
-      GROUP BY e.Employee_ID, e.First_Name, e.Last_Name, e.Email_Address,
-               r.Role_Name, d.Department_Name, po.City, po.State
-      ORDER BY Total_Packages DESC`,
-      params
-    )
-    return send(res, 200, { report: rows })
-  } catch (err) {
-    console.error(err)
-    return send(res, 500, { message: err.message || 'Server error' })
+      const [rows] = await pool.query(
+        `SELECT
+          e.Employee_ID,
+          CONCAT(e.First_Name, ' ', e.Last_Name) AS Employee_Name,
+          e.Email_Address,
+          r.Role_Name,
+          d.Department_Name,
+          a.City AS Office_City,
+          a.State AS Office_State,
+          COUNT(DISTINCT s.Shipment_ID) AS Total_Shipments,
+          COUNT(DISTINCT sp.Tracking_Number) AS Total_Packages,
+          ROUND(COUNT(DISTINCT sp.Tracking_Number) / NULLIF(COUNT(DISTINCT s.Shipment_ID), 0), 1) AS Avg_Packages_Per_Shipment,
+          (
+            SELECT COALESCE(SUM(pkg2.Price), 0)
+            FROM shipment s2
+            JOIN shipment_package sp2 ON sp2.Shipment_ID = s2.Shipment_ID
+            JOIN package pkg2 ON pkg2.Tracking_Number = sp2.Tracking_Number
+            WHERE s2.Employee_ID = e.Employee_ID
+          ) AS Total_Revenue,
+          (
+            SELECT COALESCE(AVG(pkg2.Price), 0)
+            FROM shipment s2
+            JOIN shipment_package sp2 ON sp2.Shipment_ID = s2.Shipment_ID
+            JOIN package pkg2 ON pkg2.Tracking_Number = sp2.Tracking_Number
+            WHERE s2.Employee_ID = e.Employee_ID
+          ) AS Avg_Revenue_Per_Shipment,
+          (
+            SELECT ROUND(
+              COUNT(CASE WHEN d2.Delivery_Status_Code = 4 THEN 1 END) * 100.0 /
+              NULLIF(COUNT(*), 0), 1)
+            FROM shipment s2
+            JOIN shipment_package sp2 ON sp2.Shipment_ID = s2.Shipment_ID
+            JOIN delivery d2 ON d2.Tracking_Number = sp2.Tracking_Number
+            WHERE s2.Employee_ID = e.Employee_ID
+          ) AS Delivery_Success_Rate,
+          (
+            SELECT COUNT(*)
+            FROM shipment s2
+            JOIN shipment_package sp2 ON sp2.Shipment_ID = s2.Shipment_ID
+            JOIN package pkg2 ON pkg2.Tracking_Number = sp2.Tracking_Number
+            WHERE s2.Employee_ID = e.Employee_ID AND pkg2.Oversize = 1
+          ) AS Oversize_Packages,
+          MAX(s.Departure_Time_Stamp) AS Last_Shipment_Date
+        FROM employee e
+        JOIN role r         ON e.Role_ID        = r.Role_ID
+        JOIN department d   ON e.Department_ID  = d.Department_ID
+        JOIN post_office po ON e.Post_Office_ID = po.Post_Office_ID
+        JOIN address a      ON po.Address_ID    = a.Address_ID
+        LEFT JOIN shipment s ON s.Employee_ID = e.Employee_ID
+        LEFT JOIN shipment_package sp ON sp.Shipment_ID = s.Shipment_ID
+        LEFT JOIN package pkg ON pkg.Tracking_Number = sp.Tracking_Number
+        ${whereClause}
+        GROUP BY e.Employee_ID, e.First_Name, e.Last_Name, e.Email_Address,
+                 r.Role_Name, d.Department_Name, a.City, a.State
+        ORDER BY Total_Packages DESC`,
+        params
+      )
+      return send(res, 200, { report: rows })
+    } catch (err) {
+      console.error(err)
+      return send(res, 500, { message: err.message || 'Server error' })
+    }
   }
-}
 
 // ── GET /api/reports/location-stats ─────────────────────────────────────
 if (method === 'GET' && pathname === '/api/reports/location-stats') {
@@ -1054,20 +1034,21 @@ if (method === 'GET' && pathname === '/api/reports/location-stats') {
     const [rows] = await pool.query(
       `SELECT
         po.Post_Office_ID,
-        po.City,
-        po.State,
-        CONCAT(po.House_Number, ' ', po.Street, ', ', po.City, ', ', po.State) AS Full_Address,
+        a.City,
+        a.State,
+        CONCAT(a.House_Number, ' ', a.Street, ', ', a.City, ', ', a.State) AS Full_Address,
         COUNT(DISTINCT s.Shipment_ID) AS Total_Shipments,
         COUNT(DISTINCT sp.Tracking_Number) AS Total_Packages,
         COALESCE(SUM(pkg.Price), 0) AS Total_Revenue,
         COALESCE(AVG(pkg.Price), 0) AS Avg_Package_Price,
         COUNT(DISTINCT e.Employee_ID) AS Total_Employees
       FROM post_office po
-      LEFT JOIN employee e ON e.Post_Office_ID = po.Post_Office_ID
-      LEFT JOIN shipment s ON s.Employee_ID = e.Employee_ID ${whereClause}
+      JOIN address a        ON po.Address_ID    = a.Address_ID
+      LEFT JOIN employee e  ON e.Post_Office_ID = po.Post_Office_ID
+      LEFT JOIN shipment s  ON s.Employee_ID    = e.Employee_ID ${whereClause}
       LEFT JOIN shipment_package sp ON sp.Shipment_ID = s.Shipment_ID
       LEFT JOIN package pkg ON pkg.Tracking_Number = sp.Tracking_Number
-      GROUP BY po.Post_Office_ID, po.City, po.State, po.House_Number, po.Street
+      GROUP BY po.Post_Office_ID, a.City, a.State, a.House_Number, a.Street
       ORDER BY Total_Packages DESC`,
       params
     )
@@ -1179,7 +1160,12 @@ if (method === 'GET' && pathname === '/api/reports/post-offices') {
   if (!user) return
   if (!requireEmployee(user, res)) return
   try {
-    const [rows] = await pool.query('SELECT Post_Office_ID, City, State FROM post_office ORDER BY State, City ASC')
+    const [rows] = await pool.query(
+      `SELECT po.Post_Office_ID, a.City, a.State
+       FROM post_office po
+       JOIN address a ON po.Address_ID = a.Address_ID
+       ORDER BY a.State, a.City ASC`
+    )
     return send(res, 200, rows)
   } catch (err) {
     return send(res, 500, { message: 'Server error' })
@@ -1199,10 +1185,10 @@ if (method === 'GET' && pathname === '/api/packages/full') {
     const conditions = []
     const params = []
 
-    if (zone)           { conditions.push('pkg.Zone = ?');                params.push(Number(zone)) }
-    if (package_type)   { conditions.push('pkg.Package_Type_Code = ?');   params.push(package_type) }
-    if (status)         { conditions.push('d.Delivery_Status_Code = ?');  params.push(Number(status)) }
-    if (post_office_id) { conditions.push('po.Post_Office_ID = ?');       params.push(Number(post_office_id)) }
+    if (zone)           { conditions.push('pkg.Zone = ?');               params.push(Number(zone)) }
+    if (package_type)   { conditions.push('pkg.Package_Type_Code = ?');  params.push(package_type) }
+    if (status)         { conditions.push('d.Delivery_Status_Code = ?'); params.push(Number(status)) }
+    if (post_office_id) { conditions.push('po.Post_Office_ID = ?');      params.push(Number(post_office_id)) }
 
     const whereClause = conditions.length ? `AND ${conditions.join(' AND ')}` : ''
 
@@ -1218,38 +1204,36 @@ if (method === 'GET' && pathname === '/api/packages/full') {
         pkg.Date_Created,
         pkg.Date_Updated,
         pkg.Dim_X, pkg.Dim_Y, pkg.Dim_Z,
-        -- Sender info
         pkg.Sender_ID,
         CONCAT(s.First_Name, ' ', s.Last_Name) AS Sender_Name,
         s.Email_Address AS Sender_Email,
-        -- Recipient info
         pkg.Recipient_ID,
         CONCAT(r.First_Name, ' ', r.Last_Name) AS Recipient_Name,
         r.Email_Address AS Recipient_Email,
-        -- Delivery info
         d.Delivery_Status_Code,
         d.Delivered_Date,
         d.Signature_Required,
         sc.Status_Name,
         sc.Is_Final_Status,
-        -- Shipment / post office info
-        sh.From_City,
-        sh.From_State,
-        sh.To_City,
-        sh.To_State,
-        po.City AS Office_City,
+        fa.City AS From_City,
+        fa.State AS From_State,
+        ta.City AS To_City,
+        ta.State AS To_State,
+        a.City AS Office_City,
         po.Post_Office_ID,
-        -- Employee who handled it
         CONCAT(e.First_Name, ' ', e.Last_Name) AS Handled_By
       FROM package pkg
-      LEFT JOIN customer s  ON s.Customer_ID  = pkg.Sender_ID
-      LEFT JOIN customer r  ON r.Customer_ID  = pkg.Recipient_ID
-      LEFT JOIN delivery d  ON d.Tracking_Number = pkg.Tracking_Number
-      LEFT JOIN status_code sc ON sc.Status_Code = d.Delivery_Status_Code
+      LEFT JOIN customer s   ON s.Customer_ID       = pkg.Sender_ID
+      LEFT JOIN customer r   ON r.Customer_ID       = pkg.Recipient_ID
+      LEFT JOIN delivery d   ON d.Tracking_Number   = pkg.Tracking_Number
+      LEFT JOIN status_code sc ON sc.Status_Code    = d.Delivery_Status_Code
       LEFT JOIN shipment_package sp ON sp.Tracking_Number = pkg.Tracking_Number
-      LEFT JOIN shipment sh ON sh.Shipment_ID = sp.Shipment_ID
-      LEFT JOIN employee e  ON e.Employee_ID  = sh.Employee_ID
+      LEFT JOIN shipment sh  ON sh.Shipment_ID      = sp.Shipment_ID
+      LEFT JOIN address fa   ON sh.From_Address_ID  = fa.Address_ID
+      LEFT JOIN address ta   ON sh.To_Address_ID    = ta.Address_ID
+      LEFT JOIN employee e   ON e.Employee_ID       = sh.Employee_ID
       LEFT JOIN post_office po ON po.Post_Office_ID = e.Post_Office_ID
+      LEFT JOIN address a    ON po.Address_ID       = a.Address_ID
       WHERE 1=1 ${whereClause}
       ORDER BY pkg.Tracking_Number ASC`,
       params
@@ -1375,10 +1359,13 @@ if (method === 'GET' && pathname === '/api/packages/full') {
 
     try {
       const [rows] = await pool.query(
-        `SELECT Customer_ID, First_Name, Last_Name, Email_Address,
-                Phone_Number, House_Number, Street, Apt_Number,
-                City, State, Zip_First3, Zip_Last2
-         FROM customer WHERE Email_Address = ? LIMIT 1`,
+        `SELECT c.Customer_ID, c.First_Name, c.Last_Name, c.Email_Address,
+                c.Phone_Number,
+                a.House_Number, a.Street, a.Apt_Number,
+                a.City, a.State, a.Zip_First3, a.Zip_Last2
+        FROM customer c
+        JOIN address a ON c.Address_ID = a.Address_ID
+        WHERE c.Email_Address = ? LIMIT 1`,
         [email]
       )
       if (!rows.length) return send(res, 404, { message: 'Customer not found' })

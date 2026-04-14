@@ -3,24 +3,25 @@ const bcrypt = require('bcryptjs')
 function getAllCustomers(pool, callback) {
   pool.query(`
     SELECT
-      Customer_ID,
+      c.Customer_ID,
       CONCAT(
-        First_Name, ' ',
-        IF(Middle_Name IS NOT NULL, CONCAT(Middle_Name, ' '), ''),
-        Last_Name
+        c.First_Name, ' ',
+        IF(c.Middle_Name IS NOT NULL, CONCAT(c.Middle_Name, ' '), ''),
+        c.Last_Name
       ) AS Full_Name,
       CONCAT(
-        House_Number, ' ', Street,
-        IF(Apt_Number IS NOT NULL, CONCAT(' Apt ', Apt_Number), ''),
-        ', ', City, ', ', State, ' ',
-         Zip_First3, Zip_Last2,
-        IF(Zip_Plus4 IS NOT NULL, CONCAT('-', Zip_Plus4), '')
+        a.House_Number, ' ', a.Street,
+        IF(a.Apt_Number IS NOT NULL, CONCAT(' Apt ', a.Apt_Number), ''),
+        ', ', a.City, ', ', a.State, ' ',
+        a.Zip_First3, a.Zip_Last2,
+        IF(a.Zip_Plus4 IS NOT NULL, CONCAT('-', a.Zip_Plus4), '')
       ) AS Full_Address,
-      Country,
-      Email_Address,
-      Phone_Number
-    FROM customer
-    ORDER BY Last_Name, First_Name ASC
+      a.Country,
+      c.Email_Address,
+      c.Phone_Number
+    FROM customer c
+    JOIN address a ON c.Address_ID = a.Address_ID
+    ORDER BY c.Last_Name, c.First_Name ASC
   `)
   .then(([results]) => callback(null, results))
   .catch(err => callback(err, null))
@@ -46,20 +47,21 @@ function getCustomerPackages(pool, customerID, callback) {
 function getCustomerByID(pool, customerID, callback) {
   pool.query(`
     SELECT
-      Customer_ID,
-      CONCAT(First_Name, ' ', COALESCE(CONCAT(Middle_Name, ' '), ''), Last_Name) AS Full_Name,
+      c.Customer_ID,
+      CONCAT(c.First_Name, ' ', COALESCE(CONCAT(c.Middle_Name, ' '), ''), c.Last_Name) AS Full_Name,
       CONCAT(
-        House_Number, ' ', Street,
-        COALESCE(CONCAT(' Apt ', Apt_Number), ''),
-        ', ', City, ', ', State, ' ',
-        Zip_First3, '-', Zip_Last2,
-        COALESCE(CONCAT('-', Zip_Plus4), '')
+        a.House_Number, ' ', a.Street,
+        COALESCE(CONCAT(' Apt ', a.Apt_Number), ''),
+        ', ', a.City, ', ', a.State, ' ',
+        a.Zip_First3, '-', a.Zip_Last2,
+        COALESCE(CONCAT('-', a.Zip_Plus4), '')
       ) AS Full_Address,
-      Country,
-      Email_Address,
-      Phone_Number
-    FROM customer
-    WHERE Customer_ID = ?
+      a.Country,
+      c.Email_Address,
+      c.Phone_Number
+    FROM customer c
+    JOIN address a ON c.Address_ID = a.Address_ID
+    WHERE c.Customer_ID = ?
   `, [customerID])
   .then(([results]) => callback(null, results[0] || null))
   .catch(err => callback(err, null))
@@ -91,6 +93,10 @@ async function registerCustomer(pool, rawBody) {
     zip_last2,
     zip_plus4,
     country,
+    birth_day,
+    birth_month,
+    birth_year,
+    sex,
   } = body
 
   const missing = []
@@ -178,18 +184,13 @@ async function registerCustomer(pool, rawBody) {
 
   const countryVal = (country?.toString().trim() || 'USA').slice(0, 50)
 
-  const [result] = await pool.query(
-    `INSERT INTO customer (
-      First_Name, Middle_Name, Last_Name,
+  // Step 1: insert address
+  const [addrResult] = await pool.query(
+    `INSERT INTO address (
       Apt_Number, House_Number, Street, City, State,
-      Zip_First3, Zip_Last2, Zip_Plus4,
-      Country,
-      Password_Hash, Email_Address, Phone_Number
-    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?, ?)`,
+      Zip_First3, Zip_Last2, Zip_Plus4, Country
+    ) VALUES (?,?,?,?,?,?,?,?,?)`,
     [
-      first_name.trim().slice(0, 30),
-      middleVal,
-      last_name.trim().slice(0, 30),
       aptVal,
       String(house_number).trim().slice(0, 10),
       street.trim().slice(0, 100),
@@ -199,18 +200,39 @@ async function registerCustomer(pool, rawBody) {
       zip2,
       zipPlusVal,
       countryVal,
+    ]
+  )
+  const addressId = addrResult.insertId
+
+  // Step 2: insert customer with Address_ID
+  const [result] = await pool.query(
+    `INSERT INTO customer (
+      First_Name, Middle_Name, Last_Name,
+      Address_ID,
+      Password_Hash, Email_Address, Phone_Number,
+      Sex
+    ) VALUES (?,?,?,?,?,?,?,?)`,
+    [
+      first_name.trim().slice(0, 30),
+      middleVal,
+      last_name.trim().slice(0, 30),
+      addressId,
       hash,
       email.trim().toLowerCase().slice(0, 255),
       phone_number ? String(phone_number).trim().slice(0, 20) : null,
+      sex || 'U',
     ]
   )
 
   const customerId = result.insertId
   const [rows] = await pool.query(
-    `SELECT Customer_ID, First_Name, Middle_Name, Last_Name, Email_Address, Phone_Number,
-            Apt_Number, House_Number, Street, City, State, Zip_First3, Zip_Last2, Zip_Plus4,
-            Country
-     FROM customer WHERE Customer_ID = ?`,
+    `SELECT c.Customer_ID, c.First_Name, c.Middle_Name, c.Last_Name,
+            c.Email_Address, c.Phone_Number,
+            a.Apt_Number, a.House_Number, a.Street, a.City, a.State,
+            a.Zip_First3, a.Zip_Last2, a.Zip_Plus4, a.Country
+     FROM customer c
+     JOIN address a ON c.Address_ID = a.Address_ID
+     WHERE c.Customer_ID = ?`,
     [customerId]
   )
   const user = rows[0]
@@ -262,18 +284,13 @@ async function createCustomerMinimal(pool, body) {
     : ''
   const zipPlusVal = z4digits.length === 4 ? z4digits : null
 
-  const [result] = await pool.query(
-    `INSERT INTO customer (
-      First_Name, Middle_Name, Last_Name,
+  // Step 1: insert address
+  const [addrResult] = await pool.query(
+    `INSERT INTO address (
       Apt_Number, House_Number, Street, City, State,
-      Zip_First3, Zip_Last2, Zip_Plus4,
-      Country,
-      Password_Hash, Email_Address, Phone_Number
-    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      Zip_First3, Zip_Last2, Zip_Plus4, Country
+    ) VALUES (?,?,?,?,?,?,?,?,?)`,
     [
-      String(first_name).trim().slice(0, 30),
-      null,
-      String(last_name).trim().slice(0, 30),
       apt_number ? String(apt_number).trim().slice(0, 10) : null,
       String(house_number).trim().slice(0, 10),
       String(street).trim().slice(0, 100),
@@ -283,6 +300,22 @@ async function createCustomerMinimal(pool, body) {
       zip2,
       zipPlusVal,
       (country?.toString().trim() || 'USA').slice(0, 50),
+    ]
+  )
+  const addressId = addrResult.insertId
+
+  // Step 2: insert customer with Address_ID
+  const [result] = await pool.query(
+    `INSERT INTO customer (
+      First_Name, Middle_Name, Last_Name,
+      Address_ID,
+      Password_Hash, Email_Address, Phone_Number
+    ) VALUES (?,?,?,?,?,?,?)`,
+    [
+      String(first_name).trim().slice(0, 30),
+      null,
+      String(last_name).trim().slice(0, 30),
+      addressId,
       hash,
       String(email).trim().toLowerCase().slice(0, 255),
       phone_number ? String(phone_number).trim().slice(0, 20) : null,

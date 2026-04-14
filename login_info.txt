@@ -1,0 +1,9 @@
+Use these logins to view different authentication pages
+
+--- Customer View ---
+email:
+password:
+
+--- Employee View ---
+email:
+password:
