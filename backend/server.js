@@ -205,10 +205,299 @@ app.post('/api/customer/register', async (req, res) => {
       { expiresIn: '24h' }
     )
 
+<<<<<<< Updated upstream
     res.status(201).json({
       message: 'Customer registered successfully',
       token,
       user,
+=======
+  // ── POST /api/auth/admin-register ────────────────────────────────────────
+  if (method === 'POST' && pathname === '/api/auth/admin-register') {
+    const user = authenticate(req, res)
+    if (!user) return
+    if (!requireAdmin(user, res)) return
+
+    const { name, email, department, position, phoneNumber, hireDate } = await getBody(req)
+    if (!name || !email || !department || !position || !hireDate) {
+      return send(res, 400, { message: 'Missing required fields' })
+    }
+
+    try {
+      const [exists] = await pool.query('SELECT Employee_ID FROM employee WHERE Email_Address = ?', [email])
+      if (exists.length) return send(res, 400, { message: 'Email already registered' })
+
+      const tempPassword = Math.random().toString(36).slice(-10) + 'Temp1!'
+      const hash = await bcrypt.hash(tempPassword, 10)
+
+      // Look up Department_ID by name (don’t assume IDs)
+      const [[deptRow]] = await pool.query(
+        `SELECT Department_ID FROM department WHERE Department_Name = ? LIMIT 1`,
+        [department]
+      )
+      if (!deptRow) return send(res, 400, { message: `Invalid department: ${department}` })
+      const department_id = Number(deptRow.Department_ID)
+
+      // Look up Role_ID by name (don’t assume IDs)
+      const [[roleRow]] = await pool.query(
+        `SELECT Role_ID FROM role WHERE Role_Name = ? LIMIT 1`,
+        [position]
+      )
+      if (!roleRow) return send(res, 400, { message: `Invalid position/role: ${position}` })
+      const role_id = Number(roleRow.Role_ID)
+
+      const [firstName, ...lastNameParts] = name.split(' ')
+      const lastName = lastNameParts.join(' ') || 'Employee'
+
+      const [result] = await pool.query(
+        `INSERT INTO employee (
+          Post_Office_ID, Role_ID, Department_ID,
+          First_Name, Middle_Name, Last_Name,
+          Birthday,
+          Password_Hash, Email_Address, Phone_Number,
+          Sex, Salary
+        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
+        [
+          1, role_id, department_id,
+          firstName, '', lastName,
+          hireDate,
+          hash, email, phoneNumber || null,
+          'U', 0.0
+        ]
+      )
+
+      console.log(`[TODO] Send email to ${email} with temporary password: ${tempPassword}`)
+      return send(res, 201, {
+        message: 'Employee registered successfully',
+        employee_id: result.insertId,
+        email,
+        note: 'Temporary password sent to employee email',
+      })
+    } catch (err) {
+      console.error(err)
+      return send(res, 500, { message: 'Server error', error: err.message })
+    }
+  }
+
+  // ── GET /api/admin/employees ─────────────────────────────────────────────
+  if (method === 'GET' && pathname === '/api/admin/employees') {
+    const user = authenticate(req, res)
+    if (!user) return
+    if (!requireAdmin(user, res)) return
+
+    try {
+      const [rows] = await pool.query(
+        `SELECT e.Employee_ID, po.Street AS Post_Office_Street, d.Department_Name, r.Role_Name,
+                e.First_Name, e.Last_Name, e.Email_Address, e.Sex, e.Phone_Number, e.Is_Active
+         FROM employee e
+         JOIN post_office po ON e.Post_Office_ID = po.Post_Office_ID
+         JOIN department d   ON e.Department_ID  = d.Department_ID
+         JOIN role r         ON e.Role_ID        = r.Role_ID
+         WHERE e.Is_Active IN ('1', 1)
+         ORDER BY e.Last_Name, e.First_Name, e.Employee_ID`
+      )
+      return send(res, 200, { employees: rows })
+    } catch (err) {
+      console.error(err)
+      return send(res, 500, { message: err.sqlMessage || err.message || 'Server error' })
+    }
+  }
+
+  // ── PATCH /api/admin/employees/:employeeId/deactivate ────────────────────
+  {
+    const m = matchPath('/api/admin/employees/:employeeId/deactivate', pathname)
+    if (method === 'PATCH' && m.matched) {
+      const user = authenticate(req, res)
+      if (!user) return
+      if (!requireAdmin(user, res)) return
+
+      const employeeId = Number(m.params.employeeId)
+      if (!Number.isFinite(employeeId)) return send(res, 400, { message: 'Invalid employee id' })
+
+      try {
+        const [result] = await pool.query(
+          "UPDATE employee SET Is_Active = '0' WHERE Employee_ID = ?",
+          [employeeId]
+        )
+        if (!result.affectedRows) return send(res, 404, { message: 'Employee not found' })
+        return send(res, 200, { ok: true })
+      } catch (err) {
+        console.error(err)
+        return send(res, 500, { message: err.sqlMessage || err.message || 'Server error' })
+      }
+    }
+  }
+
+  // ── GET /api/auth/profile ────────────────────────────────────────────────
+  if (method === 'GET' && pathname === '/api/auth/profile') {
+    const user = authenticate(req, res)
+    if (!user) return
+
+    try {
+      const [rows] = await pool.query(
+        `SELECT e.Employee_ID, e.First_Name, e.Middle_Name, e.Last_Name,
+                e.Email_Address, e.Phone_Number, e.Salary, e.Hours_Worked, e.Supervisor_ID,
+                CONCAT(s.First_Name, ' ', s.Last_Name) AS Supervisor,
+                r.Role_Name, d.Department_Name,
+                po.City AS Office_City, po.State AS Office_State
+         FROM employee e
+         JOIN role r         ON e.Role_ID        = r.Role_ID
+         JOIN department d   ON e.Department_ID  = d.Department_ID
+         JOIN post_office po ON e.Post_Office_ID = po.Post_Office_ID
+         LEFT JOIN employee s ON e.Supervisor_ID = s.Employee_ID
+         WHERE e.Employee_ID = ?`,
+        [user.employee_id]
+      )
+      if (!rows.length) return send(res, 404, { message: 'Employee not found' })
+      return send(res, 200, { user: rows[0] })
+    } catch (err) {
+      console.error(err)
+      return send(res, 500, { message: 'Server error' })
+    }
+  }
+
+  // ── PUT /api/auth/profile ────────────────────────────────────────────────
+  if (method === 'PUT' && pathname === '/api/auth/profile') {
+    const user = authenticate(req, res)
+    if (!user) return
+
+    const { Phone_Number } = await getBody(req)
+    try {
+      await pool.query(
+        'UPDATE employee SET Phone_Number = ? WHERE Employee_ID = ?',
+        [Phone_Number, user.employee_id]
+      )
+
+      const [rows] = await pool.query(
+        `SELECT e.Employee_ID, e.First_Name, e.Middle_Name, e.Last_Name,
+                e.Email_Address, e.Phone_Number, e.Salary, e.Hours_Worked, e.Supervisor_ID,
+                CONCAT(s.First_Name, ' ', s.Last_Name) AS Supervisor,
+                r.Role_Name, d.Department_Name,
+                po.City AS Office_City, po.State AS Office_State
+         FROM employee e
+         JOIN role r         ON e.Role_ID        = r.Role_ID
+         JOIN department d   ON e.Department_ID  = d.Department_ID
+         JOIN post_office po ON e.Post_Office_ID = po.Post_Office_ID
+         LEFT JOIN employee s ON e.Supervisor_ID = s.Employee_ID
+         WHERE e.Employee_ID = ?`,
+        [user.employee_id]
+      )
+
+      return send(res, 200, { message: 'Profile updated successfully', user: rows[0] })
+    } catch (err) {
+      console.error(err)
+      return send(res, 500, { message: 'Server error' })
+    }
+  }
+
+  // ── POST /api/auth/change-password ───────────────────────────────────────
+  if (method === 'POST' && pathname === '/api/auth/change-password') {
+    const user = authenticate(req, res)
+    if (!user) return
+
+    const { currentPassword, newPassword } = await getBody(req)
+    if (!currentPassword || !newPassword) return send(res, 400, { message: 'Both passwords are required' })
+    if (newPassword.length < 6) return send(res, 400, { message: 'New password must be at least 6 characters' })
+
+    try {
+      const [rows] = await pool.query(
+        'SELECT Password_Hash FROM employee WHERE Employee_ID = ?',
+        [user.employee_id]
+      )
+      if (!rows.length) return send(res, 404, { message: 'Employee not found' })
+
+      const valid = await bcrypt.compare(currentPassword, rows[0].Password_Hash)
+      if (!valid) return send(res, 401, { message: 'Current password is incorrect' })
+
+      const newHash = await bcrypt.hash(newPassword, 10)
+      await pool.query(
+        'UPDATE employee SET Password_Hash = ? WHERE Employee_ID = ?',
+        [newHash, user.employee_id]
+      )
+      return send(res, 200, { message: 'Password changed successfully' })
+    } catch (err) {
+      console.error(err)
+      return send(res, 500, { message: 'Server error' })
+    }
+  }
+
+  // ── GET /api/customer/profile ────────────────────────────────────────────
+  if (method === 'GET' && pathname === '/api/customer/profile') {
+    const user = authenticate(req, res)
+    if (!user) return
+
+    try {
+      const [rows] = await pool.query(
+        `SELECT Customer_ID, First_Name, Last_Name, Email_Address,
+                Phone_Number, House_Number, Street, City, State,
+                Zip_First3, Zip_Last2
+         FROM customer WHERE Customer_ID = ?`,
+        [user.customer_id]
+      )
+      if (!rows.length) return send(res, 404, { message: 'Customer not found' })
+      return send(res, 200, { user: rows[0] })
+    } catch (err) {
+      console.error(err)
+      return send(res, 500, { message: 'Server error' })
+    }
+  }
+
+  // ── PUT /api/customer/profile ────────────────────────────────────────────
+  if (method === 'PUT' && pathname === '/api/customer/profile') {
+    const user = authenticate(req, res)
+    if (!user) return
+
+    const {
+      Email_Address,
+      Phone_Number,
+      House_Number,
+      Street,
+      City,
+      State,
+      Zip_First3,
+      Zip_Last2,
+    } = await getBody(req)
+
+    try {
+      await pool.query(
+        `UPDATE customer SET Email_Address=?, Phone_Number=?, House_Number=?, Street=?, City=?, State=?, Zip_First3=?, Zip_Last2=? WHERE Customer_ID=?`,
+        [
+          Email_Address,
+          Phone_Number,
+          House_Number,
+          Street,
+          City,
+          State,
+          Zip_First3,
+          Zip_Last2,
+          user.customer_id,
+        ]
+      )
+
+      const [rows] = await pool.query(
+        `SELECT Customer_ID, First_Name, Last_Name, Email_Address,
+                Phone_Number, House_Number, Street, City, State,
+                Zip_First3, Zip_Last2
+         FROM customer WHERE Customer_ID = ?`,
+        [user.customer_id]
+      )
+
+      return send(res, 200, { message: 'Profile updated successfully', user: rows[0] })
+    } catch (err) {
+      console.error(err)
+      return send(res, 500, { message: 'Server error' })
+    }
+  }
+
+  // ── GET /api/packages (PROTECTED: employee+admin) ────────────────────────
+  if (method === 'GET' && pathname === '/api/packages') {
+    const user = authenticate(req, res)
+    if (!user) return
+    if (!requireEmployee(user, res)) return
+
+    packagesDB.getAllPackages(pool, (err, results) => {
+      if (err) return send(res, 500, { error: 'Database error' })
+      return send(res, 200, results)
+>>>>>>> Stashed changes
     })
   } catch (err) {
     if (err.status === 400 || err.code === 'VALIDATION' || err.code === 'DUPLICATE_EMAIL') {

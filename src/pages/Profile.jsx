@@ -20,6 +20,18 @@ async function parseJsonResponse(response) {
   }
 }
 
+function getStoredEmployeeRoleId() {
+  try {
+    const raw = localStorage.getItem('user')
+    if (!raw) return null
+    const u = JSON.parse(raw)
+    const roleId = Number(u.Role_ID ?? u.role_id)
+    return Number.isFinite(roleId) ? roleId : null
+  } catch {
+    return null
+  }
+}
+
 export default function Profile() {
   const [user, setUser] = useState(null)
   const [isEditing, setIsEditing] = useState(false)
@@ -29,6 +41,11 @@ export default function Profile() {
   const [loading, setLoading] = useState(true)
   const navigate = useNavigate()
 
+  // Role-based UI permissions (admin = Role_ID 5 in this codebase)
+  const roleId = getStoredEmployeeRoleId()
+  const isAdmin = roleId === 5
+
+  // Admin can edit Email + Phone; non-admin can edit Phone only (email locked)
   const [formData, setFormData] = useState({
     Email_Address: '',
     Phone_Number: '',
@@ -106,7 +123,12 @@ export default function Profile() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(formData),
+        // Only admins are allowed to submit an email update
+        body: JSON.stringify(
+          isAdmin
+            ? { Phone_Number: formData.Phone_Number, Email_Address: formData.Email_Address }
+            : { Phone_Number: formData.Phone_Number }
+        ),
       })
       const { data, raw } = await parseJsonResponse(response)
       if (!response.ok) {
@@ -393,6 +415,7 @@ export default function Profile() {
             {isEditing && (
               <form onSubmit={handleUpdateProfile}>
                 <h3 className="form-section-title">Edit profile</h3>
+
                 <div className="form-group">
                   <label htmlFor="Email_Address">Email</label>
                   <input
@@ -401,8 +424,16 @@ export default function Profile() {
                     name="Email_Address"
                     value={formData.Email_Address}
                     onChange={handleFormChange}
+                    disabled={!isAdmin}
+                    readOnly={!isAdmin}
                   />
+                  {!isAdmin && (
+                    <small style={{ opacity: 0.8 }}>
+                      Email can only be changed by an admin.
+                    </small>
+                  )}
                 </div>
+
                 <div className="form-group">
                   <label htmlFor="Phone_Number">Phone</label>
                   <input
@@ -413,6 +444,7 @@ export default function Profile() {
                     onChange={handleFormChange}
                   />
                 </div>
+
                 <div className="employee-profile-actions">
                   <button type="submit" className="btn primary">
                     Save changes
