@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../components/Auth.css';
 
-const API_BASE = import.meta.env.VITE_API_URL || ''
+const API_BASE = import.meta.env.VITE_API_URL || '';
 
 const AdminRegister = () => {
   const [formData, setFormData] = useState({
@@ -40,7 +40,7 @@ const AdminRegister = () => {
     try {
       const response = await fetch(`${API_BASE}/api/auth/admin-register`, {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
@@ -63,7 +63,7 @@ const AdminRegister = () => {
       }
 
       setSuccess(`Employee account created successfully! Temporary password sent to ${formData.email}`);
-      
+
       // Reset form
       setFormData({
         name: '',
@@ -75,8 +75,7 @@ const AdminRegister = () => {
         hireDate: ''
       });
 
-      // Removed auto-redirect; user will click "Back to Dashboard"
-      // setTimeout(() => navigate('/employee_home'), 2000);
+      // No auto-redirect; user can click Back to Dashboard anytime
     } catch (err) {
       setError('An error occurred. Please try again.');
       console.error('Admin register error:', err);
@@ -91,21 +90,23 @@ const AdminRegister = () => {
         <h2>👤 Register New Employee</h2>
         <p className="subtitle">Management - Create Employee Account</p>
 
+        {/* Always-visible Back button */}
+        <div style={{ marginBottom: '12px' }}>
+          <button
+            type="button"
+            className="submit-btn"
+            onClick={() => navigate('/employee_home')}
+          >
+            Back to Dashboard
+          </button>
+        </div>
+
         <form onSubmit={handleSubmit}>
           {error && <div className="error-message">{error}</div>}
 
           {success && (
             <div className="success-message">
               {success}
-              <div style={{ marginTop: '12px' }}>
-                <button
-                  type="button"
-                  className="submit-btn"
-                  onClick={() => navigate('/employee_home')}
-                >
-                  Back to Dashboard
-                </button>
-              </div>
             </div>
           )}
 
