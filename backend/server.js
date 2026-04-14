@@ -1028,6 +1028,68 @@ if (method === 'GET' && pathname === '/api/reports/employee-performance') {
   }
 }
 
+// /api/employee/packages/:trackingNumber/status
+{
+  const m = matchPath('/api/employee/packages/:trackingNumber/status', pathname)
+  if (method === 'PATCH' && m.matched) {
+    const user = authenticate(req, res)
+    if (!user) return
+    if (!requireEmployee(user, res)) return
+
+    const trackingNumber = (m.params.trackingNumber || '').trim()
+    const body = await getBody(req)
+    const { status_code } = body || {}
+
+    if (!trackingNumber)
+      return send(res, 400, { message: 'trackingNumber required' })
+    if (status_code === undefined || status_code === null)
+      return send(res, 400, { message: 'status_code is required' })
+
+    const code = Number(status_code)
+    if (Number.isNaN(code))
+      return send(res, 400, { message: 'status_code must be a number' })
+
+    const conn = await pool.getConnection()
+    try {
+      await conn.beginTransaction()
+
+      const [[d]] = await conn.query(
+        `SELECT Delivery_ID FROM delivery WHERE Tracking_Number = ?`,
+        [trackingNumber]
+      )
+      if (!d) {
+        await conn.rollback()
+        return send(res, 404, { message: 'Delivery record not found for this package' })
+      }
+
+      await conn.query(
+        `UPDATE delivery SET Delivery_Status_Code = ? WHERE Tracking_Number = ?`,
+        [code, trackingNumber]
+      )
+
+      const [sp] = await conn.query(
+        `SELECT Shipment_ID FROM shipment_package WHERE Tracking_Number = ? LIMIT 1`,
+        [trackingNumber]
+      )
+      if (sp.length) {
+        await conn.query(
+          `UPDATE shipment SET Status_Code = ? WHERE Shipment_ID = ?`,
+          [code, sp[0].Shipment_ID]
+        )
+      }
+
+      await conn.commit()
+      return send(res, 200, { ok: true, tracking_number: trackingNumber, status_code: code })
+    } catch (err) {
+      await conn.rollback()
+      console.error(err)
+      return send(res, 500, { message: err.message || 'Update failed' })
+    } finally {
+      conn.release()
+    }
+  }
+}
+
 // ── GET /api/reports/location-stats ─────────────────────────────────────
 if (method === 'GET' && pathname === '/api/reports/location-stats') {
   const user = authenticate(req, res)
