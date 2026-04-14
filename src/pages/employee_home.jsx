@@ -25,11 +25,11 @@ function getStoredEmployeeFullName() {
 function getStoredEmployeeRoleId() {
   try {
     const raw = localStorage.getItem('user')
-    console.log(raw)
+    // console.log(raw)
     if (!raw) return null
     const u = JSON.parse(raw)
     const roleId = Number(u.Role_ID ?? u.role_id)
-    console.log(roleId)
+    // console.log(roleId)
     return Number.isFinite(roleId) ? roleId : null
   } catch {
     return null

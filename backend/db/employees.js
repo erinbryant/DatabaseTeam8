@@ -38,7 +38,7 @@ async function getEmployeesRatios(pool){
     
         const ans = await Promise.all(employeeResults.map(async (emp) => {
             const [ticketResults] = await pool.query(ticketQ, [emp.Employee_ID]);
-             console.log(`Employee ${emp.Employee_ID} tickets:`, ticketResults);
+            //  console.log(`Employee ${emp.Employee_ID} tickets:`, ticketResults);
             const ticketCounts = ticketResults.reduce((acc, row) => {
                 acc[row.Ticket_Status_Code] = row.Ticket_Count;
                     return acc;
@@ -146,4 +146,21 @@ async function getWeeklyStatus(pool){
 
   return formatted;
 }
-module.exports = {getEmployeesRatios,getTicketsByEmployee, getNetAverage, getWeeklyStatus,netTicketsWeek,ticketByIssue}
+
+async function employeeByTickets(pool) {
+  const [results] = await pool.query(`
+    SELECT
+    e.Employee_ID,
+    COUNT(s.Assigned_Employee_ID) AS ticket_count
+    FROM employee e
+    LEFT JOIN support_ticket s ON s.Assigned_Employee_ID = e.Employee_ID
+    WHERE e.Role_ID !=2
+    GROUP BY e.Employee_ID 
+    ORDER BY ticket_count ASC
+    LIMIT 1;
+  `);
+  console.log
+  return results
+}
+
+module.exports = {getEmployeesRatios,getTicketsByEmployee, getNetAverage, getWeeklyStatus,netTicketsWeek,ticketByIssue, employeeByTickets}

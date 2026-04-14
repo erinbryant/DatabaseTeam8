@@ -1296,12 +1296,18 @@ if (method === 'GET' && pathname === '/api/packages/full') {
     if (!Tracking_Number || Issue_Type === undefined || !Description) {
       return send(res, 400, { message: 'Missing required fields' })
     }
-
+    
     try {
+      const [EmpRow] = await employeeDB.employeeByTickets(pool)
+      const assignedEmpId = EmpRow?.Employee_ID
+
+      if (!assignedEmpId) {
+        return send(res, 500, { message: 'No available employee to assign' })
+      }
       await pool.query(
-        `INSERT INTO support_ticket (User_ID, Package_ID, Issue_Type, Description, Ticket_Status_Code)
-        VALUES (?, ?, ?, ?, 0)`,
-        [user.customer_id, Tracking_Number, Issue_Type, Description]
+        `INSERT INTO support_ticket (User_ID, Package_ID, Issue_Type, Description, Ticket_Status_Code, Assigned_Employee_ID)
+        VALUES (?, ?, ?, ?, 0, ?)`,
+        [user.customer_id, Tracking_Number, Issue_Type, Description, assignedEmpId]
       )
       return send(res, 201, { message: 'Ticket submitted successfully' })
     } catch (err) {

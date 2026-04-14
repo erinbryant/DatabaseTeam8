@@ -43,27 +43,27 @@ function getCustomerPackages(pool, customerID, callback) {
   .catch(err => callback(err, null))
 }
 
-function getCustomerByID(pool, customerID, callback) {
-  pool.query(`
-    SELECT
-      Customer_ID,
-      CONCAT(First_Name, ' ', COALESCE(CONCAT(Middle_Name, ' '), ''), Last_Name) AS Full_Name,
-      CONCAT(
-        House_Number, ' ', Street,
-        COALESCE(CONCAT(' Apt ', Apt_Number), ''),
-        ', ', City, ', ', State, ' ',
-        Zip_First3, '-', Zip_Last2,
-        COALESCE(CONCAT('-', Zip_Plus4), '')
-      ) AS Full_Address,
-      Country,
-      Email_Address,
-      Phone_Number
-    FROM customer
-    WHERE Customer_ID = ?
-  `, [customerID])
-  .then(([results]) => callback(null, results[0] || null))
-  .catch(err => callback(err, null))
-}
+// function getCustomerByID(pool, customerID, callback) {
+//   pool.query(`
+//     SELECT
+//       Customer_ID,
+//       CONCAT(First_Name, ' ', COALESCE(CONCAT(Middle_Name, ' '), ''), Last_Name) AS Full_Name,
+//       CONCAT(
+//         House_Number, ' ', Street,
+//         COALESCE(CONCAT(' Apt ', Apt_Number), ''),
+//         ', ', City, ', ', State, ' ',
+//         Zip_First3, '-', Zip_Last2,
+//         COALESCE(CONCAT('-', Zip_Plus4), '')
+//       ) AS Full_Address,
+//       Country,
+//       Email_Address,
+//       Phone_Number
+//     FROM customer
+//     WHERE Customer_ID = ?
+//   `, [customerID])
+//   .then(([results]) => callback(null, results[0] || null))
+//   .catch(err => callback(err, null))
+// }
 
 /**
  * Register a new customer. Validates input; hashes password; inserts row.
@@ -293,7 +293,7 @@ async function createCustomerMinimal(pool, body) {
 
 module.exports = {
   getAllCustomers,
-  getCustomerByID,
+  // getCustomerByID,
   getCustomerPackages,
   registerCustomer,
   getCustomerByEmail,
