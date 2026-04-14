@@ -30,7 +30,8 @@ export default function EmployeeSupport() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [filterStatus, setFilterStatus] = useState('all')
-  const [searchCustomerId, setSearchCustomerId] = useState('')
+  /* Updated search bar*/
+  const [searchTerm, setSearchTerm] = useState('')
 
   const [editTicket, setEditTicket] = useState(null)
   const [editStatus, setEditStatus] = useState(0)
@@ -103,17 +104,19 @@ export default function EmployeeSupport() {
     }
   }
 
-  const filtered = tickets
-    .filter((t) =>
-      filterStatus === 'all'
-        ? true
-        : t.Ticket_Status_Code === Number(filterStatus)
-    )
-    .filter((t) =>
-      searchCustomerId.trim() === ''
-        ? true
-        : String(t.User_ID).includes(searchCustomerId.trim())
-    )
+  const filtered = tickets.filter((ticket) => {
+    const matchesStatus = 
+    filterStatus === 'all' ||
+    String(ticket.Ticket_Status_Code) === filterStatus;
+
+    const searchLower = searchTerm.toLowerCase();
+    const matchesSearch =
+      ticket.Ticket_ID?.toString().includes(searchLower) ||
+      ticket.User_ID?.toString().includes(searchLower) ||
+      ticket.Package_ID?.toString().includes(searchLower);
+
+    return matchesStatus && matchesSearch;
+  })
 
   return (
     <>
@@ -189,9 +192,9 @@ export default function EmployeeSupport() {
           <input
             type="text"
             className="es-search"
-            placeholder="Search by Customer ID..."
-            value={searchCustomerId}
-            onChange={(e) => setSearchCustomerId(e.target.value)}
+            placeholder="Search by Ticket ID, Customer ID, or Package ID..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
           />
 
           {/* Table */}

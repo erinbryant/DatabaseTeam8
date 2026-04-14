@@ -192,6 +192,10 @@ export default function AllPackages() {
   const [typeFilter,    setTypeFilter]    = useState('')
   const [officeFilter,  setOfficeFilter]  = useState('')
   const [showFilters,   setShowFilters]   = useState(false)
+  const [statusFilter,   setStatusFilter]   = useState('')
+  const [dateFromFilter, setDateFromFilter] = useState('')
+  const [dateToFilter,   setDateToFilter]   = useState('')
+  const [sigFilter,      setSigFilter]      = useState('')
 
   useEffect(() => {
     if (userType !== 'employee') { navigate('/login'); return }
@@ -245,18 +249,23 @@ export default function AllPackages() {
   }
 
   // Apply filters
-  const filtered = packages.filter(p => {
-    const q = search.toLowerCase()
-    const matchSearch = !q ||
-      (p.Tracking_Number || '').toLowerCase().includes(q) ||
-      (p.Sender_Name    || '').toLowerCase().includes(q) ||
-      (p.Recipient_Name || '').toLowerCase().includes(q) ||
-      (p.Sender_Email   || '').toLowerCase().includes(q)
-    const matchZone   = !zoneFilter   || String(p.Zone) === zoneFilter
-    const matchType   = !typeFilter   || p.Package_Type_Code === typeFilter
-    const matchOffice = !officeFilter || String(p.Post_Office_ID) === officeFilter
-    return matchSearch && matchZone && matchType && matchOffice
-  })
+const filtered = packages.filter(p => {
+  const q = search.toLowerCase()
+  const matchSearch = !q ||
+    (p.Tracking_Number || '').toLowerCase().includes(q) ||
+    (p.Sender_Name     || '').toLowerCase().includes(q) ||
+    (p.Recipient_Name  || '').toLowerCase().includes(q) ||
+    (p.Sender_Email    || '').toLowerCase().includes(q)
+  const matchZone   = !zoneFilter   || String(p.Zone) === zoneFilter
+  const matchType   = !typeFilter   || p.Package_Type_Code === typeFilter
+  const matchOffice = !officeFilter || String(p.Post_Office_ID) === officeFilter
+  const matchStatus = !statusFilter || (p.Status_Name || '').toLowerCase().includes(statusFilter)
+  const matchDateFrom = !dateFromFilter || new Date(p.Date_Created) >= new Date(dateFromFilter)
+  const matchDateTo   = !dateToFilter   || new Date(p.Date_Created) <= new Date(dateToFilter + 'T23:59:59')
+  const matchSig = !sigFilter ||
+    (sigFilter === 'yes' ? p.Requires_Signature === 1 : p.Requires_Signature === 0)
+  return matchSearch && matchZone && matchType && matchOffice && matchStatus && matchDateFrom && matchDateTo && matchSig
+})
 
   // Split into 3 groups
   const active = filtered.filter(p => {
@@ -369,8 +378,44 @@ export default function AllPackages() {
                   {postOffices.map(o => <option key={o.Post_Office_ID} value={o.Post_Office_ID}>{o.City}, {o.State}</option>)}
                 </select>
               </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, marginBottom: 5, color: '#374151' }}>Status</label>
+                <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
+                  style={{ width: '100%', padding: '8px 10px', border: '1px solid #dbe4ef', borderRadius: 8, fontSize: '0.88rem' }}>
+                  <option value="">All statuses</option>
+                  <option value="pending">Pending</option>
+                  <option value="transit">In Transit</option>
+                  <option value="out for">Out for Delivery</option>
+                  <option value="deliver">Delivered</option>
+                  <option value="delay">Delayed</option>
+                  <option value="return">Returned</option>
+                  <option value="lost">Lost</option>
+                </select>
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, marginBottom: 5, color: '#374151' }}>Date From</label>
+                <input type="date" value={dateFromFilter} onChange={e => setDateFromFilter(e.target.value)}
+                  style={{ width: '100%', padding: '8px 10px', border: '1px solid #dbe4ef', borderRadius: 8, fontSize: '0.88rem', boxSizing: 'border-box' }} />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, marginBottom: 5, color: '#374151' }}>Date To</label>
+                <input type="date" value={dateToFilter} onChange={e => setDateToFilter(e.target.value)}
+                  style={{ width: '100%', padding: '8px 10px', border: '1px solid #dbe4ef', borderRadius: 8, fontSize: '0.88rem', boxSizing: 'border-box' }} />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, marginBottom: 5, color: '#374151' }}>Signature</label>
+                <select value={sigFilter} onChange={e => setSigFilter(e.target.value)}
+                  style={{ width: '100%', padding: '8px 10px', border: '1px solid #dbe4ef', borderRadius: 8, fontSize: '0.88rem' }}>
+                  <option value="">All</option>
+                  <option value="yes">Required</option>
+                  <option value="no">Not required</option>
+                </select>
+              </div>
               <div style={{ display: 'flex', alignItems: 'flex-end' }}>
-                <button onClick={() => { setZoneFilter(''); setTypeFilter(''); setOfficeFilter(''); setSearch('') }}
+                <button onClick={() => {
+                  setZoneFilter(''); setTypeFilter(''); setOfficeFilter(''); setSearch('')
+                  setStatusFilter(''); setDateFromFilter(''); setDateToFilter(''); setSigFilter('')
+                }}
                   style={{ padding: '8px 16px', background: '#f8fafc', border: '1px solid #dbe4ef', borderRadius: 8, cursor: 'pointer', color: '#64748b' }}>
                   Clear all
                 </button>

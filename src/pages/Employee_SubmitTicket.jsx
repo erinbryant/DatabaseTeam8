@@ -108,38 +108,26 @@ function Employee_SubmitTicket() {
       <form onSubmit={handleSubmit}>
         <div className="form-group">
           <label htmlFor="userId">Customer ID *</label>
-          <select
-            id="userId"
-            name="userId"
-            value={formData.userId}
+          <input 
+            type="text"
+            id="name"
+            name="name"
+            value={formData.name}
             onChange={handleChange}
             required
-          >
-            <option value="">-- Select Customer --</option>
-            {customers.map((c) => (
-              <option key={c.Customer_ID} value={c.Customer_ID}>
-                {c.Customer_ID} — {c.Full_Name}
-              </option>
-            ))}
-          </select>
+          />
         </div>
 
         <div className="form-group">
           <label htmlFor="packageId">Package ID *</label>
-          <select
-            id="packageId"
-            name="packageId"
-            value={formData.packageId}
+          <input 
+            type="email"
+            id="email"
+            name="email"
+            value={formData.email}
             onChange={handleChange}
-            required
-          >
-            <option value="">-- Select Package --</option>
-            {packages.map((p) => (
-              <option key={p.Tracking_Number} value={p.Tracking_Number}>
-                {p.Tracking_Number}
-              </option>
-            ))}
-          </select>
+              required
+          />
         </div>
 
         <div className="form-group">

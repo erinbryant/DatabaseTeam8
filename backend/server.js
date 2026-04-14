@@ -1233,7 +1233,7 @@ if (method === 'GET' && pathname === '/api/reports/departments') {
 if (method === 'GET' && pathname === '/api/reports/post-offices') {
   const user = authenticate(req, res)
   if (!user) return
-  if (!requireAdmin(user, res)) return
+  if (!requireEmployee(user, res)) return
   try {
     const [rows] = await pool.query('SELECT Post_Office_ID, City, State FROM post_office ORDER BY State, City ASC')
     return send(res, 200, rows)

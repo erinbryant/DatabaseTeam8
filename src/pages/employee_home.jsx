@@ -87,16 +87,16 @@ export default function EmployeeHome() {
             </div> */}
 
             <div className="card">
-              <h3>Stock &amp; inventory</h3>
-              <p>Check product levels across locations.</p>
+              <h3>Stock &amp; Inventory</h3>
+              <p>Check Product Levels Across Locations.</p>
               <button type="button" className="btn primary" onClick={() => navigate('/inventory')}>
                 View inventory
               </button>
             </div>
 
             <div className="card">
-              <h3>Support tickets</h3>
-              <p>Review and manage customer support requests.</p>
+              <h3>Support Tickets</h3>
+              <p>Review and Manage Customer Support Requests.</p>
               <button type="button" className="btn primary" onClick={() => navigate('/employee-support')}>
                 Open tickets
               </button>
@@ -104,23 +104,23 @@ export default function EmployeeHome() {
 
             <div className="card">
               <h3>Packages</h3>
-              <p>Browse and manage package records.</p>
+              <p>Browse and Manage Package Records.</p>
               <button type="button" className="btn primary" onClick={() => navigate('/package_list')}>
                 View packages
               </button>
             </div>
 
             <div className="card">
-              <h3>Package for pickup</h3>
-              <p>See packages at the office and record when the customer picks them up.</p>
+              <h3>Package for Pickup</h3>
+              <p>See Packages at the Office and Record When the Customer Picks Them Up.</p>
               <button type="button" className="btn primary" onClick={() => navigate('/employee/package-pickup')}>
                 Package for pickup
               </button>
             </div>
 
             <div className="card">
-              <h3>Add package</h3>
-              <p>Register a customer shipment, calculate price, and issue a tracking number.</p>
+              <h3>Add Package</h3>
+              <p>Register a Customer Shipment, Calculate Price, and Issue a Tracking Number.</p>
               <button type="button" className="btn primary" onClick={() => navigate('/employee/add-package')}>
                 Add package
               </button>
@@ -183,7 +183,7 @@ export default function EmployeeHome() {
 
             <div className="card">
               <h3>Customers</h3>
-              <p>Search and manage customer accounts.</p>
+              <p>Search and Manage Customer Accounts.</p>
               <button type="button" className="btn primary" onClick={() => navigate('/customers')}>
                 View customers
               </button>
