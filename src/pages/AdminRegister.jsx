@@ -75,7 +75,8 @@ const AdminRegister = () => {
         hireDate: ''
       });
 
-      setTimeout(() => navigate('/dashboard'), 2000);
+      // Removed auto-redirect; user will click "Back to Dashboard"
+      // setTimeout(() => navigate('/employee_home'), 2000);
     } catch (err) {
       setError('An error occurred. Please try again.');
       console.error('Admin register error:', err);
@@ -92,7 +93,21 @@ const AdminRegister = () => {
 
         <form onSubmit={handleSubmit}>
           {error && <div className="error-message">{error}</div>}
-          {success && <div className="success-message">{success}</div>}
+
+          {success && (
+            <div className="success-message">
+              {success}
+              <div style={{ marginTop: '12px' }}>
+                <button
+                  type="button"
+                  className="submit-btn"
+                  onClick={() => navigate('/employee_home')}
+                >
+                  Back to Dashboard
+                </button>
+              </div>
+            </div>
+          )}
 
           <div className="form-row">
             <div className="form-group">
