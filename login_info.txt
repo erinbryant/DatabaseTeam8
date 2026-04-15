@@ -1,9 +1,13 @@
 Use these logins to view different authentication pages
 
 --- Customer View ---
-email:
-password:
+email: customer@email.com
+password: password
 
 --- Employee View ---
 email:
 password:
+
+--- Admin View ---
+email: admin@postoffice.com
+password: password

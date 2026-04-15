@@ -38,7 +38,7 @@ function getStoredEmployeeRoleId() {
 export default function EmployeeHome() {
   const navigate = useNavigate()
   const roleId = getStoredEmployeeRoleId()
-  const isAdmin = roleId === 5
+  const isAdmin = roleId === 4
 
   function handleLogout(e) {
     e.preventDefault()

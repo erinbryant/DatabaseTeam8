@@ -135,8 +135,8 @@ function requireEmployee(user, res) {
 }
 
 function requireAdmin(user, res) {
-  if (Number(user?.role_id) !== 5) {
-    send(res, 403, { message: 'Access denied. Admin role (5) required.' })
+  if (Number(user?.role_id) !== 4) {
+    send(res, 403, { message: 'Access denied. Admin role (4) required.' })
     return false
   }
   return true
@@ -257,7 +257,7 @@ async function router(req, res) {
     return send(res, 200, { ok: true, service: 'postoffice-api', has_price: true })
   }
 
-  // ── POST /api/auth/login ─────────────────────────────────────────────────
+  // POST /api/auth/login
   if (method === 'POST' && pathname === '/api/auth/login') {
     const { email, password } = await getBody(req)
     if (!email || !password) return send(res, 400, { message: 'Email and password required' })
@@ -293,7 +293,7 @@ async function router(req, res) {
     }
   }
 
-  // ── POST /api/auth/customer-login ────────────────────────────────────────
+  // POST /api/auth/customer-login
   if (method === 'POST' && pathname === '/api/auth/customer-login') {
     const { email, password } = await getBody(req)
     if (!email || !password) return send(res, 400, { message: 'Email and password required' })
@@ -301,7 +301,10 @@ async function router(req, res) {
       const [rows] = await pool.query('SELECT * FROM customer WHERE Email_Address = ?', [email])
       if (!rows.length) return send(res, 401, { message: 'Invalid credentials' })
       const customer = rows[0]
+
       const valid = await bcrypt.compare(password, customer.Password_Hash)
+      console.log('bcrypt result:', valid)
+
       if (!valid) return send(res, 401, { message: 'Invalid credentials' })
 
       const token = jwt.sign(
@@ -338,7 +341,7 @@ async function router(req, res) {
     }
   }
 
-  // ── POST /api/auth/admin-register ────────────────────────────────────────
+  // POST /api/auth/admin-register
   if (method === 'POST' && pathname === '/api/auth/admin-register') {
     const user = authenticate(req, res)
     if (!user) return
