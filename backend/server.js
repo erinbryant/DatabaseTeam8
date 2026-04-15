@@ -135,7 +135,7 @@ function requireEmployee(user, res) {
 }
 
 function requireAdmin(user, res) {
-  if (Number(user?.role_id) !== 4) {
+  if (Number(user?.role_id) !== 5) {
     send(res, 403, { message: 'Access denied. Admin role (4) required.' })
     return false
   }
