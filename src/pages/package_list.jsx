@@ -178,6 +178,9 @@ export default function AllPackages() {
   const token      = localStorage.getItem('token')
   const userType   = localStorage.getItem('userType')
 
+  //Add sidebar using this
+  const [sidebarOpen, setSidebarOpen] = useState(true)
+
   const [packages,       setPackages]       = useState([])
   const [statusCodes,    setStatusCodes]    = useState([])
   const [postOffices,    setPostOffices]    = useState([])
@@ -185,6 +188,7 @@ export default function AllPackages() {
   const [error,          setError]          = useState(null)
   const [expanded,       setExpanded]       = useState(null)
   const [statusUpdating, setStatusUpdating] = useState(null)
+  
 
   // Filters
   const [search,        setSearch]        = useState('')
