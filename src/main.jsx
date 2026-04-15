@@ -18,8 +18,8 @@ import AdminRegister from './pages/AdminRegister'
 
 import AllPackages from './pages/package_list'
 import AllCustomers from './pages/all_customers'
+import AllShipments from './pages/all_shipments'
 
-import Inventory from './pages/inventory'
 import PackageTracking from './pages/package_tracking'
 
 import SubmitTicket from './pages/SubmitTicket'
@@ -55,14 +55,14 @@ function App() {
         {/* Data report testing*/}
 
 
-        <Route path="/tickets_employees" element={<TicketsReport />} />
-        <Route path="/revenue-report" element={<RevenueReport />} />
+        <Route path="/tickets_employees" element={<RequireEmployee><TicketsReport /></RequireEmployee>} />
+        <Route path="/revenue-report" element={<RequireEmployee><RevenueReport /></RequireEmployee>} />
 
         {/* Customer Routes */}
         <Route path="/customer_home" element={<RequireCustomer><CustomerHome /></RequireCustomer>} />
         <Route path="/customer_profile" element={<RequireCustomer><CustomerProfile /></RequireCustomer>} />
         <Route path="/customer_packages" element={<RequireCustomer><CustomerPackages /></RequireCustomer>} />
-        <Route path="/submit_ticket" element={<SubmitTicket/>} />
+        <Route path="/submit_ticket" element={<RequireCustomer><SubmitTicket/></RequireCustomer>} />
 
         {/* Employee Routes */}
         <Route path="/employee_home" element={<RequireEmployee><EmployeeHome /></RequireEmployee>} />
@@ -70,27 +70,17 @@ function App() {
         <Route path="/employee/package-pickup" element={<RequireEmployee><PackageForPickup /></RequireEmployee>} />
         <Route path="/employee-support" element={<RequireEmployee><EmployeeSupport /></RequireEmployee>} />
         <Route path="/employee/submit-ticket" element={<RequireEmployee><Employee_SubmitTicket/></RequireEmployee>} />
-        {/* <Route path="/employee/support" element={<RequireEmployee><EmployeeSupport /></RequireEmployee>} /> */}
         <Route path="/customers" element={<RequireEmployee><AllCustomers /></RequireEmployee>} />
         <Route path="/admin-register" element={<RequireAdmin><AdminRegister /></RequireAdmin>} />
         <Route path="/profile" element={<RequireEmployee><Profile /></RequireEmployee>} />
         <Route path="/employees" element={<RequireEmployee><EmployeesPage /></RequireEmployee>} />
         <Route path="/reports/employee-performance" element={<RequireEmployee><EmployeePerformanceReport /></RequireEmployee>} />
+        <Route path ="/employees/all-shipments" element = {<RequireEmployee><AllShipments/></RequireEmployee>}/>
 
         {/* Shared / Authenticated */}
         <Route path="/package_list" element={<RequireAuth><AllPackages /></RequireAuth>} />
-        <Route path="/inventory" element={<RequireEmployee><Inventory /></RequireEmployee>} />
-        {/* <Route path="/support" element={<RequireAuth><SupportTicket /></RequireAuth>} /> */}
-
-        {/* Optional/Test */}
-        {/*<Route path="/test" element={<TestQuery />} />*/}
-
-        {/* Placeholders */}
+      
         <Route path="/package_tracking" element={<PackageTracking/>} />
-        
-        <Route path="/package_history" element={<p>Package History — coming soon</p>} />
-        
-        {/* <Route path="/support_tickets" element={<p>Support Tickets — coming soon</p>} /> */}
         <Route path="/price_calculator" element={<PriceCalculator/>} />
         
         {/* 404 */}

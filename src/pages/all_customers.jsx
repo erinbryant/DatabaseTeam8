@@ -77,6 +77,30 @@ export default function AllCustomers() {
       )
   }
 
+  const toggleCustomerStatus = async (id, currentStatus) => {
+    const isActive = Number(currentStatus) === 0
+    const newStatus = isActive ? 1 : 0
+    const actionText = isActive ? 'deactivate' : 'reinstate'
+
+    if (window.confirm(`Are you sure you want to ${actionText} this customer?`)) {
+      try {
+        const response = await authFetch(`/api/customers/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ is_Active: newStatus })
+        })
+
+        if (!response.ok) throw new Error(`Failed to ${actionText} customer`)
+        
+        setCustomers(prev => prev.map(c => 
+          c.Customer_ID === id ? { ...c, is_Active: newStatus } : c
+        ))
+      } catch (err) {
+        setError(err.message)
+      }
+    }
+  }
+
   function handleLogout(e) {
     e.preventDefault()
     localStorage.removeItem('token')
@@ -160,6 +184,9 @@ export default function AllCustomers() {
                     <th>Email</th>
                     <th>Phone</th>
                     <th>Address</th>
+                    <th>Status</th>
+                    <th></th>
+                    <th></th>
                     <th />
                   </tr>
                 </thead>
@@ -174,6 +201,46 @@ export default function AllCustomers() {
                         <td>{c.Email_Address || '—'}</td>
                         <td>{c.Phone_Number || '—'}</td>
                         <td>{c.Full_Address || '—'}</td>
+
+                        <td>
+                          {(() => {
+                            const isActive = Number(c.is_Active) === 0
+                            return (
+                          <span style={{
+                            padding: '4px 8px',
+                            borderRadius: '4px',
+                            fontSize: '0.7rem',
+                            fontWeight: 'bold',
+                            backgroundColor: isActive ? '#d4edda' : '#f8d7da',
+                            color: isActive ? '#155724' : '#721c24',
+                            border: isActive ? '1px solid #c3e6cb' : '1px solid #f5c6cb'
+                          }}>
+                            {isActive ? 'ACTIVE' : 'INACTIVE'}
+                          </span>
+                            )
+                          })()}
+                        </td>
+
+                        <td>
+                          {(() => {
+                            const isActive = Number(c.is_Active) === 0
+                            return (
+                          <button
+                            className='button'
+                            style={{
+                              backgroundColor: isActive ? '#d9534f' : '#28a745',
+                              color: 'white',
+                              marginTop: '5px',
+                              width: '200px'
+                            }}
+                            onClick={() => toggleCustomerStatus(c.Customer_ID, c.is_Active)}
+                          >
+                            {isActive ? 'Deactivate Account' : 'Reinstate Account'}
+                          </button>
+                            )
+                          })()}
+                        </td>
+
                         <td>
                           <button
                             className="button"
@@ -191,17 +258,13 @@ export default function AllCustomers() {
 
                       {expanded === c.Customer_ID && (
                         <tr className="detail-row">
-                          <td colSpan={6}>
+                          <td colSpan={8}>
                             <div className="detail-grid">
                               <div className="detail-item">
                                 <label>Country</label>
                                 <p>{c.Country || '—'}</p>
                               </div>
-                              <div className="detail-item">
-                                <label>ZIP+4</label>
-                                <p>{c.Zip_Plus4 || '—'}</p>
-                              </div>
-
+                             
                               <div className="detail-item">
                                 <label>Sending</label>
                                 <p>

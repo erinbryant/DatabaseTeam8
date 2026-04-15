@@ -11,12 +11,10 @@ const STATUS_MAP = {
 }
 
 const ISSUE_TYPE_MAP = {
-  0: 'Lost Package',
-  1: 'Damaged Package',
-  2: 'Delivery Delay',
-  3: 'Wrong Address',
-  4: 'Missing Item',
-  5: 'Other',
+  1: 'Failed transaction',
+  2: 'Payment issue',
+  3: 'Delivery issue',
+  4: 'Other',
 }
 
 const statusOptions = [

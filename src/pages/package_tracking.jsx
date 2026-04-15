@@ -212,12 +212,12 @@ export default function PackageTracking() {
                       <th>Status</th>
                       <th>Delivered Date</th>
                       <th>Signature Received</th>
-                      <th>Status</th>
+                      <th>Final State</th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr>
-                      <td><code>{delivery.Shipment_ID}</code></td>
+                      <td><code>{delivery.Delivery_ID ?? '—'}</code></td>
                       <td>{statusBadge(delivery.Status_Name)}</td>
                       <td>{delivery.Delivered_Date ? new Date(delivery.Delivered_Date).toLocaleString() : "—"}</td>
                       <td>{delivery.Signature_Received || "—"}</td>

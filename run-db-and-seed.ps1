@@ -22,7 +22,8 @@ function Get-FreePort {
   throw "No free ports found from $startPort to $($startPort + $maxTry - 1)"
 }
 
-$envFile = "backend\.env"
+$repoRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
+$envFile = Join-Path $repoRoot "backend\.env"
 if (-not (Test-Path $envFile)) {
   Write-Error "Missing $envFile"
   exit 1
@@ -35,24 +36,33 @@ Get-Content $envFile | ForEach-Object {
   }
 }
 
-$mysqlHost = $env:DB_HOST
+$mysqlHost = $env:MYSQLHOST
+if (-not $mysqlHost) { $mysqlHost = $env:DB_HOST }
 if (-not $mysqlHost) { $mysqlHost = "localhost" }
-$mysqlPort = $env:DB_PORT
+$mysqlPort = $env:MYSQLPORT
+if (-not $mysqlPort) { $mysqlPort = $env:DB_PORT }
 if (-not $mysqlPort) { $mysqlPort = "3306" }
-$mysqlUser = $env:DB_USER
+$mysqlUser = $env:MYSQLUSER
+if (-not $mysqlUser) { $mysqlUser = $env:DB_USER }
 if (-not $mysqlUser) { $mysqlUser = "root" }
-$mysqlPass = $env:DB_PASSWORD
+$mysqlPass = $env:MYSQLPASSWORD
+if (-not $mysqlPass) { $mysqlPass = $env:DB_PASSWORD }
 if (-not $mysqlPass) { $mysqlPass = "" }
-$dbName = $env:DB_NAME
+$dbName = $env:MYSQL_DATABASE
+if (-not $dbName) { $dbName = $env:DB_NAME }
 if (-not $dbName) { $dbName = "post_office_8" }
 $portEnv = $env:PORT
 if (-not $portEnv) { $basePort = 5000 } else { $basePort = [int]$portEnv }
 
-Write-Host "1) Starting MySQL service..."
-Try {
-  Start-Service -Name MySQL -ErrorAction Stop
-} Catch {
-  Try { Start-Service -Name MySQL80 -ErrorAction Stop } Catch { Write-Warning "MySQL service not found or already running." }
+if ($mysqlHost -in @('localhost', '127.0.0.1')) {
+  Write-Host "1) Starting MySQL service..."
+  Try {
+    Start-Service -Name MySQL -ErrorAction Stop
+  } Catch {
+    Try { Start-Service -Name MySQL80 -ErrorAction Stop } Catch { Write-Warning "MySQL service not found or already running." }
+  }
+} else {
+  Write-Host "1) Skipping local MySQL service start for remote host: $mysqlHost"
 }
 
 Write-Host "2) Creating database if not exists: $dbName"
@@ -63,7 +73,7 @@ if ($mysqlPass) {
 }
 if ($LASTEXITCODE -ne 0) { Write-Error "Unable to create DB (exit code $LASTEXITCODE)"; exit 2 }
 
-$schemaPath = "schema.sql"
+$schemaPath = Join-Path $repoRoot "backend\sql\Schema.sql"
 if (Test-Path $schemaPath) {
   Write-Host "3) Importing schema from $schemaPath"
   if ($mysqlPass) {
@@ -73,13 +83,13 @@ if (Test-Path $schemaPath) {
   }
   if ($LASTEXITCODE -ne 0) { Write-Error "Schema import failed"; exit 3 }
 } else {
-  Write-Host "3) No schema.sql file found; skipping schema import. Ensure tables exist by other means."
+  Write-Host "3) No schema file found at $schemaPath; skipping schema import. Ensure tables exist by other means."
 }
 
-$seedPath = "Seed_Data.sql"
+$seedPath = Join-Path $repoRoot "backend\sql\Seed_Data.sql"
 if (-not (Test-Path $seedPath)) {
-  $alt = "c:\Users\bobmo\AppData\Local\Temp\b892cf5b-603d-4ee9-8fbd-de5163e43f43_DatabaseTeam8-main.zip.f43\DatabaseTeam8-main\Seed_Data.sql"
-  if (Test-Path $alt) { $seedPath = $alt } else { Write-Error "Seed data file not found"; exit 4 }
+  Write-Error "Seed data file not found at $seedPath"
+  exit 4
 }
 
 Write-Host "4) Importing seed data from $seedPath"
@@ -97,7 +107,7 @@ if ($freePort -ne $basePort) {
 $env:PORT = $freePort
 
 Write-Host "5) Starting backend on port $freePort"
-Push-Location "backend"
+Push-Location (Join-Path $repoRoot "backend")
 if (-not (Test-Path "node_modules")) { npm install }
 npm run dev -- --port $freePort
 Pop-Location

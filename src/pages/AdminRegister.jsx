@@ -12,7 +12,6 @@ const AdminRegister = () => {
     department: '',
     position: '',
     phoneNumber: '',
-    workAddress: '',
     hireDate: ''
   });
   const [error, setError] = useState('');
@@ -20,8 +19,8 @@ const AdminRegister = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const departments = ['Customer Service', 'Delivery', 'IT', 'Management', 'Sorting'];
-  const positions = ['Clerk', 'Supervisor', 'Manager', 'Director', 'Staff'];
+  const departments = ['Customer Service', 'Delivery', 'Management'];
+  const positions = ['Clerk', 'Driver', 'Admin'];
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -51,7 +50,6 @@ const AdminRegister = () => {
           department: formData.department,
           position: formData.position,
           phoneNumber: formData.phoneNumber,
-          workAddress: formData.workAddress,
           hireDate: formData.hireDate
         })
       });
@@ -72,7 +70,6 @@ const AdminRegister = () => {
         department: '',
         position: '',
         phoneNumber: '',
-        workAddress: '',
         hireDate: ''
       });
 
@@ -179,21 +176,6 @@ const AdminRegister = () => {
                 onChange={handleChange}
                 required
                 placeholder="(123) 456-7890"
-              />
-            </div>
-          </div>
-
-          <div className="form-row">
-            <div className="form-group">
-              <label htmlFor="workAddress">Work Address *</label>
-              <input
-                type="text"
-                id="workAddress"
-                name="workAddress"
-                value={formData.workAddress}
-                onChange={handleChange}
-                required
-                placeholder="123 Main St, City, State"
               />
             </div>
           </div>

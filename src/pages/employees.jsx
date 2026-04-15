@@ -30,18 +30,18 @@ function getStoredEmployeeRoleId() {
   }
 }
 
-function handleLogout(e) {
+export default function EmployeesPage() {
+  const navigate = useNavigate()
+  const roleId = getStoredEmployeeRoleId()
+  const isAdmin = roleId === 5
+
+  function handleLogout(e) {
     e.preventDefault()
     localStorage.removeItem('token')
     localStorage.removeItem('user')
     localStorage.removeItem('userType')
     navigate('/')
   }
-
-export default function EmployeesPage() {
-  const navigate = useNavigate()
-  const roleId = getStoredEmployeeRoleId()
-  const isAdmin = roleId === 5
 
   const [employees, setEmployees] = useState([])
   const [loading, setLoading] = useState(true)
@@ -152,7 +152,6 @@ export default function EmployeesPage() {
             <nav className="top-nav">
             <a href="#" onClick={(e) => { e.preventDefault(); navigate('/employee_home') }}>Dashboard</a>
             <a href="#" onClick={(e) => { e.preventDefault(); navigate('/package_list') }}>Packages</a>
-            <a href="#" onClick={(e) => { e.preventDefault(); navigate('/inventory') }}>Inventory</a>
             <a href="#" onClick={(e) => { e.preventDefault(); navigate('/customers') }}>Customers</a>
           </nav>
           </div>

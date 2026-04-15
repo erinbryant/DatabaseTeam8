@@ -2,6 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './css/SubmitTicket.css';
 import { authFetch } from '../authFetch'
+import {
+  validateAll,
+  validateTrackingNumber,
+  validateTicketDescription,
+  validateRequired,
+} from '../Validation'
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
@@ -32,7 +38,7 @@ function SubmitTicket() {
       })
       // .then((data) => setPackages(Array.isArray(data) ? data : []))
       .then((data) => {
-        console.log('packages data:', data) // check this in the browser console
+        // console.log('packages data:', data) // check this in the browser console
         setPackages(Array.isArray(data) ? data : [])
       })
       .catch((err) => setErrorMessage(err.message))
@@ -49,6 +55,17 @@ function SubmitTicket() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMessage('')
+
+    const validationError = validateAll([
+      [formData.packageId, validateTrackingNumber],
+      [formData.issueType, validateRequired, 'Issue category'],
+      [formData.description, validateTicketDescription],
+    ])
+
+    if (validationError) {
+      setErrorMessage(validationError)
+      return
+    }
 
     try {
       const response = await authFetch('/api/tickets', {
@@ -142,12 +159,10 @@ function SubmitTicket() {
             required
           >
             <option value="">-- Select --</option>
-            <option value="0">Lost Package</option>
-            <option value="1">Damaged Package</option>
-            <option value="2">Delivery Delay</option>
-            <option value="3">Wrong Address</option>
-            <option value="4">Missing Item</option>
-            <option value="5">Other</option>
+            <option value="1">Failed transaction</option>
+            <option value="2">Payment issue</option>
+            <option value="3">Delivery issue</option>
+            <option value="4">Other</option>
           </select>
         </div>
 
