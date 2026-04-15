@@ -1749,6 +1749,29 @@ if (method === 'GET' && pathname === '/api/packages/full') {
     }
   }
 
+  // PATCH /api/customers/:id is_Active flip
+  {
+    const m = matchPath('/api/customers/:id', pathname)
+    if (method === 'PATCH' && m.matched) {
+      const user = authenticate(req, res)
+      if (!user) return
+      if (!requireEmployee(user, res)) return
+
+      const customerId = m.params.id
+      const body = await getBody(req)
+      const { is_Active } = body
+
+      customerDB.updateCustomerStatus(pool, customerId, is_Active, (err, result) => {
+        if (err) {
+          console.error(err)
+          return send(res, 500, { error: 'Failed to update customer status' })
+        }
+        return send(res, 200, { message: 'Status updated successfully' })
+      })
+      return
+    }
+  }
+
 
   // Default
   return send(res, 404, { message: 'Not found' })

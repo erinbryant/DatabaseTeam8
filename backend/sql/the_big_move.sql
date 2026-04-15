@@ -333,9 +333,3 @@ ALTER TABLE Package
     DROP COLUMN Payment_ID;
  alter table package drop column Created_At;
  alter table package drop column price;
-
-
-
-
-
-

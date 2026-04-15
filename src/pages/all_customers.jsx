@@ -77,6 +77,29 @@ export default function AllCustomers() {
       )
   }
 
+  const toggleCustomerStatus = async (id, currentStatus) => {
+    const newStatus = currentStatus == 0 ? 1 : 0;
+    const actionText = newStatus == 1 ? "deactivate" : "reinstate";
+
+    if (window.confirm(`Are you sure you want to ${actionText} this customer?`)) {
+      try {
+        const response = await authFetch(`/api/customers/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ is_Active: newStatus })
+        });
+
+        if (!response.ok) throw new Error(`Failed to ${actionText} customer`);
+        
+        setCustomers(prev => prev.map(c => 
+          c.Customer_ID === id ? { ...c, is_Active: newStatus } : c
+        ));
+      } catch (err) {
+        setError(err.message);
+      }
+    }
+  };
+
   function handleLogout(e) {
     e.preventDefault()
     localStorage.removeItem('token')
@@ -160,6 +183,7 @@ export default function AllCustomers() {
                     <th>Email</th>
                     <th>Phone</th>
                     <th>Address</th>
+                    <th>Status</th>
                     <th />
                   </tr>
                 </thead>
@@ -174,6 +198,36 @@ export default function AllCustomers() {
                         <td>{c.Email_Address || '—'}</td>
                         <td>{c.Phone_Number || '—'}</td>
                         <td>{c.Full_Address || '—'}</td>
+
+                        <td>
+                          <span style={{
+                            padding: '4px 8px',
+                            borderRadius: '4px',
+                            fontSize: '0.7rem',
+                            fontWeight: 'bold',
+                            backgroundColor: c.is_Active == 0 ? '#d4edda' : '#f8d7da',
+                            color: c.is_Active == 0 ? '#155724' : '#721c24',
+                            border: c.is_Active == 0 ? '1px solid #c3e6cb' : '1px solid #f5c6cb'
+                          }}>
+                            {c.is_Active == 0 ? 'ACTIVE' : 'INACTIVE'}
+                          </span>
+                        </td>
+
+                        <td>
+                          <button
+                            className='button'
+                            style={{
+                              backgroundColor: c.is_Active == 0 ? '#d9534f' : '#28a745',
+                              color: 'white',
+                              marginTop: '5px',
+                              width: '200px'
+                            }}
+                            onClick={() => toggleCustomerStatus(c.Customer_ID, c.is_Active)}
+                          >
+                            {c.is_Active == 0 ? 'Deactivate Account' : 'Reinstate Account'}
+                          </button>
+                        </td>
+
                         <td>
                           <button
                             className="button"
