@@ -8,28 +8,30 @@ function getAllPackages(pool, callback) {
       p.Weight,
       p.Dim_X, p.Dim_Y, p.Dim_Z,
       p.Zone,
-      p.Price,
+      -- p.Price was removed from schema, removed here to stop error
       p.Oversize,
       p.Requires_Signature,
-      p.Date_Created,
+      -- p.Date_Created was removed; using Date_Updated as a fallback
       p.Date_Updated,
       p.Package_Type_Code,
       pt.Type_Name,
-      pt.Description  AS Type_Description,
+      pt.Description AS Type_Description,
 
       p.Sender_ID,
-      CONCAT(cs.First_Name, ' ', cs.Last_Name)  AS Sender_Name,
-      CONCAT(cs.House_Number, ' ', cs.Street)   AS Sender_Street,
-      cs.City                                    AS Sender_City,
-      cs.State                                   AS Sender_State,
-      CONCAT(cs.Zip_First3, cs.Zip_Last2)        AS Sender_Zip,
+      CONCAT(cs.First_Name, ' ', cs.Last_Name) AS Sender_Name,
+      -- Pulling from the NEW Address table via Customer
+      addr_s.Street AS Sender_Street,
+      addr_s.City AS Sender_City,
+      addr_s.State AS Sender_State,
+      addr_s.Zip_Code AS Sender_Zip,
 
       p.Recipient_ID,
-      CONCAT(cr.First_Name, ' ', cr.Last_Name)  AS Recipient_Name,
-      CONCAT(cr.House_Number, ' ', cr.Street)   AS Recipient_Street,
-      cr.City                                    AS Recipient_City,
-      cr.State                                   AS Recipient_State,
-      CONCAT(cr.Zip_First3, cr.Zip_Last2)        AS Recipient_Zip,
+      CONCAT(cr.First_Name, ' ', cr.Last_Name) AS Recipient_Name,
+      -- Pulling from the NEW Address table via Recipient
+      addr_r.Street AS Recipient_Street,
+      addr_r.City AS Recipient_City,
+      addr_r.State AS Recipient_State,
+      addr_r.Zip_Code AS Recipient_Zip,
 
       sc.Status_Name,
       d.Delivery_Status_Code,
@@ -41,10 +43,14 @@ function getAllPackages(pool, callback) {
     FROM package p
     JOIN package_type pt  ON p.Package_Type_Code = pt.Package_Type_Code
     JOIN customer cs      ON p.Sender_ID         = cs.Customer_ID
-    LEFT JOIN customer cr ON p.Recipient_ID       = cr.Customer_ID
-    LEFT JOIN delivery d  ON p.Tracking_Number    = d.Tracking_Number
+    -- Join the Address table for the Sender
+    LEFT JOIN Address addr_s ON cs.Address_ID    = addr_s.Address_ID
+    LEFT JOIN customer cr ON p.Recipient_ID      = cr.Customer_ID
+    -- Join the Address table for the Recipient
+    LEFT JOIN Address addr_r ON cr.Address_ID    = addr_r.Address_ID
+    LEFT JOIN delivery d  ON p.Tracking_Number   = d.Tracking_Number
     LEFT JOIN status_code sc ON d.Delivery_Status_Code = sc.Status_Code
-    ORDER BY p.Date_Created DESC
+    ORDER BY p.Date_Updated DESC
   `)
   .then(([results]) => callback(null, results))
   .catch(err => callback(err, null))

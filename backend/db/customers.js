@@ -100,7 +100,6 @@ async function registerCustomer(pool, rawBody) {
     country,
   } = body
 
-  // Validation
   const missing = []
   if (!first_name?.trim()) missing.push('first_name')
   if (!last_name?.trim()) missing.push('last_name')
@@ -150,7 +149,7 @@ async function registerCustomer(pool, rawBody) {
       First_Name, Middle_Name, Last_Name,
       Password_Hash, Email_Address, Phone_Number,
       Address_ID, is_Active
-    ) VALUES (?,?,?,?,?,?,?,1)`, // Defaulting active to 1 for new reg
+    ) VALUES (?,?,?,?,?,?,?,1)`,
     [
       first_name.trim().slice(0, 30),
       middle_name || null,
@@ -168,10 +167,15 @@ async function registerCustomer(pool, rawBody) {
 
 async function getCustomerByEmail(pool, email) {
   if (!email?.trim()) return null
-  const [rows] = await pool.query(
-    'SELECT Customer_ID FROM customer WHERE LOWER(Email_Address) = ?',
-    [email.trim().toLowerCase()]
-  )
+  const [rows] = await pool.query(`
+    SELECT 
+      c.*, 
+      a.House_Number, a.Street, a.City, a.State, a.Zip_Code, a.Country
+    FROM customer c
+    INNER JOIN address a ON c.Address_ID = a.Address_ID
+    WHERE LOWER(c.Email_Address) = ? AND c.is_Active = 1
+  `, [email.trim().toLowerCase()])
+  
   return rows[0] || null
 }
 

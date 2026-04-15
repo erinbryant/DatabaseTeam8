@@ -427,9 +427,9 @@ const filtered = packages.filter(p => {
             <div style={{ textAlign: 'center', padding: 48, color: '#64748b' }}>Loading packages…</div>
           ) : (
             <>
-              <PackageTable title="🚚 Active Packages"    packages={active}       color="#1d4ed8" {...commonProps} />
-              <PackageTable title="✅ Completed"          packages={completed}    color="#059669" collapsible {...commonProps} />
-              <PackageTable title="⚠️ Lost & Returned"   packages={lostReturned} color="#dc2626" collapsible {...commonProps} />
+              <PackageTable title="Active Packages"    packages={active}       color="#1d4ed8" {...commonProps} />
+              <PackageTable title="Completed"          packages={completed}    color="#059669" collapsible {...commonProps} />
+              <PackageTable title="Lost & Returned"   packages={lostReturned} color="#dc2626" collapsible {...commonProps} />
             </>
           )}
         </div>

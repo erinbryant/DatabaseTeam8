@@ -1255,9 +1255,9 @@ if (method === 'GET' && pathname === '/api/packages/full') {
     const conditions = []
     const params = []
 
-    if (zone)           { conditions.push('pkg.Zone = ?');                params.push(Number(zone)) }
+    if (zone)           { conditions.push('pkg.Zone = ?');           params.push(Number(zone)) }
     if (package_type)   { conditions.push('pkg.Package_Type_Code = ?');   params.push(package_type) }
-    if (status)         { conditions.push('d.Delivery_Status_Code = ?');  params.push(Number(status)) }
+    if (status)         { conditions.push('pkg.Status_Code = ?');  params.push(Number(status)) }
     if (post_office_id) { conditions.push('po.Post_Office_ID = ?');       params.push(Number(post_office_id)) }
 
     const whereClause = conditions.length ? `AND ${conditions.join(' AND ')}` : ''
@@ -1268,10 +1268,8 @@ if (method === 'GET' && pathname === '/api/packages/full') {
         pkg.Package_Type_Code,
         pkg.Weight,
         pkg.Zone,
-        pkg.Price,
         pkg.Oversize,
         pkg.Requires_Signature,
-        pkg.Date_Created,
         pkg.Date_Updated,
         pkg.Dim_X, pkg.Dim_Y, pkg.Dim_Z,
         -- Sender info
@@ -1283,17 +1281,18 @@ if (method === 'GET' && pathname === '/api/packages/full') {
         CONCAT(r.First_Name, ' ', r.Last_Name) AS Recipient_Name,
         r.Email_Address AS Recipient_Email,
         -- Delivery info
-        d.Delivery_Status_Code,
+        pkg.Status_Code,
         d.Delivered_Date,
         d.Signature_Required,
         sc.Status_Name,
         sc.Is_Final_Status,
-        -- Shipment / post office info
-        sh.From_City,
-        sh.From_State,
-        sh.To_City,
-        sh.To_State,
-        po.City AS Office_City,
+        -- Shipment info (Now joined from Address table)
+        addr_f.City AS From_City,
+        addr_f.State AS From_State,
+        addr_t.City AS To_City,
+        addr_t.State AS To_State,
+        -- Post Office info (Now joined from Address table)
+        addr_po.City AS Office_City,
         po.Post_Office_ID,
         -- Employee who handled it
         CONCAT(e.First_Name, ' ', e.Last_Name) AS Handled_By
@@ -1301,11 +1300,15 @@ if (method === 'GET' && pathname === '/api/packages/full') {
       LEFT JOIN customer s  ON s.Customer_ID  = pkg.Sender_ID
       LEFT JOIN customer r  ON r.Customer_ID  = pkg.Recipient_ID
       LEFT JOIN delivery d  ON d.Tracking_Number = pkg.Tracking_Number
-      LEFT JOIN status_code sc ON sc.Status_Code = d.Delivery_Status_Code
+      LEFT JOIN status_code sc ON sc.Status_Code = pkg.Status_Code
       LEFT JOIN shipment_package sp ON sp.Tracking_Number = pkg.Tracking_Number
       LEFT JOIN shipment sh ON sh.Shipment_ID = sp.Shipment_ID
+      -- Joins for the new Address table
+      LEFT JOIN Address addr_f ON sh.From_Address_ID = addr_f.Address_ID
+      LEFT JOIN Address addr_t ON sh.To_Address_ID = addr_t.Address_ID
       LEFT JOIN employee e  ON e.Employee_ID  = sh.Employee_ID
       LEFT JOIN post_office po ON po.Post_Office_ID = e.Post_Office_ID
+      LEFT JOIN Address addr_po ON po.Address_ID = addr_po.Address_ID
       WHERE 1=1 ${whereClause}
       ORDER BY pkg.Tracking_Number ASC`,
       params
