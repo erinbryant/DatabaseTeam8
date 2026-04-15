@@ -56,6 +56,29 @@
   width: auto;
   display: inline-block;
 }
+/* Sidebar styling */
+.employee-sidebar {
+  width: 230px;
+  background: #1a1f4e;
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  transition: transform 0.3s ease-in-out, margin-left 0.3s ease-in-out;
+  z-index: 1000;
+}
+
+.employee-sidebar.collapsed {
+  transform: translateX(-100%);
+  margin-left: -230px;
+}
+
+.page-content-wrapper {
+  flex: 1;
+  min-width: 0;
+  transition: all 0.3s ease-in-out;
+}
+/* End Sidebar styling */
 
 @media (max-width: 760px) {
   .employee-home .header-inner {
