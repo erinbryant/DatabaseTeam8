@@ -160,7 +160,7 @@ async function registerCustomer(pool, rawBody) {
       First_Name, Middle_Name, Last_Name,
       Password_Hash, Email_Address, Phone_Number,
       Sex, Address_ID, is_Active
-    ) VALUES (?,?,?,?,?,?,?,?,1)`,
+    ) VALUES (?,?,?,?,?,?,?,?,0)`,
     [
       first_name.trim().slice(0, 30),
       middle_name || null,
@@ -183,7 +183,7 @@ async function registerCustomer(pool, rawBody) {
     Phone_Number: phone_number || null,
     Sex: safeSex,
     Address_ID: addressId,
-    is_Active: 1,
+    is_Active: 0,
     Zip_Plus4: zip_plus4 || null,
   }
   return { customer_id: customerId, user }
@@ -197,7 +197,7 @@ async function getCustomerByEmail(pool, email) {
       a.House_Number, a.Street, a.City, a.State, a.Zip_Code, a.Country
     FROM customer c
     INNER JOIN address a ON c.Address_ID = a.Address_ID
-    WHERE LOWER(c.Email_Address) = ? AND c.is_Active = 1
+    WHERE LOWER(c.Email_Address) = ? AND c.is_Active = 0
   `, [email.trim().toLowerCase()])
   
   return rows[0] || null

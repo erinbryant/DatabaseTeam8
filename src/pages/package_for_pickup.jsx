@@ -41,6 +41,8 @@ export default function PackageForPickup() {
   const [submittingArrival, setSubmittingArrival] = useState(false)
   const [submittingPickup, setSubmittingPickup] = useState(false)
   const [success, setSuccess] = useState('')
+  /** In-app notice when late-fee policy applies (clerk informs sender + recipient). */
+  const [lateFeePopup, setLateFeePopup] = useState(null)
 
   useEffect(() => {
     const ac = new AbortController()
@@ -91,6 +93,15 @@ export default function PackageForPickup() {
     () => atOffice.find((p) => p.Tracking_Number === tracking),
     [atOffice, tracking]
   )
+
+  useEffect(() => {
+    if (!lateFeePopup) return
+    const onKey = (e) => {
+      if (e.key === 'Escape') setLateFeePopup(null)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [lateFeePopup])
 
   useEffect(() => {
     if (selectedPkg?.Recipient_ID != null) setRecipientId(String(selectedPkg.Recipient_ID))
@@ -149,6 +160,18 @@ export default function PackageForPickup() {
       }
       if (!res.ok) throw new Error(data.message || text.slice(0, 160) || `HTTP ${res.status}`)
       setSuccess(`Arrival saved for ${tracking.trim()}. Pickup time stays empty until the customer picks up.`)
+      const fee = Number(data.late_fee_amount)
+      if (Number.isFinite(fee) && fee > 0) {
+        setLateFeePopup({
+          kind: 'arrival',
+          tracking: String(data.tracking_number || tracking.trim()),
+          amount: fee,
+          senderName: data.sender_name || 'Sender',
+          recipientName: data.recipient_name || 'Recipient',
+        })
+      } else {
+        setLateFeePopup(null)
+      }
       await refreshAtOfficeList()
     } catch (err) {
       setError(String(err.message || err))
@@ -186,6 +209,18 @@ export default function PackageForPickup() {
       }
       if (!res.ok) throw new Error(data.message || text.slice(0, 160) || `HTTP ${res.status}`)
       setSuccess(`Pickup recorded for ${tracking.trim()}. Status set to Picked Up when configured.`)
+      const fee = Number(data.late_fee_amount)
+      if (Number.isFinite(fee) && fee > 0) {
+        setLateFeePopup({
+          kind: 'pickup',
+          tracking: String(data.tracking_number || tracking.trim()),
+          amount: fee,
+          senderName: data.sender_name || 'Sender',
+          recipientName: data.recipient_name || 'Recipient',
+        })
+      } else {
+        setLateFeePopup(null)
+      }
       setTracking('')
       setPostOfficeId('')
       setArrivalTime('')
@@ -233,6 +268,58 @@ export default function PackageForPickup() {
           </div>
         )}
         {success && <div className="pickup-success pickup-banner">{success}</div>}
+
+        {lateFeePopup && (
+          <div
+            className="pickup-latefee-backdrop"
+            role="presentation"
+            onClick={() => setLateFeePopup(null)}
+          >
+            <div
+              className="pickup-latefee-modal"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="pickup-latefee-title"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h2 id="pickup-latefee-title" className="pickup-latefee-title">
+                Late fee applies
+              </h2>
+              <p className="pickup-latefee-lead">
+                Notify the <strong>sender</strong> and <strong>recipient</strong> that this package will include the
+                late-pickup fee below (policy: $10 after 10 days at office, $20 after 20 days).
+              </p>
+              <dl className="pickup-latefee-details">
+                <div>
+                  <dt>Tracking</dt>
+                  <dd>
+                    <code>{lateFeePopup.tracking}</code>
+                  </dd>
+                </div>
+                <div>
+                  <dt>Late fee</dt>
+                  <dd className="pickup-latefee-amount">${lateFeePopup.amount.toFixed(2)}</dd>
+                </div>
+                <div>
+                  <dt>Sender</dt>
+                  <dd>{lateFeePopup.senderName}</dd>
+                </div>
+                <div>
+                  <dt>Recipient</dt>
+                  <dd>{lateFeePopup.recipientName}</dd>
+                </div>
+              </dl>
+              <p className="pickup-latefee-note">
+                {lateFeePopup.kind === 'arrival'
+                  ? 'Fee is based on calendar days from office arrival through today. It may change if pickup happens later.'
+                  : 'This fee is recorded on pickup and matches the stored late-fee amount for this package.'}
+              </p>
+              <button type="button" className="btn primary pickup-latefee-dismiss" onClick={() => setLateFeePopup(null)}>
+                Acknowledge
+              </button>
+            </div>
+          </div>
+        )}
 
         {loading ? (
           <p className="inventory-state-msg">Loading…</p>

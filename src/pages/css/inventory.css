@@ -368,3 +368,77 @@
     width: 100%;
   }
 }
+
+/* Customer “My packages” — late fee notice (modal) */
+.customer-latefee-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(2px);
+}
+
+.customer-latefee-modal {
+  max-width: 440px;
+  width: 100%;
+  padding: 22px 22px 20px;
+  border-radius: 14px;
+  background: #fff;
+  border: 1px solid var(--border, #dbe4ef);
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.18);
+}
+
+.customer-latefee-title {
+  margin: 0 0 10px;
+  font-size: 1.2rem;
+  color: #b45309;
+}
+
+.customer-latefee-lead {
+  margin: 0 0 14px;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--text, #0f172a);
+}
+
+.customer-latefee-list {
+  margin: 0 0 16px;
+  padding-left: 1.1rem;
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: var(--text, #0f172a);
+}
+
+.customer-latefee-list li {
+  margin-bottom: 8px;
+}
+
+.customer-latefee-tracking {
+  display: block;
+  margin-bottom: 2px;
+}
+
+.customer-latefee-meta {
+  color: var(--text-soft, #64748b);
+}
+
+.customer-latefee-dismiss {
+  width: 100%;
+  margin-top: 4px;
+  padding: 10px 14px;
+  font: inherit;
+  font-weight: 600;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  background: #1d4ed8;
+  color: #fff;
+}
+
+.customer-latefee-dismiss:hover {
+  background: #1e40af;
+}
