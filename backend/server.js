@@ -11,7 +11,7 @@ const customerDB = require('./db/customers')
 const packageTrackDB = require('./db/package_track')
 const employeeDB = require('./db/employees')
 const priceDB = require('./db/package_type')
-const packagePickupStorageJob = require('./db/package_pickup_storage_job')
+// const packagePickupStorageJob = require('./db/package_pickup_storage_job')
 const revenueReportDB = require('./db/revenue_report')
 const { report } = require('process')
 const shipmentDB = require('./db/shipments')
@@ -42,11 +42,11 @@ if (
 ) {
   const jobMs = Number(process.env.PACKAGE_PICKUP_JOB_MS)
   const runOnStartEnv = process.env.PACKAGE_PICKUP_JOB_RUN_ON_START
-  packagePickupStorageJob.startPackagePickupStorageJob(pool, {
-    intervalMs: Number.isFinite(jobMs) && jobMs > 0 ? jobMs : undefined,
-    // Default: run once at startup so 30-day disposal applies without waiting for the first 24h tick.
-    runOnStart: runOnStartEnv !== '0' && runOnStartEnv !== 'false',
-  })
+  // packagePickupStorageJob.startPackagePickupStorageJob(pool, {
+  //   intervalMs: Number.isFinite(jobMs) && jobMs > 0 ? jobMs : undefined,
+  //   // Default: run once at startup so 30-day disposal applies without waiting for the first 24h tick.
+  //   runOnStart: runOnStartEnv !== '0' && runOnStartEnv !== 'false',
+  // })
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────
@@ -725,11 +725,11 @@ async function router(req, res) {
       return send(res, 403, { message: 'Customer access required' })
     }
 
-    try {
-      await packagePickupStorageJob.runNodeDisposalSweep(pool)
-    } catch (e) {
-      console.error('[my-packages] disposal sweep:', e.message || e)
-    }
+    // try {
+    //   await packagePickupStorageJob.runNodeDisposalSweep(pool)
+    // } catch (e) {
+    //   console.error('[my-packages] disposal sweep:', e.message || e)
+    // }
 
     packagesDB.getPackagesForCustomer(pool, user.customer_id, (err, results) => {
       if (err) {
@@ -1005,7 +1005,7 @@ if (method === 'GET' && pathname === '/api/reports/employee-performance') {
         ) AS Avg_Revenue_Per_Shipment,
         (
           SELECT ROUND(
-            COUNT(CASE WHEN d2.Delivery_Status_Code = 4 THEN 1 END) * 100.0 /
+            // COUNT(CASE WHEN d2.Delivery_Status_Code = 4 THEN 1 END) * 100.0 /
             NULLIF(COUNT(*), 0), 1)
           FROM shipment s2
           JOIN shipment_package sp2 ON sp2.Shipment_ID = s2.Shipment_ID
@@ -1075,7 +1075,7 @@ if (method === 'GET' && pathname === '/api/reports/employee-performance') {
       }
 
       await conn.query(
-        `UPDATE delivery SET Delivery_Status_Code = ? WHERE Tracking_Number = ?`,
+        `UPDATE package SET Status_Code = ? WHERE Tracking_Number = ?`,
         [code, trackingNumber]
       )
 
@@ -1855,4 +1855,6 @@ pool
 
 console.log('[api] admin routes: GET /api/admin/employees, PATCH /api/admin/employees/:employeeId/deactivate')
 const PORT = process.env.PORT || 5000
-http.createServer(router).listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`))
+http.createServer(router).listen(PORT, '0.0.0.0', () => 
+  console.log(`🚀 Server running on http://localhost:${PORT}`)
+)
