@@ -184,8 +184,9 @@ async function registerCustomer(pool, rawBody) {
       Apt_Number, House_Number, Street, City, State,
       Zip_First3, Zip_Last2, Zip_Plus4,
       Country,
-      Password_Hash, Email_Address, Phone_Number
-    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?, ?)`,
+      Password_Hash, Email_Address, Phone_Number,
+      is_Active
+    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?, 0)`,
     [
       first_name.trim().slice(0, 30),
       middleVal,
