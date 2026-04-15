@@ -2039,17 +2039,15 @@ if (method === 'GET' && pathname === '/api/packages/full') {
   return send(res, 404, { message: 'Not found' })
 }
 
-// ── Start ────────────────────────────────────────────────────────────────
+
+// ── Start ────────────────────────────────────────��───────────────────────
 const PORT = Number(process.env.PORT) || 5000
 
-console.log(
-  '[api] admin routes: GET /api/admin/employees, PATCH /api/admin/employees/:employeeId/deactivate'
-)
+console.log('[api] admin routes: GET /api/admin/employees, PATCH /api/admin/employees/:employeeId/deactivate')
 
 const server = http.createServer(router)
 
 server.on('error', (err) => {
-  // On Render, exiting is fine—Render will restart the service and logs will show the real error.
   console.error('Server error:', err)
   process.exit(1)
 })
