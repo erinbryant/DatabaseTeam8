@@ -1841,7 +1841,18 @@ if (method === 'GET' && pathname === '/api/packages/full') {
 
 
 // ── Start ─────────────────────────────────────────────────────────────────
-const PORT = process.env.PORT || 5000
-console.log('[api] admin routes: GET /api/admin/employees, PATCH /api/admin/employees/:employeeId/deactivate')
-http.createServer(router).listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`))
 console.log('Connecting to Database:', process.env.MYSQL_DATABASE)
+
+pool
+  .getConnection()
+  .then(async (c) => {
+    console.log('✅ MySQL connected')
+    const [results] = await c.query('SELECT CURRENT_USER() AS user')
+    console.log('Connected as:', results[0].user)
+    c.release()
+  })
+  .catch((e) => console.error('❌ MySQL connection failed:', e))
+
+console.log('[api] admin routes: GET /api/admin/employees, PATCH /api/admin/employees/:employeeId/deactivate')
+const PORT = process.env.PORT || 5000
+http.createServer(router).listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`))
