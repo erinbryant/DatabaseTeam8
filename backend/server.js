@@ -406,7 +406,7 @@ async function router(req, res) {
     }
   }
 
-  // ── GET /api/admin/employees ─────────────────────────────────────────────
+  // ── GET /api/admin/employees
   if (method === 'GET' && pathname === '/api/admin/employees') {
     const user = authenticate(req, res)
     if (!user) return
@@ -414,14 +414,24 @@ async function router(req, res) {
 
     try {
       const [rows] = await pool.query(
-        `SELECT e.Employee_ID, po.Street AS Post_Office_Street, d.Department_Name, r.Role_Name,
-                e.First_Name, e.Last_Name, e.Email_Address, e.Sex, e.Phone_Number, e.Is_Active
-         FROM employee e
-         JOIN post_office po ON e.Post_Office_ID = po.Post_Office_ID
-         JOIN department d   ON e.Department_ID  = d.Department_ID
-         JOIN role r         ON e.Role_ID        = r.Role_ID
-         WHERE e.Is_Active IN ('1', 1)
-         ORDER BY e.Last_Name, e.First_Name, e.Employee_ID`
+        `SELECT
+          e.Employee_ID,
+          addr.Street AS Post_Office_Street,
+          d.Department_Name,
+          r.Role_Name,
+          e.First_Name,
+          e.Last_Name,
+          e.Email_Address,
+          e.Sex,
+          e.Phone_Number,
+          e.Is_Active
+        FROM employee e
+        JOIN post_office po ON e.Post_Office_ID = po.Post_Office_ID
+        JOIN Address addr ON po.Address_ID = addr.Address_ID
+        JOIN department d ON e.Department_ID = d.Department_ID
+        JOIN role r ON e.Role_ID = r.Role_ID
+        WHERE e.Is_Active IN ('1',1)
+        ORDER BY e.Last_Name, e.First_Name, e.Employee_ID`
       )
       return send(res, 200, { employees: rows })
     } catch (err) {
@@ -1242,7 +1252,7 @@ if (method === 'GET' && pathname === '/api/reports/post-offices') {
   }
 }
 
-// ── GET /api/packages/full ────────────────────────────────────────────────
+// ── GET /api/packages/full
 
 if (method === 'GET' && pathname === '/api/packages/full') {
   const user = authenticate(req, res)
@@ -1268,35 +1278,44 @@ if (method === 'GET' && pathname === '/api/packages/full') {
         pkg.Package_Type_Code,
         pkg.Weight,
         pkg.Zone,
+        pay.Payment_Amount AS Price,
+        pkg.Date_Created,
         pkg.Oversize,
         pkg.Requires_Signature,
         pkg.Date_Updated,
         pkg.Dim_X, pkg.Dim_Y, pkg.Dim_Z,
+
         -- Sender info
         pkg.Sender_ID,
         CONCAT(s.First_Name, ' ', s.Last_Name) AS Sender_Name,
         s.Email_Address AS Sender_Email,
+
         -- Recipient info
         pkg.Recipient_ID,
         CONCAT(r.First_Name, ' ', r.Last_Name) AS Recipient_Name,
         r.Email_Address AS Recipient_Email,
+
         -- Delivery info
         pkg.Status_Code,
         d.Delivered_Date,
         d.Signature_Required,
         sc.Status_Name,
         sc.Is_Final_Status,
+
         -- Shipment info (Now joined from Address table)
         addr_f.City AS From_City,
         addr_f.State AS From_State,
         addr_t.City AS To_City,
         addr_t.State AS To_State,
+
         -- Post Office info (Now joined from Address table)
         addr_po.City AS Office_City,
         po.Post_Office_ID,
+
         -- Employee who handled it
         CONCAT(e.First_Name, ' ', e.Last_Name) AS Handled_By
       FROM package pkg
+      LEFT JOIN Payment pay ON pay.Tracking_Number =  pkg.Tracking_Number
       LEFT JOIN customer s  ON s.Customer_ID  = pkg.Sender_ID
       LEFT JOIN customer r  ON r.Customer_ID  = pkg.Recipient_ID
       LEFT JOIN delivery d  ON d.Tracking_Number = pkg.Tracking_Number
@@ -1775,6 +1794,45 @@ if (method === 'GET' && pathname === '/api/packages/full') {
     }
   }
 
+  // GET /api/employee/post-offices
+  if(method === 'GET' && pathname === '/api/employee/post-offices') {
+    const user = authenticate(req,res)
+    if(!user) return
+    if(!requireEmployee(user, res)) return
+    try {
+      const [rows] = await pool.query(`
+        SELECT
+          po.Post_Office_ID,
+          a.House_Number,
+          a.Street,
+          a.City,
+          a.State,
+          a.Zip_Code,
+          CONCAT(a.House_Number, ' ', a.Street, ', ', a.City, ', ', a.State) AS Street_Label
+        FROM post_office po
+        JOIN address a ON a.Address_ID = po.Address_ID
+        ORDER BY a.State, a.City ASC
+        `)
+        return send(res,200, rows)
+    }catch (err) {
+      return send(res,500, {message: 'Server error' })
+    }
+  }
+
+  // GET /api/employee/packages-at-office
+  if(method === 'GET' && pathname === '/api/employee/packages-at-office') {
+    const user = authenticate(req,res);
+    if(!user) return;
+    if(!requireEmployee(user,res)) return;
+
+    try{
+      const rows = await packagesDB.getPackagesAtOffice(pool);
+      return send(res,200,rows);
+    }catch (err){
+      console.log(err);
+      return send(res,500,{message:'Failed to load packages: ' + err.message})
+    }
+  }
 
   // Default
   return send(res, 404, { message: 'Not found' })
