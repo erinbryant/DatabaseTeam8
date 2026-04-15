@@ -3,10 +3,10 @@ const http = require('http')
 const mysql = require('mysql2/promise')
 const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
-require('dotenv').config()
+// Load backend/.env as source of truth (override: true avoids stale Windows user env shadowing MYSQL_*).
+require('dotenv').config({ path: path.join(__dirname, '.env'), override: true })
 
 const packagesDB = require('./db/packages')
-const inventoryDB = require('./db/inventory')
 const customerDB = require('./db/customers')
 const packageTrackDB = require('./db/package_track')
 const employeeDB = require('./db/employees')
@@ -16,21 +16,30 @@ const revenueReportDB = require('./db/revenue_report')
 const { report } = require('process')
 
 // ── DB pool ───────────────────────────────────────────────────────────────
+const mysqlHost = String(process.env.MYSQLHOST || '').trim()
+const mysqlSslEnv = String(process.env.MYSQL_SSL || '').trim().toLowerCase()
+// CRLF in .env can leave `\r` on the host and break hostname checks; Azure requires TLS.
+const azureMysqlHost =
+  /\.mysql\.database\.azure\.com\s*$/i.test(mysqlHost) ||
+  /database\.azure\.com/i.test(mysqlHost)
 const useSsl =
-  String(process.env.MYSQL_SSL || '').toLowerCase() === 'true' ||
-  process.env.MYSQL_SSL === '1'
+  azureMysqlHost || mysqlSslEnv === 'true' || mysqlSslEnv === '1'
 
 const pool = mysql.createPool({
-  host: process.env.MYSQLHOST,
-  port: Number(process.env.MYSQLPORT || 3306),
-  user: process.env.MYSQLUSER,
+  host: mysqlHost,
+  port: Number(String(process.env.MYSQLPORT || '3306').trim() || 3306),
+  user: String(process.env.MYSQLUSER || '').trim(),
   password: process.env.MYSQLPASSWORD,
-  database: process.env.MYSQL_DATABASE,
+  database: String(process.env.MYSQL_DATABASE || '').trim(),
   waitForConnections: true,
   connectionLimit: 10,
-  // Azure MySQL commonly requires TLS:
-  ssl: useSsl ? { rejectUnauthorized: true } : undefined,
+  // Azure MySQL uses require_secure_transport=ON — mysql2 must upgrade the socket (ssl object must be set).
+  ssl: useSsl ? { rejectUnauthorized: true, minVersion: 'TLSv1.2' } : undefined,
 })
+
+if (process.env.DEBUG_MYSQL === '1' || process.env.DEBUG_MYSQL === 'true') {
+  console.log('[db] MySQL TLS:', useSsl ? 'on' : 'off', 'host:', mysqlHost || '(empty)')
+}
 
 pool
   .getConnection()
@@ -1694,19 +1703,6 @@ if (method === 'GET' && pathname === '/api/packages/full') {
       console.error(err)
       return send(res, 500, { message: 'Database error' })
     }
-  }
-
-  // ── GET /api/inventory (employee+admin) ──────────────────────────────────
-  if (method === 'GET' && pathname === '/api/inventory') {
-    const user = authenticate(req, res)
-    if (!user) return
-    if (!requireEmployee(user, res)) return
-
-    inventoryDB.getAllInventory(pool, (err, results) => {
-      if (err) return send(res, 500, { error: 'Database error' })
-      return send(res, 200, results)
-    })
-    return
   }
 
   // ── POST /api/tickets (PUBLIC submit) ────────────────────────────────────

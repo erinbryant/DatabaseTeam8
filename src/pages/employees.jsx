@@ -152,7 +152,6 @@ export default function EmployeesPage() {
             <nav className="top-nav">
             <a href="#" onClick={(e) => { e.preventDefault(); navigate('/employee_home') }}>Dashboard</a>
             <a href="#" onClick={(e) => { e.preventDefault(); navigate('/package_list') }}>Packages</a>
-            <a href="#" onClick={(e) => { e.preventDefault(); navigate('/inventory') }}>Inventory</a>
             <a href="#" onClick={(e) => { e.preventDefault(); navigate('/customers') }}>Customers</a>
           </nav>
           </div>

@@ -19,7 +19,6 @@ import AdminRegister from './pages/AdminRegister'
 import AllPackages from './pages/package_list'
 import AllCustomers from './pages/all_customers'
 
-import Inventory from './pages/inventory'
 import PackageTracking from './pages/package_tracking'
 
 import SubmitTicket from './pages/SubmitTicket'
@@ -79,7 +78,6 @@ function App() {
 
         {/* Shared / Authenticated */}
         <Route path="/package_list" element={<RequireAuth><AllPackages /></RequireAuth>} />
-        <Route path="/inventory" element={<RequireEmployee><Inventory /></RequireEmployee>} />
         {/* <Route path="/support" element={<RequireAuth><SupportTicket /></RequireAuth>} /> */}
 
         {/* Optional/Test */}

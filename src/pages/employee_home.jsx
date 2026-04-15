@@ -47,7 +47,6 @@ const NAV_ITEMS = [
   { label: 'Add Package',       path: '/employee/add-package',         section: 'main'  },
   { label: 'Package Pickup',    path: '/employee/package-pickup',      section: 'main'  },
   { label: 'Track a Package',   path: '/package_tracking',             section: 'main'  },
-  { label: 'Inventory',         path: '/inventory',                    section: 'main'  },
   { label: 'Support Tickets',   path: '/employee-support',             section: 'main'  },
   { label: 'Customers',         path: '/customers',                    section: 'main'  },
   { label: 'Profile',           path: '/profile',                      section: 'main'  },
@@ -63,7 +62,6 @@ const DASHBOARD_CARDS = [
   { title: 'Packages',          desc: 'Browse and manage all package records.',                          path: '/package_list',                 btnLabel: 'View packages',      section: 'main'  },
   { title: 'Add Package',       desc: 'Register a shipment, calculate price, issue a tracking number.', path: '/employee/add-package',         btnLabel: 'Add package',        section: 'main'  },
   { title: 'Package Pickup',    desc: 'Record when a customer picks up their package at the office.',   path: '/employee/package-pickup',      btnLabel: 'Package for pickup', section: 'main'  },
-  { title: 'Inventory',         desc: 'Check product and supply levels across all locations.',          path: '/inventory',                    btnLabel: 'View inventory',     section: 'main'  },
   { title: 'Support Tickets',   desc: 'Review and respond to customer support requests.',               path: '/employee-support',             btnLabel: 'Open tickets',       section: 'main'  },
   { title: 'Customers',         desc: 'Search and manage customer accounts.',                           path: '/customers',                    btnLabel: 'View customers',     section: 'main'  },
   { title: 'Employees',         desc: 'View and manage all employee accounts.',                         path: '/employees',                    btnLabel: 'View employees',     section: 'admin' },
@@ -489,7 +487,7 @@ export default function EmployeeHome() {
                   Welcome back, {name ?? 'Employee'}
                 </h1>
                 <p style={{ margin: '6px 0 0', color: 'rgba(255,255,255,0.6)', fontSize: '0.85rem' }}>
-                  Tools for post office staff — packages, inventory, and customer records.
+                  Tools for post office staff — packages and customer records.
                 </p>
               </div>
             </div>
