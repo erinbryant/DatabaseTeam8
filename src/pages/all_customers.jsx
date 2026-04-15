@@ -78,8 +78,9 @@ export default function AllCustomers() {
   }
 
   const toggleCustomerStatus = async (id, currentStatus) => {
-    const newStatus = currentStatus == 0 ? 1 : 0;
-    const actionText = newStatus == 1 ? "deactivate" : "reinstate";
+    const isActive = Number(currentStatus) === 1
+    const newStatus = isActive ? 0 : 1
+    const actionText = newStatus === 0 ? 'deactivate' : 'reinstate'
 
     if (window.confirm(`Are you sure you want to ${actionText} this customer?`)) {
       try {
@@ -87,18 +88,18 @@ export default function AllCustomers() {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ is_Active: newStatus })
-        });
+        })
 
-        if (!response.ok) throw new Error(`Failed to ${actionText} customer`);
+        if (!response.ok) throw new Error(`Failed to ${actionText} customer`)
         
         setCustomers(prev => prev.map(c => 
           c.Customer_ID === id ? { ...c, is_Active: newStatus } : c
-        ));
+        ))
       } catch (err) {
-        setError(err.message);
+        setError(err.message)
       }
     }
-  };
+  }
 
   function handleLogout(e) {
     e.preventDefault()
@@ -202,32 +203,42 @@ export default function AllCustomers() {
                         <td>{c.Full_Address || '—'}</td>
 
                         <td>
+                          {(() => {
+                            const isActive = Number(c.is_Active) === 1
+                            return (
                           <span style={{
                             padding: '4px 8px',
                             borderRadius: '4px',
                             fontSize: '0.7rem',
                             fontWeight: 'bold',
-                            backgroundColor: c.is_Active == 0 ? '#d4edda' : '#f8d7da',
-                            color: c.is_Active == 0 ? '#155724' : '#721c24',
-                            border: c.is_Active == 0 ? '1px solid #c3e6cb' : '1px solid #f5c6cb'
+                            backgroundColor: isActive ? '#d4edda' : '#f8d7da',
+                            color: isActive ? '#155724' : '#721c24',
+                            border: isActive ? '1px solid #c3e6cb' : '1px solid #f5c6cb'
                           }}>
-                            {c.is_Active == 0 ? 'ACTIVE' : 'INACTIVE'}
+                            {isActive ? 'ACTIVE' : 'INACTIVE'}
                           </span>
+                            )
+                          })()}
                         </td>
 
                         <td>
+                          {(() => {
+                            const isActive = Number(c.is_Active) === 1
+                            return (
                           <button
                             className='button'
                             style={{
-                              backgroundColor: c.is_Active == 0 ? '#d9534f' : '#28a745',
+                              backgroundColor: isActive ? '#d9534f' : '#28a745',
                               color: 'white',
                               marginTop: '5px',
                               width: '200px'
                             }}
                             onClick={() => toggleCustomerStatus(c.Customer_ID, c.is_Active)}
                           >
-                            {c.is_Active == 0 ? 'Deactivate Account' : 'Reinstate Account'}
+                            {isActive ? 'Deactivate Account' : 'Reinstate Account'}
                           </button>
+                            )
+                          })()}
                         </td>
 
                         <td>

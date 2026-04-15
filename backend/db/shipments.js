@@ -3,27 +3,25 @@ async function allShipments(pool){
     const [results] = await pool.query(
     `
     SELECT
-        Shipment_ID,
-        Employee_ID,
+        s.Shipment_ID,
+        s.Employee_ID,
         CONCAT(
-            From_House_Number, ' ', From_Street,
-            IF(From_Apt_Number IS NOT NULL, CONCAT(' Apt ', From_Apt_Number), ''),
-            ', ', From_City, ', ', From_State, ' ',
-            From_Zip_First3, From_Zip_Last2,
-            IF(From_Zip_Plus4 IS NOT NULL, CONCAT('-', From_Zip_Plus4), '')
+            fa.House_Number, ' ', fa.Street,
+            IF(fa.Apt_Number IS NOT NULL, CONCAT(' Apt ', fa.Apt_Number), ''),
+            ', ', fa.City, ', ', fa.State, ' ', fa.Zip_Code
         ) AS From_Full_Address,
         CONCAT(
-            To_House_Number, ' ', To_Street,
-            IF(To_Apt_Number IS NOT NULL, CONCAT(' Apt ', To_Apt_Number), ''),
-            ', ', To_City, ', ', To_State, ' ',
-            To_Zip_First3, To_Zip_Last2,
-            IF(To_Zip_Plus4 IS NOT NULL, CONCAT('-', To_Zip_Plus4), '')
+            ta.House_Number, ' ', ta.Street,
+            IF(ta.Apt_Number IS NOT NULL, CONCAT(' Apt ', ta.Apt_Number), ''),
+            ', ', ta.City, ', ', ta.State, ' ', ta.Zip_Code
         ) AS To_Full_Address,
-         Departure_Time_Stamp,
-         Arrival_Time_Stamp,
-         Status_Code
-    From Shipment
-    ORDER BY Shipment_ID
+         s.Departure_Time_Stamp,
+         s.Arrival_Time_Stamp,
+         s.Status_Code
+    FROM shipment s
+    JOIN address fa ON fa.Address_ID = s.From_Address_ID
+    JOIN address ta ON ta.Address_ID = s.To_Address_ID
+    ORDER BY s.Shipment_ID
     `
   );
   return results;

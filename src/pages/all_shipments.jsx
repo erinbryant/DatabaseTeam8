@@ -56,9 +56,9 @@ export default function AllShipments() {
   })
 
   if (sortValue === 'name_asc')
-    filtered = [...filtered].sort((a, b) => a.Shipment_ID.localeCompare(b.Shipment_ID))
+    filtered = [...filtered].sort((a, b) => Number(a.Shipment_ID) - Number(b.Shipment_ID))
   if (sortValue === 'name_desc')
-    filtered = [...filtered].sort((a, b) => b.Shipment_ID.localeCompare(a.Shipment_ID))
+    filtered = [...filtered].sort((a, b) => Number(b.Shipment_ID) - Number(a.Shipment_ID))
 
   function toggleExpand(id) {
     if (expanded === id) {

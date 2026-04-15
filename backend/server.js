@@ -1107,6 +1107,11 @@ if (method === 'GET' && pathname === '/api/reports/employee-performance') {
       }
 
       await conn.query(
+        `UPDATE delivery SET Delivery_Status_Code = ? WHERE Tracking_Number = ?`,
+        [code, trackingNumber]
+      )
+
+      await conn.query(
         `UPDATE package SET Status_Code = ? WHERE Tracking_Number = ?`,
         [code, trackingNumber]
       )
@@ -1333,6 +1338,7 @@ if (method === 'GET' && pathname === '/api/packages/full') {
 
         -- Delivery info
         pkg.Status_Code,
+        d.Delivery_Status_Code,
         d.Delivered_Date,
         d.Signature_Required,
         sc.Status_Name,
@@ -1871,6 +1877,192 @@ if (method === 'GET' && pathname === '/api/packages/full') {
     }catch (err){
       console.log(err);
       return send(res,500,{message:'Failed to load packages: ' + err.message})
+    }
+  }
+
+  // POST /api/employee/package-pickup-arrival
+  if (method === 'POST' && pathname === '/api/employee/package-pickup-arrival') {
+    const user = authenticate(req, res)
+    if (!user) return
+    if (!requireEmployee(user, res)) return
+
+    const b = await getBody(req)
+    const trackingNumber = normalizeTrackingNumber(b.tracking_number)
+    const recipientId = Number(b.recipient_id)
+    const postOfficeId = Number(b.post_office_id)
+
+    if (!trackingNumber || !Number.isFinite(recipientId) || !Number.isFinite(postOfficeId)) {
+      return send(res, 400, { message: 'tracking_number, recipient_id, and post_office_id are required' })
+    }
+
+    const conn = await pool.getConnection()
+    try {
+      await conn.beginTransaction()
+
+      const [[pkg]] = await conn.query(
+        `SELECT Tracking_Number, Recipient_ID FROM package WHERE Tracking_Number = ? LIMIT 1`,
+        [trackingNumber]
+      )
+      if (!pkg) {
+        await conn.rollback()
+        return send(res, 404, { message: 'Package not found' })
+      }
+      if (Number(pkg.Recipient_ID) !== recipientId) {
+        await conn.rollback()
+        return send(res, 400, { message: 'recipient_id does not match package recipient' })
+      }
+
+      const [[po]] = await conn.query(
+        `SELECT Post_Office_ID FROM post_office WHERE Post_Office_ID = ? LIMIT 1`,
+        [postOfficeId]
+      )
+      if (!po) {
+        await conn.rollback()
+        return send(res, 404, { message: 'Post office not found' })
+      }
+
+      const [[ship]] = await conn.query(
+        `SELECT s.Arrival_Time_Stamp
+         FROM shipment_package sp
+         JOIN shipment s ON s.Shipment_ID = sp.Shipment_ID
+         WHERE sp.Tracking_Number = ?
+         ORDER BY s.Shipment_ID DESC
+         LIMIT 1`,
+        [trackingNumber]
+      )
+
+      const arrival = resolveArrivalForPickup(ship?.Arrival_Time_Stamp ?? null, b.arrival_time)
+      if (!arrival) {
+        await conn.rollback()
+        return send(res, 400, { message: 'Arrival time is required when shipment has no office arrival timestamp' })
+      }
+
+      await conn.query(
+        `INSERT INTO package_pickup (Tracking_Number, Recipient_ID, Post_Office_ID, Arrival_Time, Pickup_Time, Is_picked_Up, Late_Fee_Amount)
+         VALUES (?, ?, ?, ?, NULL, '0', 0.00)
+         ON DUPLICATE KEY UPDATE
+           Recipient_ID = VALUES(Recipient_ID),
+           Post_Office_ID = VALUES(Post_Office_ID),
+           Arrival_Time = COALESCE(VALUES(Arrival_Time), package_pickup.Arrival_Time)`,
+        [trackingNumber, recipientId, postOfficeId, arrival]
+      )
+
+      await conn.commit()
+      return send(res, 200, { message: 'Arrival recorded', tracking_number: trackingNumber, arrival_time: arrival })
+    } catch (err) {
+      await conn.rollback()
+      console.error(err)
+      return send(res, 500, { message: err.message || 'Failed to record arrival' })
+    } finally {
+      conn.release()
+    }
+  }
+
+  // POST /api/employee/package-pickup
+  if (method === 'POST' && pathname === '/api/employee/package-pickup') {
+    const user = authenticate(req, res)
+    if (!user) return
+    if (!requireEmployee(user, res)) return
+
+    const b = await getBody(req)
+    const trackingNumber = normalizeTrackingNumber(b.tracking_number)
+    const recipientId = Number(b.recipient_id)
+    const postOfficeId = Number(b.post_office_id)
+    const pickupTime = toMysqlDateTime(b.pickup_time)
+
+    if (!trackingNumber || !Number.isFinite(recipientId) || !Number.isFinite(postOfficeId) || !pickupTime) {
+      return send(res, 400, { message: 'tracking_number, recipient_id, post_office_id, and pickup_time are required' })
+    }
+
+    const conn = await pool.getConnection()
+    try {
+      await conn.beginTransaction()
+
+      const [[pkg]] = await conn.query(
+        `SELECT Tracking_Number, Recipient_ID FROM package WHERE Tracking_Number = ? LIMIT 1`,
+        [trackingNumber]
+      )
+      if (!pkg) {
+        await conn.rollback()
+        return send(res, 404, { message: 'Package not found' })
+      }
+      if (Number(pkg.Recipient_ID) !== recipientId) {
+        await conn.rollback()
+        return send(res, 400, { message: 'recipient_id does not match package recipient' })
+      }
+
+      const [[ship]] = await conn.query(
+        `SELECT s.Arrival_Time_Stamp
+         FROM shipment_package sp
+         JOIN shipment s ON s.Shipment_ID = sp.Shipment_ID
+         WHERE sp.Tracking_Number = ?
+         ORDER BY s.Shipment_ID DESC
+         LIMIT 1`,
+        [trackingNumber]
+      )
+
+      const arrival = resolveArrivalForPickup(ship?.Arrival_Time_Stamp ?? null, b.arrival_time)
+      if (!arrival) {
+        await conn.rollback()
+        return send(res, 400, { message: 'Arrival time is required when shipment has no office arrival timestamp' })
+      }
+
+      await conn.query(
+        `INSERT INTO package_pickup (Tracking_Number, Recipient_ID, Post_Office_ID, Arrival_Time, Pickup_Time, Is_picked_Up, Late_Fee_Amount)
+         VALUES (?, ?, ?, ?, ?, '1',
+           CASE
+             WHEN DATEDIFF(DATE(?), DATE(?)) > 20 THEN 20.00
+             WHEN DATEDIFF(DATE(?), DATE(?)) > 10 THEN 10.00
+             ELSE 0.00
+           END)
+         ON DUPLICATE KEY UPDATE
+           Recipient_ID = VALUES(Recipient_ID),
+           Post_Office_ID = VALUES(Post_Office_ID),
+           Arrival_Time = COALESCE(VALUES(Arrival_Time), package_pickup.Arrival_Time),
+           Pickup_Time = VALUES(Pickup_Time),
+           Is_picked_Up = '1',
+           Late_Fee_Amount = CASE
+             WHEN DATEDIFF(DATE(VALUES(Pickup_Time)), DATE(COALESCE(VALUES(Arrival_Time), package_pickup.Arrival_Time))) > 20 THEN 20.00
+             WHEN DATEDIFF(DATE(VALUES(Pickup_Time)), DATE(COALESCE(VALUES(Arrival_Time), package_pickup.Arrival_Time))) > 10 THEN 10.00
+             ELSE 0.00
+           END`,
+        [
+          trackingNumber,
+          recipientId,
+          postOfficeId,
+          arrival,
+          pickupTime,
+          pickupTime,
+          arrival,
+          pickupTime,
+          arrival,
+        ]
+      )
+
+      const [[delivered]] = await conn.query(
+        `SELECT Status_Code FROM status_code WHERE Status_Name = 'Delivered' LIMIT 1`
+      )
+      if (delivered?.Status_Code != null) {
+        const deliveredCode = Number(delivered.Status_Code)
+        await conn.query(`UPDATE package SET Status_Code = ? WHERE Tracking_Number = ?`, [deliveredCode, trackingNumber])
+        await conn.query(`UPDATE delivery SET Delivery_Status_Code = ? WHERE Tracking_Number = ?`, [deliveredCode, trackingNumber])
+        await conn.query(
+          `UPDATE shipment s
+           JOIN shipment_package sp ON sp.Shipment_ID = s.Shipment_ID
+           SET s.Status_Code = ?
+           WHERE sp.Tracking_Number = ?`,
+          [deliveredCode, trackingNumber]
+        )
+      }
+
+      await conn.commit()
+      return send(res, 200, { message: 'Pickup recorded', tracking_number: trackingNumber })
+    } catch (err) {
+      await conn.rollback()
+      console.error(err)
+      return send(res, 500, { message: err.message || 'Failed to complete pickup' })
+    } finally {
+      conn.release()
     }
   }
 

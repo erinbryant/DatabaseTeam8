@@ -2,6 +2,7 @@ const getPackageTracking = (pool, tracking_number, callback) => {
   pool.query(
     `SELECT
       s.Shipment_ID,
+      NULL AS Delivery_ID,
       'Shipment' AS Instance_Type,
       s.Status_Code,
       sc.Status_Name,
@@ -31,9 +32,10 @@ const getPackageTracking = (pool, tracking_number, callback) => {
     UNION ALL
 
     SELECT
-      d.Delivery_ID AS Shipment_ID,
+      NULL AS Shipment_ID,
+      d.Delivery_ID,
       'Delivery' AS Instance_Type,
-      p.Status_Code,
+      d.Delivery_Status_Code AS Status_Code,
       sc.Status_Name,
       sc.Is_Final_Status,
 
@@ -45,11 +47,13 @@ const getPackageTracking = (pool, tracking_number, callback) => {
       d.Delivered_Date,
       d.Signature_Received
     FROM delivery d
-    JOIN package p ON p.Tracking_Number = d.Tracking_Number
-    JOIN status_code sc ON p.Status_Code = sc.Status_Code
+    JOIN status_code sc ON d.Delivery_Status_Code = sc.Status_Code
     WHERE d.Tracking_Number = ?
 
-    ORDER BY Departure_Time_Stamp`,
+    ORDER BY
+      CASE WHEN Instance_Type = 'Shipment' THEN 0 ELSE 1 END,
+      Departure_Time_Stamp,
+      Delivered_Date`,
     [tracking_number, tracking_number]
   )
   .then(([rows]) => callback(null, rows))

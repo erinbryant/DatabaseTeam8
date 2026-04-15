@@ -169,8 +169,8 @@ async function getPackagesAtOffice(pool) {
     LEFT JOIN status_code sc ON sc.Status_Code = pkg.Status_Code
     LEFT JOIN package_pickup pp ON pp.Tracking_Number = pkg.Tracking_Number
     
-    WHERE sc.Status_Name LIKE '%At Office%'
-      OR pkg.Status_Code = 2
+    WHERE LOWER(TRIM(REPLACE(REPLACE(REPLACE(IFNULL(sc.Status_Name, ''), '-', ' '), '_', ' '), '  ', ' '))) = 'at office'
+       OR REPLACE(LOWER(TRIM(IFNULL(sc.Status_Name, ''))), ' ', '') LIKE '%atoffice%'
     ORDER BY pkg.Tracking_Number ASC`
   );
   return rows;
