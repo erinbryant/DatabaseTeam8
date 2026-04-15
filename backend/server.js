@@ -3,7 +3,7 @@ const http = require('http')
 const mysql = require('mysql2/promise')
 const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
-require('dotenv').config({ path: path.join(__dirname, '.env') })
+require('dotenv').config()
 
 const packagesDB = require('./db/packages')
 const inventoryDB = require('./db/inventory')
@@ -17,14 +17,20 @@ const { report } = require('process')
 const shipmentDB = require('./db/shipments')
 
 // ── DB pool ───────────────────────────────────────────────────────────────
+const useSsl =
+  String(process.env.MYSQL_SSL || '').toLowerCase() === 'true' ||
+  process.env.MYSQL_SSL === '1'
+
 const pool = mysql.createPool({
   host: process.env.MYSQLHOST,
-  port: process.env.MYSQLPORT,
+  port: Number(process.env.MYSQLPORT || 3306),
   user: process.env.MYSQLUSER,
   password: process.env.MYSQLPASSWORD,
   database: process.env.MYSQL_DATABASE,
   waitForConnections: true,
   connectionLimit: 10,
+  // Azure MySQL commonly requires TLS:
+  ssl: useSsl ? { rejectUnauthorized: true } : undefined,
 })
 
 pool
@@ -188,6 +194,25 @@ function resolveArrivalForPickup(shipmentArrivalStamp, bodyArrivalTime) {
     dateToMysqlDateTime(shipmentArrivalStamp) ||
     null
   )
+}
+
+/** Same tiers as trigger / sp_daily_package_pickup_storage: calendar days held → fee (pickup date vs arrival date). */
+function pickupLateFeeFromArrivalAndPickup(arrivalLike, pickupLike) {
+  const a =
+    arrivalLike instanceof Date
+      ? arrivalLike
+      : new Date(String(arrivalLike || '').trim().replace(' ', 'T'))
+  const p =
+    pickupLike instanceof Date
+      ? pickupLike
+      : new Date(String(pickupLike || '').trim().replace(' ', 'T'))
+  if (Number.isNaN(a.getTime()) || Number.isNaN(p.getTime())) return 0
+  const dayA = Date.UTC(a.getFullYear(), a.getMonth(), a.getDate())
+  const dayP = Date.UTC(p.getFullYear(), p.getMonth(), p.getDate())
+  const days = Math.floor((dayP - dayA) / 86400000)
+  if (days > 20) return 20
+  if (days > 10) return 10
+  return 0
 }
 
 function isAtOfficeStatusName(name) {
@@ -1179,6 +1204,307 @@ if (method === 'GET' && pathname === '/api/reports/department-stats') {
   }
 }
 
+// ── GET /api/employee/shipments-for-package/:trackingNumber ────────────────
+{
+  const m = matchPath('/api/employee/shipments-for-package/:trackingNumber', pathname)
+  if (method === 'GET' && m.matched) {
+    const user = authenticate(req, res); if (!user) return
+    if (!requireEmployee(user, res)) return
+    const tn = m.params.trackingNumber.trim()
+    if (!tn) return send(res, 400, { message: 'trackingNumber is required' })
+    try {
+      const [rows] = await pool.query(
+        `SELECT
+           s.Shipment_ID,
+           s.Departure_Time_Stamp,
+           s.Arrival_Time_Stamp,
+           sc.Status_Name,
+           CONCAT(s.From_Street, ', ', s.From_City, ', ', s.From_State) AS From_Summary,
+           CONCAT(s.To_Street, ', ', s.To_City, ', ', s.To_State) AS To_Summary
+         FROM shipment_package sp
+         INNER JOIN shipment s ON sp.Shipment_ID = s.Shipment_ID
+         INNER JOIN status_code sc ON s.Status_Code = sc.Status_Code
+         WHERE sp.Tracking_Number = ?
+         ORDER BY s.Shipment_ID ASC`,
+        [tn]
+      )
+      return send(res, 200, rows)
+    } catch (err) {
+      console.error(err)
+      return send(res, 500, { message: err.sqlMessage || err.message || 'Database error' })
+    }
+  }
+}
+
+// ── GET /api/employee/shipment/:shipmentId/routing-events ─────────────────
+{
+  const m = matchPath('/api/employee/shipment/:shipmentId/routing-events', pathname)
+  if (method === 'GET' && m.matched) {
+    const user = authenticate(req, res); if (!user) return
+    if (!requireEmployee(user, res)) return
+    const sid = Number(m.params.shipmentId)
+    if (!Number.isFinite(sid)) return send(res, 400, { message: 'Invalid shipment id' })
+    try {
+      const rows = await queryRoutingEventsForShipmentId(pool, sid)
+      return send(res, 200, sortRoutingDeliveredLast(rows))
+    } catch (err) {
+      console.error(err)
+      if (err.code === 'ER_NO_SUCH_TABLE') {
+        return send(res, 500, {
+          message:
+            'Table shipment_routing_event is missing. Run backend/db/shipment_routing_schema.sql',
+        })
+      }
+      return send(res, 500, { message: err.sqlMessage || err.message || 'Database error' })
+    }
+  }
+}
+
+// ── POST /api/employee/shipment/routing-event ─────────────────────────────
+if (method === 'POST' && pathname === '/api/employee/shipment/routing-event') {
+  const user = authenticate(req, res); if (!user) return
+  if (!requireEmployee(user, res)) return
+  const body = await getBody(req)
+  const sid = Number(body.shipment_id)
+  const poid = Number(body.post_office_id)
+  const eventType = String(body.event_type || '').toLowerCase().trim()
+  const eventTime = toMysqlDateTime(body.event_time) || dateToMysqlDateTime(new Date())
+  const empId = Number(user.employee_id)
+
+  if (!Number.isFinite(sid)) return send(res, 400, { message: 'shipment_id is required' })
+  if (!Number.isFinite(poid)) return send(res, 400, { message: 'post_office_id is required' })
+  if (!['arrival', 'departure'].includes(eventType)) {
+    return send(res, 400, { message: 'event_type must be arrival or departure' })
+  }
+  if (!eventTime) return send(res, 400, { message: 'event_time is invalid' })
+
+  try {
+    const [[sh]] = await pool.query(`SELECT Shipment_ID FROM shipment WHERE Shipment_ID = ?`, [sid])
+    if (!sh) return send(res, 404, { message: 'Shipment not found' })
+
+    await pool.query(
+      `INSERT INTO shipment_routing_event
+         (Shipment_ID, Post_Office_ID, Event_Type, Event_Time, Logged_By_Employee_ID)
+       VALUES (?, ?, ?, ?, ?)`,
+      [sid, poid, eventType, eventTime, Number.isFinite(empId) ? empId : null]
+    )
+    return send(res, 201, { ok: true, shipment_id: sid, event_type: eventType, event_time: eventTime })
+  } catch (err) {
+    console.error(err)
+    if (err.code === 'ER_NO_SUCH_TABLE') {
+      return send(res, 500, {
+        message:
+          'Table shipment_routing_event is missing. Run backend/db/shipment_routing_schema.sql',
+      })
+    }
+    return send(res, 500, { message: err.sqlMessage || err.message || 'Could not log event' })
+  }
+}
+
+// ── POST /api/employee/package-pickup-arrival (arrival only; not picked up yet) ─
+if (method === 'POST' && pathname === '/api/employee/package-pickup-arrival') {
+  const user = authenticate(req, res); if (!user) return
+  if (!requireEmployee(user, res)) return
+  const body = await getBody(req)
+  const tracking_number = String(body.tracking_number || '').trim()
+  const recipient_id = Number(body.recipient_id)
+  const post_office_id = Number(body.post_office_id)
+  const arrival_time = body.arrival_time
+
+  if (!tracking_number) return send(res, 400, { message: 'tracking_number is required' })
+  if (!Number.isFinite(recipient_id)) return send(res, 400, { message: 'recipient_id is required' })
+  if (!Number.isFinite(post_office_id)) return send(res, 400, { message: 'post_office_id is required' })
+
+  try {
+    const [[sh]] = await pool.query(
+      `SELECT s.Shipment_ID, s.Arrival_Time_Stamp
+       FROM shipment_package sp
+       INNER JOIN shipment s ON s.Shipment_ID = sp.Shipment_ID
+       WHERE sp.Tracking_Number = ?
+       ORDER BY sp.Shipment_ID DESC
+       LIMIT 1`,
+      [tracking_number]
+    )
+
+    const resolvedArrival = resolveArrivalForPickup(sh?.Arrival_Time_Stamp, arrival_time) || dateToMysqlDateTime(new Date())
+
+    await pool.query(
+      `INSERT INTO package_pickup (Tracking_Number, Recipient_ID, Post_Office_ID, Arrival_Time, Is_picked_Up)
+       VALUES (?, ?, ?, ?, '0')
+       ON DUPLICATE KEY UPDATE
+         Recipient_ID = VALUES(Recipient_ID),
+         Post_Office_ID = VALUES(Post_Office_ID),
+         Arrival_Time = COALESCE(package_pickup.Arrival_Time, VALUES(Arrival_Time)),
+         Is_picked_Up = COALESCE(package_pickup.Is_picked_Up, '0')`,
+      [tracking_number, recipient_id, post_office_id, resolvedArrival]
+    )
+
+    return send(res, 200, { ok: true, tracking_number, arrival_time: resolvedArrival, shipment_id: sh?.Shipment_ID ?? null })
+  } catch (err) {
+    console.error(err)
+    return send(res, 500, { message: err.sqlMessage || err.message || 'Could not record pickup arrival' })
+  }
+}
+
+// ── GET /api/employee/post-offices (dropdown) ───────────────────────────────
+if (method === 'GET' && pathname === '/api/employee/post-offices') {
+  const user = authenticate(req, res); if (!user) return
+  if (!requireEmployee(user, res)) return
+  try {
+    const [rows] = await pool.query(
+      `SELECT
+         Post_Office_ID,
+         Street,
+         City,
+         State,
+         NULLIF(TRIM(CONCAT(COALESCE(Street, ''), ', ', COALESCE(City, ''), ', ', COALESCE(State, ''))), '') AS Street_Label
+       FROM post_office
+       ORDER BY State ASC, City ASC, Street ASC`
+    )
+    return send(res, 200, rows)
+  } catch (err) {
+    console.error(err)
+    return send(res, 500, { message: err.sqlMessage || err.message || 'Could not load post offices' })
+  }
+}
+
+// ── GET /api/employee/packages-at-office (pickup dashboard) ─────────────────
+if (method === 'GET' && pathname === '/api/employee/packages-at-office') {
+  const user = authenticate(req, res); if (!user) return
+  if (!requireEmployee(user, res)) return
+  try {
+    const [rows] = await pool.query(
+      `SELECT
+         pkg.Tracking_Number,
+         pkg.Package_Type_Code,
+         pkg.Weight,
+         pkg.Recipient_ID,
+         CONCAT(r.First_Name, ' ', r.Last_Name) AS Recipient_Name,
+         sc.Status_Name,
+         pp.Arrival_Time AS Pickup_Arrival_Time,
+         MAX(sh.Arrival_Time_Stamp) AS Shipment_Arrival_Stamp
+       FROM package pkg
+       INNER JOIN delivery d ON d.Tracking_Number = pkg.Tracking_Number
+       INNER JOIN status_code sc ON sc.Status_Code = d.Delivery_Status_Code
+       LEFT JOIN customer r ON r.Customer_ID = pkg.Recipient_ID
+       LEFT JOIN package_pickup pp ON pp.Tracking_Number = pkg.Tracking_Number
+       LEFT JOIN shipment_package sp ON sp.Tracking_Number = pkg.Tracking_Number
+       LEFT JOIN shipment sh ON sh.Shipment_ID = sp.Shipment_ID
+       WHERE (
+         LOWER(TRIM(REPLACE(REPLACE(REPLACE(IFNULL(sc.Status_Name, ''), '-', ' '), '_', ' '), '  ', ' '))) = 'at office'
+         OR REPLACE(LOWER(TRIM(IFNULL(sc.Status_Name, ''))), ' ', '') LIKE '%atoffice%'
+       )
+         AND (pp.Is_picked_Up IS NULL OR TRIM(IFNULL(pp.Is_picked_Up, '0')) = '0')
+       GROUP BY
+         pkg.Tracking_Number,
+         pkg.Package_Type_Code,
+         pkg.Weight,
+         pkg.Recipient_ID,
+         Recipient_Name,
+         sc.Status_Name,
+         pp.Arrival_Time
+       ORDER BY pkg.Tracking_Number ASC`
+    )
+    return send(res, 200, rows)
+  } catch (err) {
+    console.error(err)
+    return send(res, 500, { message: err.sqlMessage || err.message || 'Could not load at-office packages' })
+  }
+}
+
+// ── POST /api/employee/package-pickup (complete pickup) ─────────────────────
+if (method === 'POST' && pathname === '/api/employee/package-pickup') {
+  const user = authenticate(req, res); if (!user) return
+  if (!requireEmployee(user, res)) return
+  const body = await getBody(req)
+  const tracking_number = String(body.tracking_number || '').trim()
+  const recipient_id = Number(body.recipient_id)
+  const post_office_id = Number(body.post_office_id)
+  const arrival_time = body.arrival_time
+  const pickup_time = body.pickup_time
+
+  if (!tracking_number) return send(res, 400, { message: 'tracking_number is required' })
+  if (!Number.isFinite(recipient_id)) return send(res, 400, { message: 'recipient_id is required' })
+  if (!Number.isFinite(post_office_id)) return send(res, 400, { message: 'post_office_id is required' })
+  if (!pickup_time) return send(res, 400, { message: 'pickup_time is required' })
+
+  try {
+    const [[sh]] = await pool.query(
+      `SELECT s.Shipment_ID, s.Arrival_Time_Stamp
+       FROM shipment_package sp
+       INNER JOIN shipment s ON s.Shipment_ID = sp.Shipment_ID
+       WHERE sp.Tracking_Number = ?
+       ORDER BY sp.Shipment_ID DESC
+       LIMIT 1`,
+      [tracking_number]
+    )
+
+    const resolvedArrival =
+      resolveArrivalForPickup(sh?.Arrival_Time_Stamp, arrival_time) || dateToMysqlDateTime(new Date())
+    const resolvedPickup = toMysqlDateTime(pickup_time) || dateToMysqlDateTime(new Date())
+
+    const [[ppExisting]] = await pool.query(
+      `SELECT Arrival_Time FROM package_pickup WHERE Tracking_Number = ? LIMIT 1`,
+      [tracking_number]
+    )
+    const arrivalForFee =
+      ppExisting?.Arrival_Time != null
+        ? ppExisting.Arrival_Time
+        : resolvedArrival
+    const lateFeeAmount = pickupLateFeeFromArrivalAndPickup(arrivalForFee, resolvedPickup)
+
+    await pool.query(
+      `INSERT INTO package_pickup (Tracking_Number, Recipient_ID, Post_Office_ID, Arrival_Time, Pickup_Time, Is_picked_Up, Late_Fee_Amount)
+       VALUES (?, ?, ?, ?, ?, '1', ?)
+       ON DUPLICATE KEY UPDATE
+         Recipient_ID = VALUES(Recipient_ID),
+         Post_Office_ID = VALUES(Post_Office_ID),
+         Arrival_Time = COALESCE(package_pickup.Arrival_Time, VALUES(Arrival_Time)),
+         Pickup_Time = VALUES(Pickup_Time),
+         Is_picked_Up = '1',
+         Late_Fee_Amount = VALUES(Late_Fee_Amount)`,
+      [tracking_number, recipient_id, post_office_id, resolvedArrival, resolvedPickup, lateFeeAmount]
+    )
+
+    // Best-effort: if the DB has a "Picked Up" status code, set it on delivery + latest shipment.
+    const [[pickedUpRow]] = await pool.query(
+      `SELECT Status_Code
+       FROM status_code
+       WHERE REPLACE(LOWER(TRIM(IFNULL(Status_Name, ''))), ' ', '') LIKE '%pickedup%'
+       LIMIT 1`
+    )
+    const pickedUpCode = pickedUpRow?.Status_Code ?? null
+
+    let status_updated = false
+    if (pickedUpCode != null) {
+      await pool.query(`UPDATE delivery SET Delivery_Status_Code = ? WHERE Tracking_Number = ?`, [
+        pickedUpCode,
+        tracking_number,
+      ])
+      if (sh?.Shipment_ID != null) {
+        await pool.query(`UPDATE shipment SET Status_Code = ? WHERE Shipment_ID = ?`, [
+          pickedUpCode,
+          sh.Shipment_ID,
+        ])
+      }
+      status_updated = true
+    }
+
+    return send(res, 200, {
+      ok: true,
+      tracking_number,
+      arrival_time: resolvedArrival,
+      pickup_time: resolvedPickup,
+      late_fee_amount: lateFeeAmount,
+      shipment_id: sh?.Shipment_ID ?? null,
+      status_updated,
+    })
+  } catch (err) {
+    console.error(err)
+    return send(res, 500, { message: err.sqlMessage || err.message || 'Could not complete pickup' })
+  }
+}
+
 // ── GET /api/reports/zone-stats ───────────────────────────────────────────
 if (method === 'GET' && pathname === '/api/reports/zone-stats') {
   const user = authenticate(req, res)
@@ -1754,9 +2080,22 @@ if (method === 'GET' && pathname === '/api/packages/full') {
   return send(res, 404, { message: 'Not found' })
 }
 
+// ── Start ────────────────────────────────────────────────────────────────
+const PORT = Number(process.env.PORT) || 5000
 
-// ── Start ─────────────────────────────────────────────────────────────────
-const PORT = process.env.PORT || 5000
-console.log('[api] admin routes: GET /api/admin/employees, PATCH /api/admin/employees/:employeeId/deactivate')
-http.createServer(router).listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`))
-console.log('Connecting to Database:', process.env.MYSQL_DATABASE)
+console.log(
+  '[api] admin routes: GET /api/admin/employees, PATCH /api/admin/employees/:employeeId/deactivate'
+)
+
+const server = http.createServer(router)
+
+server.on('error', (err) => {
+  // On Render, exiting is fine—Render will restart the service and logs will show the real error.
+  console.error('Server error:', err)
+  process.exit(1)
+})
+
+server.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`)
+  console.log('Connecting to Database:', process.env.MYSQL_DATABASE)
+})
