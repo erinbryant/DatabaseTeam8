@@ -1,5 +1,5 @@
 import { useState, useEffect, Fragment } from 'react'
-import { Link, useNavigate, useLocation } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import './css/home.css'
 // import './css/customer_home.css'
 import './css/inventory.css'
@@ -172,13 +172,6 @@ function PackageTable({ title, packages, expanded, onToggle, statusCodes, onStat
   )
 }
 
-const ScrollToTop = () => {
-    const {pathname} = useLocation();
-    useEffect(()=> {
-      window.scrollTo(0,0);
-    }, [pathname]);
-    return null;
-}
 
 export default function AllPackages() {
   const navigate   = useNavigate()
@@ -203,15 +196,6 @@ export default function AllPackages() {
   const [dateFromFilter, setDateFromFilter] = useState('')
   const [dateToFilter,   setDateToFilter]   = useState('')
   const [sigFilter,      setSigFilter]      = useState('')
-
-  const ScrollToTop = () => {
-      const {pathname} = useLocation();
-        useEffect(()=> {
-          window.scrollTo(0,0);
-        }, [pathname]);
-        return null;
-    }
-
 
   useEffect(() => {
     if (userType !== 'employee') { navigate('/login'); return }

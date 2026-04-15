@@ -47,78 +47,43 @@ WHERE NOT EXISTS (SELECT 1 FROM Status_Code WHERE Status_Name = 'Disposed');
 --    Disposal:    DATEDIFF >= 30 → status Disposed (still not picked up)
 
 
--- DELIMITER $$
-
--- DROP TRIGGER IF EXISTS trg_shipment_au_sync_pickup_arrival $$
--- CREATE TRIGGER trg_shipment_au_sync_pickup_arrival
--- AFTER UPDATE ON shipment
--- FOR EACH ROW
--- BEGIN
---   DECLARE v_at_office INT;
-
---   SELECT status_code INTO v_at_office
---   FROM status_code
---   WHERE Status_Name = 'At Office'
---   LIMIT 1;
-
---   IF NOT (NEW.Status_Code <=> OLD.Status_Code) THEN
---     IF v_at_office IS NOT NULL AND NEW.Status_Code = v_at_office THEN
---       UPDATE package_pickup pp
---       INNER JOIN shipment_package sp ON sp.Tracking_Number = pp.Tracking_Number
---       SET pp.Arrival_Time = COALESCE(NEW.Arrival_Time_Stamp, pp.Arrival_Time, NOW())
---       WHERE sp.Shipment_ID = NEW.Shipment_ID;
---     END IF;
---   END IF;
-
---   IF v_at_office IS NOT NULL AND NEW.Status_Code = v_at_office THEN
---     UPDATE package_pickup pp
---     INNER JOIN shipment_package sp ON sp.Tracking_Number = pp.Tracking_Number
---     SET pp.Late_Fee_Amount = CASE
---       WHEN pp.Is_picked_Up <> '0' THEN pp.Late_Fee_Amount
---       WHEN pp.Arrival_Time IS NULL THEN pp.Late_Fee_Amount
---       WHEN DATEDIFF(CURDATE(), DATE(pp.Arrival_Time)) > 20 THEN 20.00
---       WHEN DATEDIFF(CURDATE(), DATE(pp.Arrival_Time)) > 10 THEN 10.00
---       ELSE 0.00
---     END
---     WHERE sp.Shipment_ID = NEW.Shipment_ID
---       AND pp.Is_picked_Up = '0'
---       AND pp.Arrival_Time IS NOT NULL;
---   END IF;
--- END $$
-
-DELIMITER ;
-
 DELIMITER $$
 
 DROP TRIGGER IF EXISTS trg_shipment_au_sync_pickup_arrival $$
-
 CREATE TRIGGER trg_shipment_au_sync_pickup_arrival
 AFTER UPDATE ON shipment
 FOR EACH ROW
 BEGIN
   DECLARE v_at_office INT;
 
-  SELECT Status_Code INTO v_at_office
-  FROM Status_Code
+  SELECT status_code INTO v_at_office
+  FROM status_code
   WHERE Status_Name = 'At Office'
   LIMIT 1;
 
   IF NOT (NEW.Status_Code <=> OLD.Status_Code) THEN
-
-    -- When shipment enters "At Office"
-    IF NEW.Status_Code = v_at_office THEN
-
+    IF v_at_office IS NOT NULL AND NEW.Status_Code = v_at_office THEN
       UPDATE package_pickup pp
       INNER JOIN shipment_package sp ON sp.Tracking_Number = pp.Tracking_Number
-      INNER JOIN package p ON p.Tracking_Number = pp.Tracking_Number
-      SET pp.Arrival_Time =
-        COALESCE(NEW.Arrival_Time_Stamp, pp.Arrival_Time, NOW()),
-          p.Status_Code = v_at_office
+      SET pp.Arrival_Time = COALESCE(NEW.Arrival_Time_Stamp, pp.Arrival_Time, NOW())
       WHERE sp.Shipment_ID = NEW.Shipment_ID;
-
     END IF;
   END IF;
 
+  IF v_at_office IS NOT NULL AND NEW.Status_Code = v_at_office THEN
+    UPDATE package_pickup pp
+    INNER JOIN shipment_package sp ON sp.Tracking_Number = pp.Tracking_Number
+    SET pp.Late_Fee_Amount = CASE
+      WHEN pp.Is_picked_Up <> '0' THEN pp.Late_Fee_Amount
+      WHEN pp.Arrival_Time IS NULL THEN pp.Late_Fee_Amount
+      WHEN DATEDIFF(CURDATE(), DATE(pp.Arrival_Time)) > 20 THEN 20.00
+      WHEN DATEDIFF(CURDATE(), DATE(pp.Arrival_Time)) > 10 THEN 10.00
+      ELSE 0.00
+    END
+    WHERE sp.Shipment_ID = NEW.Shipment_ID
+      AND pp.Is_picked_Up = '0'
+      AND pp.Arrival_Time IS NOT NULL;
+  END IF;
 END $$
 
 DELIMITER ;
@@ -139,202 +104,89 @@ SET GLOBAL event_scheduler = ON;
 -- Apply to the DB your app uses, e.g.:
 -- (No USE line — the database is the one you pass on the mysql command line.)
 
--- DELIMITER $$
-
--- DROP PROCEDURE IF EXISTS sp_daily_package_pickup_storage $$
--- CREATE PROCEDURE sp_daily_package_pickup_storage()
--- BEGIN
---   DECLARE v_disposed INT;
-
---   SELECT Status_Code INTO v_disposed
---   FROM status_code
---   WHERE LOWER(TRIM(Status_Name)) = 'disposed'
---      OR REPLACE(LOWER(TRIM(Status_Name)), ' ', '') LIKE '%disposed%'
---   LIMIT 1;
-
---   UPDATE package_pickup pp
---   INNER JOIN delivery d ON d.Tracking_Number = pp.Tracking_Number
---   LEFT JOIN status_code scd ON scd.Status_Code = d.Delivery_Status_Code
---   LEFT JOIN shipment_package sp ON sp.Tracking_Number = pp.Tracking_Number
---   LEFT JOIN shipment sh ON sh.Shipment_ID = sp.Shipment_ID
---   LEFT JOIN status_code scs ON scs.Status_Code = sh.Status_Code
---   SET pp.Late_Fee_Amount = CASE
---     WHEN pp.Is_picked_Up <> '0' THEN pp.Late_Fee_Amount
---     WHEN pp.Arrival_Time IS NULL THEN pp.Late_Fee_Amount
---     WHEN DATEDIFF(CURDATE(), DATE(pp.Arrival_Time)) > 20 THEN 20.00
---     WHEN DATEDIFF(CURDATE(), DATE(pp.Arrival_Time)) > 10 THEN 10.00
---     ELSE 0.00
---   END
---   WHERE (TRIM(IFNULL(pp.Is_picked_Up, '')) = '0' OR pp.Is_picked_Up IS NULL)
---     AND pp.Arrival_Time IS NOT NULL
---     AND (
---       LOWER(TRIM(REPLACE(REPLACE(REPLACE(IFNULL(scd.Status_Name, ''), '-', ' '), '_', ' '), '  ', ' '))) = 'at office'
---       OR REPLACE(LOWER(TRIM(IFNULL(scd.Status_Name, ''))), ' ', '') LIKE '%atoffice%'
---       OR (
---         sh.Shipment_ID IS NOT NULL
---         AND (
---           LOWER(TRIM(REPLACE(REPLACE(REPLACE(IFNULL(scs.Status_Name, ''), '-', ' '), '_', ' '), '  ', ' '))) = 'at office'
---           OR REPLACE(LOWER(TRIM(IFNULL(scs.Status_Name, ''))), ' ', '') LIKE '%atoffice%'
---         )
---       )
---     );
-
---   IF v_disposed IS NOT NULL THEN
---     DROP TEMPORARY TABLE IF EXISTS _pkg_dispose_today;
---     CREATE TEMPORARY TABLE _pkg_dispose_today (Tracking_Number VARCHAR(64) PRIMARY KEY);
-
---     INSERT IGNORE INTO _pkg_dispose_today (Tracking_Number)
---     SELECT pp.Tracking_Number
---     FROM package_pickup pp
---     INNER JOIN delivery d ON d.Tracking_Number = pp.Tracking_Number
---     INNER JOIN status_code scd ON scd.Status_Code = d.Delivery_Status_Code
---     WHERE (TRIM(IFNULL(pp.Is_picked_Up, '')) = '0' OR pp.Is_picked_Up IS NULL)
---       AND pp.Arrival_Time IS NOT NULL
---       AND DATEDIFF(CURDATE(), DATE(pp.Arrival_Time)) >= 30
---       AND (
---         LOWER(TRIM(REPLACE(REPLACE(REPLACE(IFNULL(scd.Status_Name, ''), '-', ' '), '_', ' '), '  ', ' '))) = 'at office'
---         OR REPLACE(LOWER(TRIM(IFNULL(scd.Status_Name, ''))), ' ', '') LIKE '%atoffice%'
---       );
-
---     INSERT IGNORE INTO _pkg_dispose_today (Tracking_Number)
---     SELECT pp.Tracking_Number
---     FROM package_pickup pp
---     INNER JOIN shipment_package sp ON sp.Tracking_Number = pp.Tracking_Number
---     INNER JOIN shipment sh ON sh.Shipment_ID = sp.Shipment_ID
---     INNER JOIN status_code scs ON scs.Status_Code = sh.Status_Code
---     WHERE (TRIM(IFNULL(pp.Is_picked_Up, '')) = '0' OR pp.Is_picked_Up IS NULL)
---       AND pp.Arrival_Time IS NOT NULL
---       AND DATEDIFF(CURDATE(), DATE(pp.Arrival_Time)) >= 30
---       AND (
---         LOWER(TRIM(REPLACE(REPLACE(REPLACE(IFNULL(scs.Status_Name, ''), '-', ' '), '_', ' '), '  ', ' '))) = 'at office'
---         OR REPLACE(LOWER(TRIM(IFNULL(scs.Status_Name, ''))), ' ', '') LIKE '%atoffice%'
---       );
-
---     UPDATE delivery d
---     INNER JOIN _pkg_dispose_today t ON t.Tracking_Number = d.Tracking_Number
---     SET d.Delivery_Status_Code = v_disposed;
-
---     UPDATE shipment sh
---     INNER JOIN shipment_package sp ON sp.Shipment_ID = sh.Shipment_ID
---     INNER JOIN _pkg_dispose_today t ON t.Tracking_Number = sp.Tracking_Number
---     SET sh.Status_Code = v_disposed;
-
---     DROP TEMPORARY TABLE IF EXISTS _pkg_dispose_today;
---   END IF;
--- END $$
-
 DELIMITER $$
 
--- DROP PROCEDURE IF EXISTS sp_daily_package_pickup_storage $$
-
--- CREATE PROCEDURE sp_daily_package_pickup_storage()
--- BEGIN
---   DECLARE v_disposed INT;
---   DECLARE v_at_office INT;
-
---   SELECT Status_Code INTO v_disposed
---   FROM Status_Code
---   WHERE Status_Name = 'Disposed'
---   LIMIT 1;
-
---   SELECT Status_Code INTO v_at_office
---   FROM Status_Code
---   WHERE Status_Name = 'At Office'
---   LIMIT 1;
-
---   /* =========================
---      1. UPDATE LATE FEES
---      ========================= */
---   UPDATE package_pickup pp
---   INNER JOIN package p ON p.Tracking_Number = pp.Tracking_Number
---   SET pp.Late_Fee_Amount = CASE
---     WHEN pp.Is_picked_Up = 1 THEN pp.Late_Fee_Amount
---     WHEN pp.Arrival_Time IS NULL THEN pp.Late_Fee_Amount
---     WHEN DATEDIFF(CURDATE(), DATE(pp.Arrival_Time)) > 20 THEN 20.00
---     WHEN DATEDIFF(CURDATE(), DATE(pp.Arrival_Time)) > 10 THEN 10.00
---     ELSE 0.00
---   END
---   WHERE pp.Is_picked_Up = 0
---     AND pp.Arrival_Time IS NOT NULL
---     AND p.Status_Code = v_at_office;
-
---   /* =========================
---      2. DISPOSE OLD PACKAGES (30 days)
---      ========================= */
---   DROP TEMPORARY TABLE IF EXISTS _pkg_dispose_today;
-
---   CREATE TEMPORARY TABLE _pkg_dispose_today (
---     Tracking_Number VARCHAR(10) PRIMARY KEY
---   );
-
---   INSERT INTO _pkg_dispose_today
---   SELECT pp.Tracking_Number
---   FROM package_pickup pp
---   INNER JOIN package p ON p.Tracking_Number = pp.Tracking_Number
---   WHERE pp.Is_picked_Up = 0
---     AND pp.Arrival_Time IS NOT NULL
---     AND DATEDIFF(CURDATE(), DATE(pp.Arrival_Time)) >= 30
---     AND p.Status_Code = v_at_office;
-
---   /* Update package status to Disposed */
---   UPDATE package p
---   INNER JOIN _pkg_dispose_today t ON t.Tracking_Number = p.Tracking_Number
---   SET p.Status_Code = v_disposed;
-
---   DROP TEMPORARY TABLE IF EXISTS _pkg_dispose_today;
-
--- END $$
-
--- DELIMITER ;
-
-DELIMITER $$
-
+DROP PROCEDURE IF EXISTS sp_daily_package_pickup_storage $$
 CREATE PROCEDURE sp_daily_package_pickup_storage()
 BEGIN
   DECLARE v_disposed INT;
-  DECLARE v_at_office INT;
 
-  -- Get status codes
   SELECT Status_Code INTO v_disposed
-  FROM Status_Code
-  WHERE Status_Name = 'Disposed'
+  FROM status_code
+  WHERE LOWER(TRIM(Status_Name)) = 'disposed'
+     OR REPLACE(LOWER(TRIM(Status_Name)), ' ', '') LIKE '%disposed%'
   LIMIT 1;
 
-  SELECT Status_Code INTO v_at_office
-  FROM Status_Code
-  WHERE Status_Name = 'At Office'
-  LIMIT 1;
-
-  /* =========================
-     1. UPDATE LATE FEES
-     ========================= */
   UPDATE package_pickup pp
-  INNER JOIN package p ON p.Tracking_Number = pp.Tracking_Number
+  INNER JOIN delivery d ON d.Tracking_Number = pp.Tracking_Number
+  LEFT JOIN status_code scd ON scd.Status_Code = d.Delivery_Status_Code
+  LEFT JOIN shipment_package sp ON sp.Tracking_Number = pp.Tracking_Number
+  LEFT JOIN shipment sh ON sh.Shipment_ID = sp.Shipment_ID
+  LEFT JOIN status_code scs ON scs.Status_Code = sh.Status_Code
   SET pp.Late_Fee_Amount = CASE
-    WHEN pp.Is_picked_Up = 1 THEN pp.Late_Fee_Amount
+    WHEN pp.Is_picked_Up <> '0' THEN pp.Late_Fee_Amount
     WHEN pp.Arrival_Time IS NULL THEN pp.Late_Fee_Amount
     WHEN DATEDIFF(CURDATE(), DATE(pp.Arrival_Time)) > 20 THEN 20.00
     WHEN DATEDIFF(CURDATE(), DATE(pp.Arrival_Time)) > 10 THEN 10.00
     ELSE 0.00
   END
-  WHERE pp.Is_picked_Up = 0
+  WHERE (TRIM(IFNULL(pp.Is_picked_Up, '')) = '0' OR pp.Is_picked_Up IS NULL)
     AND pp.Arrival_Time IS NOT NULL
-    AND p.Status_Code = v_at_office;
+    AND (
+      LOWER(TRIM(REPLACE(REPLACE(REPLACE(IFNULL(scd.Status_Name, ''), '-', ' '), '_', ' '), '  ', ' '))) = 'at office'
+      OR REPLACE(LOWER(TRIM(IFNULL(scd.Status_Name, ''))), ' ', '') LIKE '%atoffice%'
+      OR (
+        sh.Shipment_ID IS NOT NULL
+        AND (
+          LOWER(TRIM(REPLACE(REPLACE(REPLACE(IFNULL(scs.Status_Name, ''), '-', ' '), '_', ' '), '  ', ' '))) = 'at office'
+          OR REPLACE(LOWER(TRIM(IFNULL(scs.Status_Name, ''))), ' ', '') LIKE '%atoffice%'
+        )
+      )
+    );
 
-  /* =========================
-     2. DISPOSE OLD PACKAGES (30+ days)
-     ========================= */
-  UPDATE package p
-  INNER JOIN package_pickup pp ON pp.Tracking_Number = p.Tracking_Number
-  SET p.Status_Code = v_disposed
-  WHERE pp.Is_picked_Up = 0
-    AND pp.Arrival_Time IS NOT NULL
-    AND DATEDIFF(CURDATE(), DATE(pp.Arrival_Time)) >= 30
-    AND p.Status_Code = v_at_office;
+  IF v_disposed IS NOT NULL THEN
+    DROP TEMPORARY TABLE IF EXISTS _pkg_dispose_today;
+    CREATE TEMPORARY TABLE _pkg_dispose_today (Tracking_Number VARCHAR(64) PRIMARY KEY);
 
+    INSERT IGNORE INTO _pkg_dispose_today (Tracking_Number)
+    SELECT pp.Tracking_Number
+    FROM package_pickup pp
+    INNER JOIN delivery d ON d.Tracking_Number = pp.Tracking_Number
+    INNER JOIN status_code scd ON scd.Status_Code = d.Delivery_Status_Code
+    WHERE (TRIM(IFNULL(pp.Is_picked_Up, '')) = '0' OR pp.Is_picked_Up IS NULL)
+      AND pp.Arrival_Time IS NOT NULL
+      AND DATEDIFF(CURDATE(), DATE(pp.Arrival_Time)) >= 30
+      AND (
+        LOWER(TRIM(REPLACE(REPLACE(REPLACE(IFNULL(scd.Status_Name, ''), '-', ' '), '_', ' '), '  ', ' '))) = 'at office'
+        OR REPLACE(LOWER(TRIM(IFNULL(scd.Status_Name, ''))), ' ', '') LIKE '%atoffice%'
+      );
+
+    INSERT IGNORE INTO _pkg_dispose_today (Tracking_Number)
+    SELECT pp.Tracking_Number
+    FROM package_pickup pp
+    INNER JOIN shipment_package sp ON sp.Tracking_Number = pp.Tracking_Number
+    INNER JOIN shipment sh ON sh.Shipment_ID = sp.Shipment_ID
+    INNER JOIN status_code scs ON scs.Status_Code = sh.Status_Code
+    WHERE (TRIM(IFNULL(pp.Is_picked_Up, '')) = '0' OR pp.Is_picked_Up IS NULL)
+      AND pp.Arrival_Time IS NOT NULL
+      AND DATEDIFF(CURDATE(), DATE(pp.Arrival_Time)) >= 30
+      AND (
+        LOWER(TRIM(REPLACE(REPLACE(REPLACE(IFNULL(scs.Status_Name, ''), '-', ' '), '_', ' '), '  ', ' '))) = 'at office'
+        OR REPLACE(LOWER(TRIM(IFNULL(scs.Status_Name, ''))), ' ', '') LIKE '%atoffice%'
+      );
+
+    UPDATE delivery d
+    INNER JOIN _pkg_dispose_today t ON t.Tracking_Number = d.Tracking_Number
+    SET d.Delivery_Status_Code = v_disposed;
+
+    UPDATE shipment sh
+    INNER JOIN shipment_package sp ON sp.Shipment_ID = sh.Shipment_ID
+    INNER JOIN _pkg_dispose_today t ON t.Tracking_Number = sp.Tracking_Number
+    SET sh.Status_Code = v_disposed;
+
+    DROP TEMPORARY TABLE IF EXISTS _pkg_dispose_today;
+  END IF;
 END $$
-
-DELIMITER ;
 
 DROP EVENT IF EXISTS evt_daily_package_pickup_storage $$
 CREATE EVENT evt_daily_package_pickup_storage
