@@ -7,13 +7,16 @@ const API_BASE =
       : 'http://localhost:5000'
 
 export function authFetch(path, options = {}) {
+  const { auth = true, ...fetchOptions } = options
   const token = localStorage.getItem('token')
   const url = /^https?:\/\//i.test(path)
     ? path
     : `${API_BASE}${path.startsWith('/') ? path : `/${path}`}`
 
-  const headers = new Headers(options.headers || {})
-  if (token) headers.set('Authorization', `Bearer ${token}`)
+  const headers = new Headers(fetchOptions.headers || {})
+  if (auth && token && !headers.has('Authorization')) {
+    headers.set('Authorization', `Bearer ${token}`)
+  }
 
-  return fetch(url, { ...options, headers })
+  return fetch(url, { ...fetchOptions, headers })
 }

@@ -55,14 +55,14 @@ function App() {
         {/* Data report testing*/}
 
 
-        <Route path="/tickets_employees" element={<TicketsReport />} />
-        <Route path="/revenue-report" element={<RevenueReport />} />
+        <Route path="/tickets_employees" element={<RequireEmployee><TicketsReport /></RequireEmployee>} />
+        <Route path="/revenue-report" element={<RequireEmployee><RevenueReport /></RequireEmployee>} />
 
         {/* Customer Routes */}
         <Route path="/customer_home" element={<RequireCustomer><CustomerHome /></RequireCustomer>} />
         <Route path="/customer_profile" element={<RequireCustomer><CustomerProfile /></RequireCustomer>} />
         <Route path="/customer_packages" element={<RequireCustomer><CustomerPackages /></RequireCustomer>} />
-        <Route path="/submit_ticket" element={<SubmitTicket/>} />
+        <Route path="/submit_ticket" element={<RequireCustomer><SubmitTicket/></RequireCustomer>} />
 
         {/* Employee Routes */}
         <Route path="/employee_home" element={<RequireEmployee><EmployeeHome /></RequireEmployee>} />

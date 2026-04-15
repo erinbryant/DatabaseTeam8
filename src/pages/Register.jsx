@@ -2,6 +2,22 @@ import React, { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import './css/home.css'
 import '../components/Auth.css'
+import {
+  validateAll,
+  validateName,
+  validateEmail,
+  validatePassword,
+  validateConfirmPassword,
+  validatePhone,
+  validateAptNumber,
+  validateHouseNumber,
+  validateStreet,
+  validateCity,
+  validateState,
+  validateZip3,
+  validateZip2,
+  validateRequired,
+} from '../Validation'
 
 // In dev, prefer same-origin `/api` so Vite's proxy can reach the backend without CORS surprises.
 const envApi = import.meta.env.VITE_API_URL
@@ -46,8 +62,26 @@ const Register = () => {
     e.preventDefault()
     setError('')
 
-    if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match')
+    const validationError = validateAll([
+      [formData.first_name, validateName, 'First name'],
+      [formData.middle_name, (v) => (!v ? null : validateName(v, 'Middle name'))],
+      [formData.last_name, validateName, 'Last name'],
+      [formData.email, validateEmail],
+      [formData.phone_number, validatePhone],
+      [formData.apt_number, validateAptNumber],
+      [formData.house_number, validateHouseNumber],
+      [formData.street, validateStreet],
+      [formData.city, validateCity],
+      [formData.state, validateState],
+      [formData.zip_first3, validateZip3],
+      [formData.zip_last2, validateZip2],
+      [formData.country, validateRequired, 'Country'],
+      [formData.password, validatePassword],
+      [formData.password, validateConfirmPassword, formData.confirmPassword],
+    ])
+
+    if (validationError) {
+      setError(validationError)
       return
     }
 

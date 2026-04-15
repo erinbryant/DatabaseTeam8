@@ -97,8 +97,16 @@ async function registerCustomer(pool, rawBody) {
     city,
     state,
     zip_code,
+    zip_first3,
+    zip_last2,
+    zip_plus4,
     country,
+    sex,
   } = body
+
+  const normalizedZipCode =
+    zip_code?.toString().trim() ||
+    `${String(zip_first3 || '').trim()}${String(zip_last2 || '').trim()}`
 
   const missing = []
   if (!first_name?.trim()) missing.push('first_name')
@@ -109,7 +117,7 @@ async function registerCustomer(pool, rawBody) {
   if (!street?.trim()) missing.push('street')
   if (!city?.trim()) missing.push('city')
   if (!state?.toString().trim()) missing.push('state')
-  if (!zip_code?.toString().trim()) missing.push('zip_code')
+  if (!normalizedZipCode) missing.push('zip_code')
 
   if (missing.length) {
     const err = new Error(`Missing required fields: ${missing.join(', ')}`)
@@ -138,18 +146,21 @@ async function registerCustomer(pool, rawBody) {
       street.trim(),
       city.trim(),
       state.trim(),
-      String(zip_code).trim().slice(0, 5),
+      `${normalizedZipCode}`.slice(0, 5),
       country || 'USA'
     ]
   )
   const addressId = addrResult.insertId
 
+  const normalizedSex = String(sex || 'U').trim().toUpperCase()
+  const safeSex = ['M', 'F', 'O', 'U'].includes(normalizedSex) ? normalizedSex : 'U'
+
   const [result] = await pool.query(
     `INSERT INTO customer (
       First_Name, Middle_Name, Last_Name,
       Password_Hash, Email_Address, Phone_Number,
-      Address_ID, is_Active
-    ) VALUES (?,?,?,?,?,?,?,1)`,
+      Sex, Address_ID, is_Active
+    ) VALUES (?,?,?,?,?,?,?,?,1)`,
     [
       first_name.trim().slice(0, 30),
       middle_name || null,
@@ -157,12 +168,25 @@ async function registerCustomer(pool, rawBody) {
       hash,
       email.trim().toLowerCase().slice(0, 255),
       phone_number || null,
+      safeSex,
       addressId
     ]
   )
 
   const customerId = result.insertId
-  return { customer_id: customerId }
+  const user = {
+    Customer_ID: customerId,
+    First_Name: first_name.trim().slice(0, 30),
+    Middle_Name: middle_name || null,
+    Last_Name: last_name.trim().slice(0, 30),
+    Email_Address: email.trim().toLowerCase().slice(0, 255),
+    Phone_Number: phone_number || null,
+    Sex: safeSex,
+    Address_ID: addressId,
+    is_Active: 1,
+    Zip_Plus4: zip_plus4 || null,
+  }
+  return { customer_id: customerId, user }
 }
 
 async function getCustomerByEmail(pool, email) {
