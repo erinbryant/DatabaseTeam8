@@ -1,4 +1,5 @@
 import { useNavigate, Link } from 'react-router-dom'
+import { useState, useEffect } from 'react'
 import './css/home.css'
 import './css/customer_home.css'
 import skyline from '../assets/houston-skyline.jpeg'
@@ -23,6 +24,22 @@ function getStoredCustomerFullName() {
 
 export default function CustomerHome() {
   const navigate = useNavigate()
+  const [lostPackages, setLostPackages] = useState([])
+  const [showLostBanner, setShowLostBanner] = useState(true)
+
+  useEffect(() => {
+    const user = JSON.parse(localStorage.getItem('user') || '{}')
+    const token = localStorage.getItem('token')
+    
+    if (user.Customer_ID && token) {
+      fetch(`${API_BASE}/api/packages/lost/${user.Customer_ID}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+        .then(r => r.json())
+        .then(data => setLostPackages(Array.isArray(data) ? data : []))
+        .catch(() => setLostPackages([]))
+    }
+  }, [])
 
   function handleLogout() {
     localStorage.removeItem('token')
@@ -31,19 +48,18 @@ export default function CustomerHome() {
     navigate('/')
   }
 
-// const [lostPackages, setLostPackages] = useState([])
-// const [showLostBanner, setShowLostBanner] = useState(true)
-
-// useEffect(() => {
-//   const user = JSON.parse(localStorage.getItem('user') || '{}')
-//   const token = localStorage.getItem('token')
-//   fetch(`${API_BASE}/api/packages/lost?customer_id=${user.Customer_ID}`, {
-//     headers: { Authorization: `Bearer ${token}` }
-//   })
-//     .then(r => r.json())
-//     .then(data => setLostPackages(data))
-//     .catch(() => {})
-// }, [])
+  async function dismissLostPackage(trackingNumber) {
+    const token = localStorage.getItem('token')
+    try {
+      await fetch(`${API_BASE}/api/packages/lost/${trackingNumber}/dismiss`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      setLostPackages(lostPackages.filter(pkg => pkg.Tracking_Number !== trackingNumber))
+    } catch (err) {
+      console.error('Failed to dismiss lost package:', err)
+    }
+  }
 
   return (
     <div className="customer-home">
@@ -60,7 +76,7 @@ export default function CustomerHome() {
       </header>
 
       {/* Lost Package Banner */}
-      {/* {lostPackages.length > 0 && showLostBanner && (
+      {lostPackages.length > 0 && showLostBanner && (
         <div className="lost-banner">
           <div className="lost-banner-inner">
             <div className="lost-icon">
@@ -100,7 +116,7 @@ export default function CustomerHome() {
             </button>
           </div>
         </div>
-      )} */}
+      )}
 
       <main>
         <div className="customer-hero">

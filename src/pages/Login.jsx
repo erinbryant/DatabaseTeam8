@@ -2,17 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import './css/home.css'
 import '../components/Auth.css'
-import {
-  validateEmail, validatePhone, validatePassword, validateConfirmPassword,
-  validateName, validateEmployeeId, validateFreeText,
-  validateTicketDescription, validateTicketResolution,
-  validateHouseNumber, validateAptNumber, validateStreet,
-  validateCity, validateState, validateZip3, validateZip2,
-  validateWorkAddress, validateTrackingNumber,
-  validateWeight, validateDimension, validateZone,
-  validateBirthDay, validateBirthMonth, validateBirthYear,
-  validateAll
-} from '../Validation'
+import { validateEmail, validateAll } from '../Validation'
 
 // In dev, prefer same-origin `/api` so Vite's proxy can reach the backend without CORS surprises.
 const envApi = import.meta.env.VITE_API_URL
@@ -51,10 +41,13 @@ const Login = () => {
     }
 
     const loginError = validateAll([
-      [email,    validateEmail],
-      [password, validatePassword],
+      [email, validateEmail],
     ])
     if (loginError) { setError(loginError); return }
+    if (!password) {
+      setError('Password is required.')
+      return
+    }
       
     setError('')
     setLoading(true)
@@ -111,6 +104,10 @@ const Login = () => {
   const handleForgotPassword = async (e) => {
     e.preventDefault()
     setResetMessage('')
+
+    // Backend route is not implemented yet; avoid a guaranteed failing request.
+    setResetMessage('Password reset is not available right now. Please contact support.')
+    return
 
     try {
       const response = await fetch(`${API_BASE}/api/auth/forgot-password`, {

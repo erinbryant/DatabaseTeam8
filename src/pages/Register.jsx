@@ -50,11 +50,13 @@ const Register = () => {
       setError('Passwords do not match')
       return
     }
+    const fullZip = `${formData.zip_first3}${formData.zip_last2}`;
 
     setLoading(true)
 
     try {
       const url = `${API_BASE}/api/customer/register`
+
       const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -70,6 +72,9 @@ const Register = () => {
           street: formData.street,
           city: formData.city,
           state: formData.state,
+
+          zip_code: fullZip,
+
           zip_first3: formData.zip_first3,
           zip_last2: formData.zip_last2,
           zip_plus4: formData.zip_plus4 || null,

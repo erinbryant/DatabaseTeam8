@@ -3,24 +3,24 @@ const bcrypt = require('bcryptjs')
 function getAllCustomers(pool, callback) {
   pool.query(`
     SELECT
-      Customer_ID,
+      c.Customer_ID,
+      c.is_Active,
       CONCAT(
-        First_Name, ' ',
-        IF(Middle_Name IS NOT NULL, CONCAT(Middle_Name, ' '), ''),
-        Last_Name
+        c.First_Name, ' ',
+        IF(c.Middle_Name IS NOT NULL, CONCAT(c.Middle_Name, ' '), ''),
+        c.Last_Name
       ) AS Full_Name,
       CONCAT(
-        House_Number, ' ', Street,
-        IF(Apt_Number IS NOT NULL, CONCAT(' Apt ', Apt_Number), ''),
-        ', ', City, ', ', State, ' ',
-         Zip_First3, Zip_Last2,
-        IF(Zip_Plus4 IS NOT NULL, CONCAT('-', Zip_Plus4), '')
+        a.House_Number, ' ', a.Street,
+        IF(a.Apt_Number IS NOT NULL, CONCAT(' Apt ', a.Apt_Number), ''),
+        ', ', a.City, ', ', a.State, ' ', a.Zip_Code
       ) AS Full_Address,
-      Country,
-      Email_Address,
-      Phone_Number
-    FROM customer
-    ORDER BY Last_Name, First_Name ASC
+      a.Country,
+      c.Email_Address,
+      c.Phone_Number
+    FROM customer c
+    INNER JOIN address a ON c.Address_ID = a.Address_ID
+    ORDER BY c.Last_Name, c.First_Name ASC
   `)
   .then(([results]) => callback(null, results))
   .catch(err => callback(err, null))
@@ -46,30 +46,39 @@ function getCustomerPackages(pool, customerID, callback) {
 function getCustomerByID(pool, customerID, callback) {
   pool.query(`
     SELECT
-      Customer_ID,
-      CONCAT(First_Name, ' ', COALESCE(CONCAT(Middle_Name, ' '), ''), Last_Name) AS Full_Name,
+      c.Customer_ID,
+      c.is_Active,
+      CONCAT(c.First_Name, ' ', COALESCE(CONCAT(c.Middle_Name, ' '), ''), c.Last_Name) AS Full_Name,
       CONCAT(
-        House_Number, ' ', Street,
-        COALESCE(CONCAT(' Apt ', Apt_Number), ''),
-        ', ', City, ', ', State, ' ',
-        Zip_First3, '-', Zip_Last2,
-        COALESCE(CONCAT('-', Zip_Plus4), '')
+        a.House_Number, ' ', a.Street,
+        COALESCE(CONCAT(' Apt ', a.Apt_Number), ''),
+        ', ', a.City, ', ', a.State, ' ', a.Zip_Code
       ) AS Full_Address,
-      Country,
-      Email_Address,
-      Phone_Number
-    FROM customer
-    WHERE Customer_ID = ?
+      a.Country,
+      c.Email_Address,
+      c.Phone_Number
+    FROM customer c
+    INNER JOIN address a ON c.Address_ID = a.Address_ID
+    WHERE c.Customer_ID = ?
   `, [customerID])
   .then(([results]) => callback(null, results[0] || null))
   .catch(err => callback(err, null))
 }
 
-/**
- * Register a new customer. Validates input; hashes password; inserts row.
- * Customer_ID is never sent by the client: MySQL assigns it via AUTO_INCREMENT on Customer.Customer_ID.
- * Expects DB columns: Birth_Day, Birth_Month, Birth_Year, Sex (see migrations/).
- */
+function updateCustomerStatus(pool, customerID, isActive, callback){
+  pool.query(
+    'UPDATE customer SET is_Active = ? WHERE Customer_ID = ?',
+    [Number(isActive), customerID]
+  )
+  .then(([result]) => {
+    if(result.affectedRows === 0) {
+      return callback(new Error('Customer not found'), null);
+    }
+    callback(null, result);
+  })
+  .catch(err => callback(err,null));
+}
+
 async function registerCustomer(pool, rawBody) {
   const body = { ...rawBody }
   delete body.customer_id
@@ -87,9 +96,7 @@ async function registerCustomer(pool, rawBody) {
     street,
     city,
     state,
-    zip_first3,
-    zip_last2,
-    zip_plus4,
+    zip_code,
     country,
   } = body
 
@@ -102,43 +109,11 @@ async function registerCustomer(pool, rawBody) {
   if (!street?.trim()) missing.push('street')
   if (!city?.trim()) missing.push('city')
   if (!state?.toString().trim()) missing.push('state')
-  if (!zip_first3?.toString().trim()) missing.push('zip_first3')
-  if (!zip_last2?.toString().trim()) missing.push('zip_last2')
+  if (!zip_code?.toString().trim()) missing.push('zip_code')
 
   if (missing.length) {
     const err = new Error(`Missing required fields: ${missing.join(', ')}`)
     err.status = 400
-    err.code = 'VALIDATION'
-    throw err
-  }
-
-  const zip3 = String(zip_first3).replace(/\D/g, '').slice(0, 3)
-  const zip2 = String(zip_last2).replace(/\D/g, '').slice(0, 2)
-  if (zip3.length !== 3) {
-    const err = new Error('zip_first3 must be exactly 3 digits')
-    err.status = 400
-    err.code = 'VALIDATION'
-    throw err
-  }
-  if (zip2.length !== 2) {
-    const err = new Error('zip_last2 must be exactly 2 digits')
-    err.status = 400
-    err.code = 'VALIDATION'
-    throw err
-  }
-
-  const stateNorm = String(state).trim().slice(0, 50)
-  if (stateNorm.length < 2) {
-    const err = new Error('state is required')
-    err.status = 400
-    err.code = 'VALIDATION'
-    throw err
-  }
-
-  if (password.length < 6) {
-    const err = new Error('Password must be at least 6 characters')
-    err.status = 400
-    err.code = 'VALIDATION'
     throw err
   }
 
@@ -149,143 +124,105 @@ async function registerCustomer(pool, rawBody) {
   if (exists.length) {
     const err = new Error('Email already registered')
     err.status = 400
-    err.code = 'DUPLICATE_EMAIL'
     throw err
   }
 
   const hash = await bcrypt.hash(password, 10)
 
-  const middleTrim = middle_name?.toString().trim()
-  const middleVal = middleTrim ? middleTrim.slice(0, 30) : null
-
-  const aptTrim = apt_number?.toString().trim()
-  const aptVal = aptTrim ? aptTrim.slice(0, 10) : null
-
-  const z4digits = zip_plus4 !== undefined && zip_plus4 !== null
-    ? String(zip_plus4).replace(/\D/g, '')
-    : ''
-  let zipPlusVal = null
-  if (z4digits.length === 0) {
-    zipPlusVal = null
-  } else if (z4digits.length === 4) {
-    zipPlusVal = z4digits
-  } else {
-    const err = new Error('zip_plus4 must be exactly 4 digits or left empty')
-    err.status = 400
-    err.code = 'VALIDATION'
-    throw err
-  }
-
-  const countryVal = (country?.toString().trim() || 'USA').slice(0, 50)
+  const [addrResult] = await pool.query(
+    `INSERT INTO address (Apt_Number, House_Number, Street, City, State, Zip_Code, Country) 
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    [
+      apt_number || null,
+      String(house_number).trim(),
+      street.trim(),
+      city.trim(),
+      state.trim(),
+      String(zip_code).trim().slice(0, 5),
+      country || 'USA'
+    ]
+  )
+  const addressId = addrResult.insertId
 
   const [result] = await pool.query(
     `INSERT INTO customer (
       First_Name, Middle_Name, Last_Name,
-      Apt_Number, House_Number, Street, City, State,
-      Zip_First3, Zip_Last2, Zip_Plus4,
-      Country,
-      Password_Hash, Email_Address, Phone_Number
-    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?, ?)`,
+      Password_Hash, Email_Address, Phone_Number,
+      Address_ID, is_Active
+    ) VALUES (?,?,?,?,?,?,?,0)`,
     [
       first_name.trim().slice(0, 30),
-      middleVal,
+      middle_name || null,
       last_name.trim().slice(0, 30),
-      aptVal,
-      String(house_number).trim().slice(0, 10),
-      street.trim().slice(0, 100),
-      city.trim().slice(0, 100),
-      stateNorm,
-      zip3,
-      zip2,
-      zipPlusVal,
-      countryVal,
       hash,
       email.trim().toLowerCase().slice(0, 255),
-      phone_number ? String(phone_number).trim().slice(0, 20) : null,
+      phone_number || null,
+      addressId
     ]
   )
 
   const customerId = result.insertId
   const [rows] = await pool.query(
-    `SELECT Customer_ID, First_Name, Middle_Name, Last_Name, Email_Address, Phone_Number,
-            Apt_Number, House_Number, Street, City, State, Zip_First3, Zip_Last2, Zip_Plus4,
-            Country
-     FROM customer WHERE Customer_ID = ?`,
+    'SELECT Customer_ID, Email_Address, First_Name, Last_Name FROM customer WHERE Customer_ID = ?',
     [customerId]
-  )
-  const user = rows[0]
-  return { customer_id: customerId, user }
+  );
+
+  return { 
+    customer_id: customerId,
+    user:rows[0]
+  };
 }
 
-/**
- * Lookup by email (case-insensitive). Returns Customer_ID or null.
- */
 async function getCustomerByEmail(pool, email) {
   if (!email?.trim()) return null
-  const [rows] = await pool.query(
-    'SELECT Customer_ID FROM customer WHERE LOWER(Email_Address) = ?',
-    [email.trim().toLowerCase()]
-  )
+  const [rows] = await pool.query(`
+    SELECT 
+      c.*, 
+      a.House_Number, a.Street, a.City, a.State, a.Zip_Code, a.Country
+    FROM customer c
+    INNER JOIN address a ON c.Address_ID = a.Address_ID
+    WHERE LOWER(c.Email_Address) = ? AND c.is_Active = 0
+  `, [email.trim().toLowerCase()])
+  
   return rows[0] || null
 }
 
-/** Default login for customers created when an employee adds a package (same for all such accounts). */
 const EMPLOYEE_CREATED_CUSTOMER_PASSWORD = 'customer123'
 
-/**
- * Minimal customer row for employee-created shipments (fixed default password).
- * @returns {{ customerId: number, initialPassword: string }}
- */
 async function createCustomerMinimal(pool, body) {
-  const {
-    first_name,
-    last_name,
-    email,
-    house_number,
-    street,
-    city,
-    state,
-    zip_first3,
-    zip_last2,
-    apt_number,
-    zip_plus4,
-    country,
-    phone_number,
-  } = body
-
   const initialPassword = EMPLOYEE_CREATED_CUSTOMER_PASSWORD
   const hash = await bcrypt.hash(initialPassword, 10)
-  const zip3 = String(zip_first3).replace(/\D/g, '').slice(0, 3)
-  const zip2 = String(zip_last2).replace(/\D/g, '').slice(0, 2)
-  const z4digits = zip_plus4 != null && zip_plus4 !== ''
-    ? String(zip_plus4).replace(/\D/g, '')
-    : ''
-  const zipPlusVal = z4digits.length === 4 ? z4digits : null
+
+  const [addrResult] = await pool.query(
+    `INSERT INTO address (Apt_Number, House_Number, Street, City, State, Zip_Code, Country) 
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    [
+      body.apt_number || null,
+      String(body.house_number).trim(),
+      body.street.trim(),
+      body.city.trim(),
+      body.state.trim(),
+      String(body.zip_code || body.zip_first3).trim().slice(0, 5),
+      body.country || 'USA'
+    ]
+  )
+  
+  const addressId = addrResult.insertId
 
   const [result] = await pool.query(
     `INSERT INTO customer (
       First_Name, Middle_Name, Last_Name,
-      Apt_Number, House_Number, Street, City, State,
-      Zip_First3, Zip_Last2, Zip_Plus4,
-      Country,
-      Password_Hash, Email_Address, Phone_Number
-    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      Password_Hash, Email_Address, Phone_Number,
+      Address_ID
+    ) VALUES (?,?,?,?,?,?,?)`,
     [
-      String(first_name).trim().slice(0, 30),
+      String(body.first_name).trim(),
       null,
-      String(last_name).trim().slice(0, 30),
-      apt_number ? String(apt_number).trim().slice(0, 10) : null,
-      String(house_number).trim().slice(0, 10),
-      String(street).trim().slice(0, 100),
-      String(city).trim().slice(0, 100),
-      String(state).trim().slice(0, 50),
-      zip3,
-      zip2,
-      zipPlusVal,
-      (country?.toString().trim() || 'USA').slice(0, 50),
+      String(body.last_name).trim(),
       hash,
-      String(email).trim().toLowerCase().slice(0, 255),
-      phone_number ? String(phone_number).trim().slice(0, 20) : null,
+      String(body.email).trim().toLowerCase(),
+      body.phone_number || null,
+      addressId
     ]
   )
   return { customerId: result.insertId, initialPassword }
@@ -298,4 +235,5 @@ module.exports = {
   registerCustomer,
   getCustomerByEmail,
   createCustomerMinimal,
+  updateCustomerStatus,
 }
