@@ -472,7 +472,7 @@ function handleLogout(e) {
                                     );
                                   })
                                 }
-                                {!(employeeTickets[c.Employee_ID] || []).some(t => t.Ticket_Status_Code == 1) && (
+                                {!(employeeTickets[c.Employee_ID] || []).some(t => t.Ticket_Status_Code == 2) && (
                                     <tr><td colSpan={7} style={{ textAlign: "center" }}>—</td></tr>
                                 )}
                                 </tbody>
@@ -521,7 +521,7 @@ function handleLogout(e) {
                                     );
                                     })
                                 }
-                                {!(employeeTickets[c.Employee_ID] || []).some(t => t.Ticket_Status_Code == 0) && (
+                                  {!(employeeTickets[c.Employee_ID] || []).some(t => t.Ticket_Status_Code == 0 || t.Ticket_Status_Code == 1) && (
                                     <tr><td colSpan={8} style={{ textAlign: "center" }}>—</td></tr>
                                 )}
                                 </tbody>

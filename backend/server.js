@@ -712,9 +712,6 @@ async function router(req, res) {
 
   // ── GET /api/price (PUBLIC) ──────────────────────────────────────────────
   if (method === 'GET' && pathname === '/api/price') {
-    const user = authenticate(req, res)
-    if (!user) return
-
     const { package_type, weight, zone, excess_fee, dim_x, dim_y, dim_z } = query
     const pt = normalizePackageTypeName(package_type)
     if (!pt || weight === undefined || weight === '' || zone === undefined || zone === '') {
@@ -1759,11 +1756,27 @@ if (method === 'GET' && pathname === '/api/packages/full') {
     }
 
     const { Tracking_Number, Issue_Type, Description } = await getBody(req)
+    const issueTypeNum = Number(Issue_Type)
     if (!Tracking_Number || Issue_Type === undefined || !Description) {
       return send(res, 400, { message: 'Missing required fields' })
     }
+    if (!Number.isInteger(issueTypeNum) || issueTypeNum < 1 || issueTypeNum > 4) {
+      return send(res, 400, { message: 'Invalid issue type' })
+    }
     
     try {
+      const [ownedPackage] = await pool.query(
+        `SELECT Tracking_Number
+         FROM package
+         WHERE Tracking_Number = ? AND (Sender_ID = ? OR Recipient_ID = ?)
+         LIMIT 1`,
+        [Tracking_Number, user.customer_id, user.customer_id]
+      )
+
+      if (!ownedPackage.length) {
+        return send(res, 403, { message: 'You can only submit tickets for your own packages' })
+      }
+
       const [EmpRow] = await employeeDB.employeeByTickets(pool)
       const assignedEmpId = EmpRow?.Employee_ID
 
@@ -1773,7 +1786,7 @@ if (method === 'GET' && pathname === '/api/packages/full') {
       await pool.query(
         `INSERT INTO support_ticket (User_ID, Package_ID, Issue_Type, Description, Ticket_Status_Code, Assigned_Employee_ID)
         VALUES (?, ?, ?, ?, 0, ?)`,
-        [user.customer_id, Tracking_Number, Issue_Type, Description, assignedEmpId]
+        [user.customer_id, Tracking_Number, issueTypeNum, Description, assignedEmpId]
       )
       return send(res, 201, { message: 'Ticket submitted successfully' })
     } catch (err) {

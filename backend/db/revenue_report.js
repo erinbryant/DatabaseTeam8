@@ -29,20 +29,31 @@ function getReportPackages(pool, { search, dateFrom, dateTo } = {}, callback) {
   let sql = `
     SELECT 
       p.Tracking_Number AS package_id,
-      p.Package_Type_Code AS package_type,
+      pt.Type_Name AS package_type,
       p.Weight AS weight,
-      p.Price AS price,
+      COALESCE(pay.Payment_Amount, 0) AS price,
       p.Zone AS zone,
       p.Date_Created AS created_at,
+      p.Sender_ID AS sender_id,
+      p.Recipient_ID AS recipient_id,
       CONCAT(s.First_Name, ' ', s.Last_Name) AS sender_name,
       CONCAT(r.First_Name, ' ', r.Last_Name) AS recipient_name
     FROM package p
+    LEFT JOIN package_type pt ON p.Package_Type_Code = pt.Package_Type_Code
+    LEFT JOIN (
+      SELECT Tracking_Number, SUM(Payment_Amount) AS Payment_Amount
+      FROM payment
+      GROUP BY Tracking_Number
+    ) pay ON p.Tracking_Number = pay.Tracking_Number
     JOIN customer s ON p.Sender_ID = s.Customer_ID
     JOIN customer r ON p.Recipient_ID = r.Customer_ID
     WHERE 1=1
   `
   const params = []
-  if (search) { sql += ` AND (p.Tracking_Number LIKE ?)`; params.push(`%${search}%`) }
+  if (search) {
+    sql += ` AND (p.Tracking_Number LIKE ? OR pt.Type_Name LIKE ?)`
+    params.push(`%${search}%`, `%${search}%`)
+  }
   if (dateFrom) { sql += ` AND p.Date_Created >= ?`; params.push(dateFrom) }
   if (dateTo) { sql += ` AND p.Date_Created <= ?`; params.push(dateTo) }
   sql += ` ORDER BY p.Date_Created DESC`
@@ -58,8 +69,10 @@ function getReportPayments(pool, { dateFrom, dateTo } = {}, callback) {
       Payment_ID AS payment_id,
       Customer_ID AS customer_id,
       Payment_Amount AS amount,
-      Payment_Type AS payment_method,
-      Payment_Status AS payment_status,
+      'N/A' AS payment_method,
+      'Recorded' AS payment_status,
+      Tracking_Number AS package_id,
+      Employee_ID AS employee_id,
       Date_Created AS payment_date
     FROM payment
     WHERE 1=1
