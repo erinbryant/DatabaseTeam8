@@ -23,18 +23,20 @@ function getAllInventory(pool, callback) {
 }
 
 // Employee-only: update quantity for a product at a given store
-function updateInventoryQuantity(pool, { upc, store_id, quantity }, callback) {
-  pool
-    .query(
-      `
-      UPDATE product
-      SET Quantity = ?
-      WHERE Universal_Product_Code = ? AND Store_ID = ?
-      `,
-      [quantity, upc, store_id]
-    )
-    .then(([result]) => callback(null, result))
-    .catch((err) => callback(err, null))
-}
+// function updateInventoryQuantity(pool, { upc, store_id, quantity }, callback) {
+//   pool
+//     .query(
+//       `
+//       UPDATE product
+//       SET Quantity = ?
+//       WHERE Universal_Product_Code = ? AND Store_ID = ?
+//       `,
+//       [quantity, upc, store_id]
+//     )
+//     .then(([result]) => callback(null, result))
+//     .catch((err) => callback(err, null))
+// }
 
-module.exports = { getAllInventory, updateInventoryQuantity }
+module.exports = { getAllInventory, 
+  // updateInventoryQuantity 
+}

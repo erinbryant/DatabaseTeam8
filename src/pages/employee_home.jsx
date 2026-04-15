@@ -58,7 +58,6 @@ const NAV_ITEMS = [
   { label: 'Revenue Report',    path: '/revenue-report',               section: 'admin' },
   { label: 'Ticket Report',     path: '/tickets_employees',            section: 'admin' },
 ]
-
 const DASHBOARD_CARDS = [
   { title: 'Packages',          desc: 'Browse and manage all package records.',                          path: '/package_list',                 btnLabel: 'View packages',      section: 'main'  },
   { title: 'Add Package',       desc: 'Register a shipment, calculate price, issue a tracking number.', path: '/employee/add-package',         btnLabel: 'Add package',        section: 'main'  },

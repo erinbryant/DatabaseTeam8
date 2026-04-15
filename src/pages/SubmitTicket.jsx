@@ -32,7 +32,7 @@ function SubmitTicket() {
       })
       // .then((data) => setPackages(Array.isArray(data) ? data : []))
       .then((data) => {
-        console.log('packages data:', data) // check this in the browser console
+        // console.log('packages data:', data) // check this in the browser console
         setPackages(Array.isArray(data) ? data : [])
       })
       .catch((err) => setErrorMessage(err.message))
