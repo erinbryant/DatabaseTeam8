@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import './css/home.css'
 import './css/customer_home.css'
@@ -20,6 +20,13 @@ export default function CustomerPackages() {
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [lateFeePopupAck, setLateFeePopupAck] = useState(false)
+
+  const packagesWithLateFee = useMemo(
+    () => rows.filter((p) => Number(p.Late_Fee_Due) > 0),
+    [rows]
+  )
+  const showLateFeePopup = !lateFeePopupAck && packagesWithLateFee.length > 0
 
   useEffect(() => {
     authFetch('/api/customer/my-packages')
@@ -40,6 +47,15 @@ export default function CustomerPackages() {
         setLoading(false)
       })
   }, [navigate])
+
+  useEffect(() => {
+    if (!showLateFeePopup) return
+    const onKey = (e) => {
+      if (e.key === 'Escape') setLateFeePopupAck(true)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [showLateFeePopup])
 
   function handleLogout() {
     localStorage.removeItem('token')
@@ -80,6 +96,53 @@ export default function CustomerPackages() {
               >
                 ×
               </button>
+            </div>
+          )}
+
+          {showLateFeePopup && (
+            <div
+              className="customer-latefee-backdrop"
+              role="presentation"
+              onClick={() => setLateFeePopupAck(true)}
+            >
+              <div
+                className="customer-latefee-modal"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="customer-latefee-title"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <h2 id="customer-latefee-title" className="customer-latefee-title">
+                  Late pickup fee on your package
+                  {packagesWithLateFee.length > 1 ? 's' : ''}
+                </h2>
+                <p className="customer-latefee-lead">
+                  The following package
+                  {packagesWithLateFee.length > 1 ? 's have' : ' has'} been at the post office past the free hold
+                  period. A late fee applies ($10 after 10 days, $20 after 20 days). This affects both the sender and
+                  recipient for pickup billing.
+                </p>
+                <ul className="customer-latefee-list">
+                  {packagesWithLateFee.map((p) => (
+                    <li key={p.Tracking_Number}>
+                      <span className="customer-latefee-tracking">
+                        <code>{p.Tracking_Number}</code>
+                      </span>
+                      <span className="customer-latefee-meta">
+                        {p.role || '—'} ·{' '}
+                        <strong>${Number(p.Late_Fee_Due).toFixed(2)}</strong> late fee
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+                <button
+                  type="button"
+                  className="customer-latefee-dismiss"
+                  onClick={() => setLateFeePopupAck(true)}
+                >
+                  OK
+                </button>
+              </div>
             </div>
           )}
 
