@@ -632,24 +632,7 @@ async function router(req, res) {
     return
   }
 
-  // ── GET /api/packages/track/:trackingNumber (PUBLIC tracking) ────────────
-  // {
-  //   const m = matchPath('/api/packages/track/:trackingNumber', pathname)
-  //   const user = authenticate(req, res)
-  //   if (!user) return
-  //   if (method === 'GET' && m.matched) {
-  //     const trackingNumber = m.params.trackingNumber.trim()
-  //     if (!trackingNumber) return send(res, 400, { error: 'trackingNumber is required' })
-
-  //     packagesDB.getPackageByTracking(pool, trackingNumber, (err, result) => {
-  //       if (err) return send(res, 500, { error: 'Database error' })
-  //       if (!result) return send(res, 404, { error: 'Package not found' })
-  //       return send(res, 200, result)
-  //     })
-  //     return
-  //   }
-  // }
-
+  /
   // ── GET /qry_track_package (PUBLIC tracking) ─────────────────────────────
   // if (method === 'GET' && pathname === '/qry_track_package') {
   //   const user = authenticate(req, res)
