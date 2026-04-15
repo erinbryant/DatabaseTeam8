@@ -333,3 +333,237 @@ ALTER TABLE Package
     DROP COLUMN Payment_ID;
  alter table package drop column Created_At;
  alter table package drop column price;
+
+-- Add Status_Code FK to Package
+ALTER TABLE Package
+    ADD COLUMN Status_Code INT NOT NULL DEFAULT 1,
+    ADD FOREIGN KEY (Status_Code) REFERENCES status_code(Status_Code);
+
+-- Drop Status_Code FK from Delivery (replace constraint name with actual from SHOW CREATE TABLE)
+ALTER TABLE Delivery
+    DROP FOREIGN KEY delivery_ibfk_2,
+    DROP COLUMN Delivery_Status_Code;
+
+UPDATE Package SET Status_Code = 4 WHERE Tracking_Number = 'TRK0000001';
+UPDATE Package SET Status_Code = 4 WHERE Tracking_Number = 'TRK0000002';
+UPDATE Package SET Status_Code = 4 WHERE Tracking_Number = 'TRK0000003';
+UPDATE Package SET Status_Code = 3 WHERE Tracking_Number = 'TRK0000004';
+UPDATE Package SET Status_Code = 2 WHERE Tracking_Number = 'TRK0000005';
+UPDATE Package SET Status_Code = 4 WHERE Tracking_Number = 'TRK0000006';
+UPDATE Package SET Status_Code = 3 WHERE Tracking_Number = 'TRK0000007';
+UPDATE Package SET Status_Code = 2 WHERE Tracking_Number = 'TRK0000008';
+UPDATE Package SET Status_Code = 4 WHERE Tracking_Number = 'TRK0000009';
+UPDATE Package SET Status_Code = 1 WHERE Tracking_Number = 'TRK0000010';
+UPDATE Package SET Status_Code = 2 WHERE Tracking_Number = 'TRK0000011';
+UPDATE Package SET Status_Code = 2 WHERE Tracking_Number = 'TRK0000012';
+UPDATE Package SET Status_Code = 4 WHERE Tracking_Number = 'TRK0000016';
+UPDATE Package SET Status_Code = 4 WHERE Tracking_Number = 'TRK0000017';
+UPDATE Package SET Status_Code = 4 WHERE Tracking_Number = 'TRK0000018';
+UPDATE Package SET Status_Code = 4 WHERE Tracking_Number = 'TRK0000019';
+UPDATE Package SET Status_Code = 2 WHERE Tracking_Number = 'TRK0000020';
+UPDATE Package SET Status_Code = 2 WHERE Tracking_Number = 'TRK0000021';
+UPDATE Package SET Status_Code = 4 WHERE Tracking_Number = 'TRK0000022';
+UPDATE Package SET Status_Code = 4 WHERE Tracking_Number = 'TRK0000023';
+UPDATE Package SET Status_Code = 3 WHERE Tracking_Number = 'TRK0000024';
+UPDATE Package SET Status_Code = 4 WHERE Tracking_Number = 'TRK0000025';
+UPDATE Package SET Status_Code = 4 WHERE Tracking_Number = 'TRK0000026';
+UPDATE Package SET Status_Code = 4 WHERE Tracking_Number = 'TRK0000027';
+UPDATE Package SET Status_Code = 4 WHERE Tracking_Number = 'TRK0000028';
+UPDATE Package SET Status_Code = 2 WHERE Tracking_Number = 'TRK0000029';
+UPDATE Package SET Status_Code = 2 WHERE Tracking_Number = 'TRK0000030';
+UPDATE Package SET Status_Code = 4 WHERE Tracking_Number = 'TRK0000031';
+UPDATE Package SET Status_Code = 4 WHERE Tracking_Number = 'TRK0000032';
+UPDATE Package SET Status_Code = 4 WHERE Tracking_Number = 'TRK0000033';
+UPDATE Package SET Status_Code = 4 WHERE Tracking_Number = 'TRK0000034';
+UPDATE Package SET Status_Code = 4 WHERE Tracking_Number = 'TRK0000035';
+UPDATE Package SET Status_Code = 4 WHERE Tracking_Number = 'TRK0000036';
+UPDATE Package SET Status_Code = 4 WHERE Tracking_Number = 'TRK0000037';
+UPDATE Package SET Status_Code = 4 WHERE Tracking_Number = 'TRK0000038';
+UPDATE Package SET Status_Code = 5 WHERE Tracking_Number = 'TRK0000039';
+UPDATE Package SET Status_Code = 5 WHERE Tracking_Number = 'TRK0000040';
+UPDATE Package SET Status_Code = 4 WHERE Tracking_Number = 'TRK0000041';
+UPDATE Package SET Status_Code = 4 WHERE Tracking_Number = 'TRK0000042';
+UPDATE Package SET Status_Code = 2 WHERE Tracking_Number = 'TRK0000043';
+UPDATE Package SET Status_Code = 4 WHERE Tracking_Number = 'TRK0000044';
+UPDATE Package SET Status_Code = 4 WHERE Tracking_Number = 'TRK0000045';
+UPDATE Package SET Status_Code = 4 WHERE Tracking_Number = 'TRK0000046';
+UPDATE Package SET Status_Code = 4 WHERE Tracking_Number = 'TRK0000047';
+UPDATE Package SET Status_Code = 4 WHERE Tracking_Number = 'TRK0000048';
+UPDATE Package SET Status_Code = 4 WHERE Tracking_Number = 'TRK0000049';
+UPDATE Package SET Status_Code = 2 WHERE Tracking_Number = 'TRK0000050';
+UPDATE Package SET Status_Code = 3 WHERE Tracking_Number = 'TRK0000051';
+UPDATE Package SET Status_Code = 2 WHERE Tracking_Number = 'TRK0000052';
+UPDATE Package SET Status_Code = 4 WHERE Tracking_Number = 'TRK0000053';
+UPDATE Package SET Status_Code = 4 WHERE Tracking_Number = 'TRK0000054';
+UPDATE Package SET Status_Code = 4 WHERE Tracking_Number = 'TRK0000055';
+UPDATE Package SET Status_Code = 4 WHERE Tracking_Number = 'TRK0000056';
+UPDATE Package SET Status_Code = 4 WHERE Tracking_Number = 'TRK0000057';
+UPDATE Package SET Status_Code = 4 WHERE Tracking_Number = 'TRK0000058';
+UPDATE Package SET Status_Code = 5 WHERE Tracking_Number = 'TRK0000059';
+UPDATE Package SET Status_Code = 2 WHERE Tracking_Number = 'TRK0000060';
+UPDATE Package SET Status_Code = 2 WHERE Tracking_Number = 'TRK0000061';
+UPDATE Package SET Status_Code = 3 WHERE Tracking_Number = 'TRK0000062';
+UPDATE Package SET Status_Code = 2 WHERE Tracking_Number = 'TRK0000063';
+UPDATE Package SET Status_Code = 2 WHERE Tracking_Number = 'TRK0000064';
+UPDATE Package SET Status_Code = 2 WHERE Tracking_Number = 'TRK0000065';
+UPDATE Package SET Status_Code = 4 WHERE Tracking_Number = 'TRK0000066';
+UPDATE Package SET Status_Code = 4 WHERE Tracking_Number = 'TRK0000067';
+UPDATE Package SET Status_Code = 4 WHERE Tracking_Number = 'TRK0000068';
+UPDATE Package SET Status_Code = 4 WHERE Tracking_Number = 'TRK0000069';
+UPDATE Package SET Status_Code = 2 WHERE Tracking_Number = 'TRK0000070';
+UPDATE Package SET Status_Code = 4 WHERE Tracking_Number = 'TRK0000071';
+UPDATE Package SET Status_Code = 4 WHERE Tracking_Number = 'TRK0000072';
+UPDATE Package SET Status_Code = 4 WHERE Tracking_Number = 'TRK0000073';
+UPDATE Package SET Status_Code = 4 WHERE Tracking_Number = 'TRK0000074';
+UPDATE Package SET Status_Code = 4 WHERE Tracking_Number = 'TRK0000075';
+UPDATE Package SET Status_Code = 4 WHERE Tracking_Number = 'TRK0000076';
+UPDATE Package SET Status_Code = 4 WHERE Tracking_Number = 'TRK0000077';
+UPDATE Package SET Status_Code = 4 WHERE Tracking_Number = 'TRK0000078';
+UPDATE Package SET Status_Code = 2 WHERE Tracking_Number = 'TRK0000079';
+UPDATE Package SET Status_Code = 7 WHERE Tracking_Number = 'TRK0000080';
+UPDATE Package SET Status_Code = 7 WHERE Tracking_Number = 'TRK0000081';
+UPDATE Package SET Status_Code = 7 WHERE Tracking_Number = 'TRK0000082';
+UPDATE Package SET Status_Code = 6 WHERE Tracking_Number = 'TRK0000083';
+UPDATE Package SET Status_Code = 6 WHERE Tracking_Number = 'TRK0000084';
+UPDATE Package SET Status_Code = 6 WHERE Tracking_Number = 'TRK0000085';
+UPDATE Package SET Status_Code = 1 WHERE Tracking_Number = 'TRK0000086';
+UPDATE Package SET Status_Code = 1 WHERE Tracking_Number = 'TRK0000087';
+UPDATE Package SET Status_Code = 1 WHERE Tracking_Number = 'TRK0000088';
+UPDATE Package SET Status_Code = 1 WHERE Tracking_Number = 'TRK0000089';
+
+ALTER TABLE Payment
+DROP COLUMN Payment_Type,
+DROP COLUMN Payment_Status,
+DROP COLUMN Items,
+CHANGE date_created Date_Created DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP;
+
+ALTER TABLE Package
+ADD COLUMN To_Address_ID INT NOT NULL,
+ADD COLUMN Recipient_Name VARCHAR(100) NOT NULL;
+
+ALTER TABLE customer
+ADD COLUMN is_Active TINYINT(1) NOT NULL DEFAULT 0
+CHECK (is_Active IN (0, 1));
+
+UPDATE customer
+SET is_Active = 0
+WHERE customer_id > 0;
+
+ALTER TABLE Package
+MODIFY To_Address_ID INT NULL;
+
+UPDATE Package
+SET To_Address_ID = NULL
+WHERE To_Address_ID = 0;
+
+UPDATE Package p
+JOIN Customer c 
+    ON p.Recipient_ID = c.Customer_ID
+SET p.To_Address_ID = c.Address_ID
+WHERE p.To_Address_ID IS NULL;
+
+TRUNCATE TABLE Payment;
+
+DELETE FROM Payment;
+
+ALTER TABLE Payment AUTO_INCREMENT = 1;
+
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (3, 8.50, 'TRK0000001');
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (4, 22.00, 'TRK0000002');
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (5, 14.25, 'TRK0000003');
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (6, 65.00, 'TRK0000004');
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (7, 18.75, 'TRK0000005');
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (8, 11.00, 'TRK0000006');
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (9, 7.50, 'TRK0000007');
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (10, 31.50, 'TRK0000008');
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (1, 48.00, 'TRK0000009');
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (2, 5.25, 'TRK0000010');
+
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (5, 13.00, 'TRK0000011');
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (7, 20.00, 'TRK0000012');
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (8, 82.00, 'TRK0000013');
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (10, 6.75, 'TRK0000014');
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (1, 27.00, 'TRK0000015');
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (11, 10.00, 'TRK0000016');
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (2, 13.00, 'TRK0000017');
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (12, 16.00, 'TRK0000018');
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (3, 9.00, 'TRK0000019');
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (13, 52.00, 'TRK0000020');
+
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (4, 5.25, 'TRK0000021');
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (14, 24.00, 'TRK0000022');
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (5, 80.00, 'TRK0000023');
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (15, 11.00, 'TRK0000024');
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (6, 26.00, 'TRK0000025');
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (16, 4.50, 'TRK0000026');
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (7, 42.00, 'TRK0000027');
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (17, 16.00, 'TRK0000028');
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (8, 11.00, 'TRK0000029');
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (18, 61.00, 'TRK0000030');
+
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (9, 10.00, 'TRK0000031');
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (19, 22.00, 'TRK0000032');
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (10, 19.00, 'TRK0000033');
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (20, 15.00, 'TRK0000034');
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (1, 88.00, 'TRK0000035');
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (2, 9.00, 'TRK0000036');
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (3, 28.00, 'TRK0000037');
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (4, 14.00, 'TRK0000038');
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (5, 11.00, 'TRK0000039');
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (6, 46.00, 'TRK0000040');
+
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (7, 13.00, 'TRK0000041');
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (8, 30.00, 'TRK0000042');
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (9, 74.00, 'TRK0000043');
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (10, 13.00, 'TRK0000044');
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (11, 22.00, 'TRK0000045');
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (12, 4.50, 'TRK0000046');
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (13, 52.00, 'TRK0000047');
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (14, 12.00, 'TRK0000048');
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (15, 28.00, 'TRK0000049');
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (16, 25.00, 'TRK0000050');
+
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (17, 20.00, 'TRK0000051');
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (18, 66.00, 'TRK0000052');
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (19, 19.00, 'TRK0000053');
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (11, 24.00, 'TRK0000054');
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (12, 68.00, 'TRK0000055');
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (13, 10.00, 'TRK0000056');
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (14, 34.00, 'TRK0000057');
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (15, 56.00, 'TRK0000058');
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (16, 9.00, 'TRK0000059');
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (17, 22.00, 'TRK0000060');
+
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (18, 25.00, 'TRK0000061');
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (19, 16.50, 'TRK0000062');
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (20, 70.00, 'TRK0000063');
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (1, 10.00, 'TRK0000064');
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (2, 18.00, 'TRK0000065');
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (3, 11.00, 'TRK0000066');
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (4, 24.00, 'TRK0000067');
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (5, 19.00, 'TRK0000068');
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (6, 56.00, 'TRK0000069');
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (7, 20.00, 'TRK0000070');
+
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (8, 14.00, 'TRK0000071');
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (9, 33.00, 'TRK0000072');
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (10, 10.00, 'TRK0000073');
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (11, 30.00, 'TRK0000074');
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (12, 22.00, 'TRK0000075');
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (13, 85.00, 'TRK0000076');
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (14, 22.00, 'TRK0000077');
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (15, 16.00, 'TRK0000078');
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (16, 33.00, 'TRK0000079');
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (17, 12.00, 'TRK0000080');
+
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (18, 28.00, 'TRK0000081');
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (19, 68.00, 'TRK0000082');
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (20, 11.00, 'TRK0000083');
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (21, 26.00, 'TRK0000084');
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (22, 25.00, 'TRK0000085');
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (21, 40.75, 'TRK0000086');
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (22, 50.25, 'TRK0000087');
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (23, 37.50, 'TRK0000088');
+INSERT INTO Payment (Customer_ID, Payment_Amount, Tracking_Number) VALUES (23, 28.50, 'TRK0000089');
+
+
