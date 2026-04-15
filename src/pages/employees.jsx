@@ -30,18 +30,18 @@ function getStoredEmployeeRoleId() {
   }
 }
 
-function handleLogout(e) {
+export default function EmployeesPage() {
+  const navigate = useNavigate()
+  const roleId = getStoredEmployeeRoleId()
+  const isAdmin = roleId === 5
+
+  function handleLogout(e) {
     e.preventDefault()
     localStorage.removeItem('token')
     localStorage.removeItem('user')
     localStorage.removeItem('userType')
     navigate('/')
   }
-
-export default function EmployeesPage() {
-  const navigate = useNavigate()
-  const roleId = getStoredEmployeeRoleId()
-  const isAdmin = roleId === 5
 
   const [employees, setEmployees] = useState([])
   const [loading, setLoading] = useState(true)
