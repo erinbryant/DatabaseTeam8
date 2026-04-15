@@ -1,9 +1,16 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import './css/home.css'
 import { authFetch } from '../authFetch'
 
 export default function Home() {
+  const ScrollToTop = () => {
+    const {pathname} = useLocation();
+    useEffect(()=> {
+      window.scrollTo(0,0);
+    }, [pathname]);
+    return null;
+  }
   const navigate = useNavigate()
   const [loggedIn, setLoggedIn] = useState(() => !!localStorage.getItem('token'))
 
