@@ -3,6 +3,13 @@ import { useNavigate } from 'react-router-dom'
 import './css/Employee_SubmitTicket.css'
 import { authFetch } from '../authFetch'
 
+const ISSUE_TYPES = [
+  { value: 1, label: 'Failed transaction' },
+  { value: 2, label: 'Payment issue' },
+  { value: 3, label: 'Delivery issue' },
+  { value: 4, label: 'Other' },
+]
+
 function Employee_SubmitTicket() {
   const navigate = useNavigate()
 
@@ -66,7 +73,6 @@ function Employee_SubmitTicket() {
           Assigned_Employee_ID: formData.employeeId,
           Issue_Type: Number(formData.issueType),
           Description: formData.description,
-          submittedAt: new Date().toISOString(),
         }),
       })
 
@@ -108,38 +114,56 @@ function Employee_SubmitTicket() {
       <form onSubmit={handleSubmit}>
         <div className="form-group">
           <label htmlFor="userId">Customer ID *</label>
-          <input 
-            type="text"
-            id="name"
-            name="name"
-            value={formData.name}
+          <select
+            id="userId"
+            name="userId"
+            value={formData.userId}
             onChange={handleChange}
             required
-          />
+          >
+            <option value="">-- Select Customer --</option>
+            {customers.map((c) => (
+              <option key={c.Customer_ID} value={c.Customer_ID}>
+                {c.Customer_ID} - {c.Full_Name}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div className="form-group">
           <label htmlFor="packageId">Package ID *</label>
-          <input 
-            type="email"
-            id="email"
-            name="email"
-            value={formData.email}
+          <select
+            id="packageId"
+            name="packageId"
+            value={formData.packageId}
             onChange={handleChange}
-              required
-          />
+            required
+          >
+            <option value="">-- Select Package --</option>
+            {packages.map((p) => (
+              <option key={p.Tracking_Number} value={p.Tracking_Number}>
+                {p.Tracking_Number}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div className="form-group">
           <label htmlFor="employeeId">Employee ID *</label>
-          <input
-            type="text"
+          <select
             id="employeeId"
             name="employeeId"
             value={formData.employeeId}
             onChange={handleChange}
             required
-          />
+          >
+            <option value="">-- Select Employee --</option>
+            {employees.map((e) => (
+              <option key={e.Employee_ID} value={e.Employee_ID}>
+                {e.Employee_ID} - {e.First_Name} {e.Last_Name}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div className="form-group">
@@ -152,12 +176,9 @@ function Employee_SubmitTicket() {
             required
           >
             <option value="">-- Select --</option>
-            <option value="0">Lost Package</option>
-            <option value="1">Damaged Package</option>
-            <option value="2">Delivery Delay</option>
-            <option value="3">Wrong Address</option>
-            <option value="4">Missing Item</option>
-            <option value="5">Other</option>
+            {ISSUE_TYPES.map((t) => (
+              <option key={t.value} value={t.value}>{t.label}</option>
+            ))}
           </select>
         </div>
 

@@ -8,10 +8,10 @@ function getAllPackages(pool, callback) {
       p.Weight,
       p.Dim_X, p.Dim_Y, p.Dim_Z,
       p.Zone,
-      -- p.Price was removed from schema, removed here to stop error
+      q.Payment_Amount AS Price,
       p.Oversize,
       p.Requires_Signature,
-      -- p.Date_Created was removed; using Date_Updated as a fallback
+      p.Date_Created,
       p.Date_Updated,
       p.Package_Type_Code,
       pt.Type_Name,
@@ -19,16 +19,16 @@ function getAllPackages(pool, callback) {
 
       p.Sender_ID,
       CONCAT(cs.First_Name, ' ', cs.Last_Name) AS Sender_Name,
-      CONCAT(cs.House_Number, ' ', cs.Street) AS Sender_Street,
-      cs.City AS Sender_City,
-      cs.State AS Sender_State,
-      cs.Zip_Code,
+      CONCAT(asnd.House_Number, ' ', asnd.Street) AS Sender_Street,
+      asnd.City AS Sender_City,
+      asnd.State AS Sender_State,
+      asnd.Zip_Code AS Sender_Zip_Code,
 
       p.Recipient_Name,
       CONCAT(ar.House_Number, ' ', ar.Street)   AS Recipient_Street,
       ar.City                                    AS Recipient_City,
       ar.State                                   AS Recipient_State,
-      ar.Zip_Code,
+      ar.Zip_Code AS Recipient_Zip_Code,
 
       sc.Status_Name,
       d.Delivery_Status_Code,
@@ -40,6 +40,8 @@ function getAllPackages(pool, callback) {
     FROM package p
     JOIN package_type pt ON p.Package_Type_Code = pt.Package_Type_Code
     JOIN customer cs ON p.Sender_ID = cs.Customer_ID
+    JOIN address asnd ON cs.Address_ID = asnd.Address_ID
+    LEFT JOIN payment q ON q.Tracking_Number = p.Tracking_Number
     
     JOIN customer cr ON p.Recipient_ID = cr.Customer_ID
     JOIN address ar ON cr.Address_ID = ar.Address_ID
@@ -81,7 +83,7 @@ function getPackagesForCustomer(pool, customerID, callback) {
       p.Weight,
       p.Dim_X, p.Dim_Y, p.Dim_Z,
       p.Zone,
-      q.payment_amount,
+      q.Payment_Amount AS Price,
       p.Oversize,
       p.Requires_Signature,
       p.Date_Created,
@@ -140,6 +142,8 @@ function getPackagesForCustomer(pool, customerID, callback) {
     LEFT JOIN package_pickup pp 
     ON pp.Tracking_Number = p.Tracking_Number 
     AND pp.Recipient_ID = ?
+    WHERE p.Sender_ID = ? OR p.Recipient_ID = ?
+    ORDER BY p.Date_Created DESC
   `, [customerID, customerID, customerID, customerID, customerID])
   .then(([results]) => callback(null, results))
   .catch(err => callback(err, null))

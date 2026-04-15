@@ -13,6 +13,7 @@ const employeeDB = require('./db/employees')
 const priceDB = require('./db/package_type')
 const packagePickupStorageJob = require('./db/package_pickup_storage_job')
 const revenueReportDB = require('./db/revenue_report')
+const lostNotifsDB = require('./db/lost_package_notifs')
 const { report } = require('process')
 const shipmentDB = require('./db/shipments')
 
@@ -33,6 +34,10 @@ pool
   .then((c) => {
     console.log('✅ MySQL connected')
     c.release()
+    // Initialize lost packages tracking column
+    lostNotifsDB.ensureLostStatusColumn(pool).catch(err => {
+      console.error('⚠️ Failed to initialize lost packages column:', err.message)
+    })
   })
   .catch((e) => console.error('❌ MySQL connection failed:', e))
 
@@ -569,10 +574,14 @@ async function router(req, res) {
 
     try {
       const [rows] = await pool.query(
-        `SELECT Customer_ID, First_Name, Last_Name, Email_Address,
-                Phone_Number, House_Number, Street, City, State,
-                Zip_First3, Zip_Last2
-         FROM customer WHERE Customer_ID = ?`,
+        `SELECT c.Customer_ID, c.First_Name, c.Last_Name, c.Email_Address,
+                c.Phone_Number, a.House_Number, a.Street, a.City, a.State,
+                SUBSTRING(a.Zip_Code, 1, 3) AS Zip_First3,
+                SUBSTRING(a.Zip_Code, 4, 2) AS Zip_Last2,
+                a.Zip_Code, a.Address_ID
+         FROM customer c
+         JOIN address a ON c.Address_ID = a.Address_ID
+         WHERE c.Customer_ID = ?`,
         [user.customer_id]
       )
       if (!rows.length) return send(res, 404, { message: 'Customer not found' })
@@ -600,26 +609,49 @@ async function router(req, res) {
     } = await getBody(req)
 
     try {
+      // Update customer info
       await pool.query(
-        `UPDATE customer SET Email_Address=?, Phone_Number=?, House_Number=?, Street=?, City=?, State=?, Zip_First3=?, Zip_Last2=? WHERE Customer_ID=?`,
+        `UPDATE customer SET Email_Address=?, Phone_Number=? WHERE Customer_ID=?`,
         [
           Email_Address,
           Phone_Number,
-          House_Number,
-          Street,
-          City,
-          State,
-          Zip_First3,
-          Zip_Last2,
           user.customer_id,
         ]
       )
 
+      // Get Address_ID for the customer
+      const [customerRows] = await pool.query(
+        `SELECT Address_ID FROM customer WHERE Customer_ID=?`,
+        [user.customer_id]
+      )
+      if (!customerRows.length) return send(res, 404, { message: 'Customer not found' })
+      
+      const addressId = customerRows[0].Address_ID
+      const fullZip = (Zip_First3 || '') + (Zip_Last2 || '')
+
+      // Update address info
+      await pool.query(
+        `UPDATE address SET House_Number=?, Street=?, City=?, State=?, Zip_Code=? WHERE Address_ID=?`,
+        [
+          House_Number,
+          Street,
+          City,
+          State,
+          fullZip || null,
+          addressId,
+        ]
+      )
+
+      // Fetch updated profile
       const [rows] = await pool.query(
-        `SELECT Customer_ID, First_Name, Last_Name, Email_Address,
-                Phone_Number, House_Number, Street, City, State,
-                Zip_First3, Zip_Last2
-         FROM customer WHERE Customer_ID = ?`,
+        `SELECT c.Customer_ID, c.First_Name, c.Last_Name, c.Email_Address,
+                c.Phone_Number, a.House_Number, a.Street, a.City, a.State,
+                SUBSTRING(a.Zip_Code, 1, 3) AS Zip_First3,
+                SUBSTRING(a.Zip_Code, 4, 2) AS Zip_Last2,
+                a.Zip_Code, a.Address_ID
+         FROM customer c
+         JOIN address a ON c.Address_ID = a.Address_ID
+         WHERE c.Customer_ID = ?`,
         [user.customer_id]
       )
 
@@ -990,17 +1022,17 @@ if (method === 'GET' && pathname === '/api/reports/employee-performance') {
         COUNT(DISTINCT sp.Tracking_Number) AS Total_Packages,
         ROUND(COUNT(DISTINCT sp.Tracking_Number) / NULLIF(COUNT(DISTINCT s.Shipment_ID), 0), 1) AS Avg_Packages_Per_Shipment,
         (
-          SELECT COALESCE(SUM(pkg2.Price), 0)
+          SELECT COALESCE(SUM(pay2.Payment_Amount), 0)
           FROM shipment s2
           JOIN shipment_package sp2 ON sp2.Shipment_ID = s2.Shipment_ID
-          JOIN package pkg2 ON pkg2.Tracking_Number = sp2.Tracking_Number
+          LEFT JOIN payment pay2 ON pay2.Tracking_Number = sp2.Tracking_Number
           WHERE s2.Employee_ID = e.Employee_ID
         ) AS Total_Revenue,
         (
-          SELECT COALESCE(AVG(pkg2.Price), 0)
+          SELECT COALESCE(AVG(pay2.Payment_Amount), 0)
           FROM shipment s2
           JOIN shipment_package sp2 ON sp2.Shipment_ID = s2.Shipment_ID
-          JOIN package pkg2 ON pkg2.Tracking_Number = sp2.Tracking_Number
+          LEFT JOIN payment pay2 ON pay2.Tracking_Number = sp2.Tracking_Number
           WHERE s2.Employee_ID = e.Employee_ID
         ) AS Avg_Revenue_Per_Shipment,
         (
@@ -1126,14 +1158,15 @@ if (method === 'GET' && pathname === '/api/reports/location-stats') {
         CONCAT(po.House_Number, ' ', po.Street, ', ', po.City, ', ', po.State) AS Full_Address,
         COUNT(DISTINCT s.Shipment_ID) AS Total_Shipments,
         COUNT(DISTINCT sp.Tracking_Number) AS Total_Packages,
-        COALESCE(SUM(pkg.Price), 0) AS Total_Revenue,
-        COALESCE(AVG(pkg.Price), 0) AS Avg_Package_Price,
+        COALESCE(SUM(pay.Payment_Amount), 0) AS Total_Revenue,
+        COALESCE(AVG(pay.Payment_Amount), 0) AS Avg_Package_Price,
         COUNT(DISTINCT e.Employee_ID) AS Total_Employees
       FROM post_office po
       LEFT JOIN employee e ON e.Post_Office_ID = po.Post_Office_ID
       LEFT JOIN shipment s ON s.Employee_ID = e.Employee_ID ${whereClause}
       LEFT JOIN shipment_package sp ON sp.Shipment_ID = s.Shipment_ID
       LEFT JOIN package pkg ON pkg.Tracking_Number = sp.Tracking_Number
+      LEFT JOIN payment pay ON pay.Tracking_Number = sp.Tracking_Number
       GROUP BY po.Post_Office_ID, po.City, po.State, po.House_Number, po.Street
       ORDER BY Total_Packages DESC`,
       params
@@ -1168,7 +1201,7 @@ if (method === 'GET' && pathname === '/api/reports/department-stats') {
         COUNT(DISTINCT e.Employee_ID) AS Total_Employees,
         COUNT(DISTINCT s.Shipment_ID) AS Total_Shipments,
         COUNT(DISTINCT sp.Tracking_Number) AS Total_Packages,
-        COALESCE(SUM(pkg.Price), 0) AS Total_Revenue,
+        COALESCE(SUM(pay.Payment_Amount), 0) AS Total_Revenue,
         ROUND(
           COUNT(CASE WHEN del.Delivery_Status_Code = 4 THEN 1 END) * 100.0 /
           NULLIF(COUNT(DISTINCT sp.Tracking_Number), 0), 1
@@ -1178,6 +1211,7 @@ if (method === 'GET' && pathname === '/api/reports/department-stats') {
       LEFT JOIN shipment s ON s.Employee_ID = e.Employee_ID ${whereClause}
       LEFT JOIN shipment_package sp ON sp.Shipment_ID = s.Shipment_ID
       LEFT JOIN package pkg ON pkg.Tracking_Number = sp.Tracking_Number
+      LEFT JOIN payment pay ON pay.Tracking_Number = sp.Tracking_Number
       LEFT JOIN delivery del ON del.Tracking_Number = sp.Tracking_Number
       GROUP BY d.Department_ID, d.Department_Name
       ORDER BY Total_Packages DESC`,
@@ -1210,11 +1244,12 @@ if (method === 'GET' && pathname === '/api/reports/zone-stats') {
       `SELECT
         pkg.Zone,
         COUNT(*) AS Total_Packages,
-        COALESCE(SUM(pkg.Price), 0) AS Total_Revenue,
-        COALESCE(AVG(pkg.Price), 0) AS Avg_Price,
+        COALESCE(SUM(pay.Payment_Amount), 0) AS Total_Revenue,
+        COALESCE(AVG(pay.Payment_Amount), 0) AS Avg_Price,
         COALESCE(AVG(pkg.Weight), 0) AS Avg_Weight,
         COUNT(CASE WHEN pkg.Oversize = 1 THEN 1 END) AS Oversize_Count
       FROM package pkg
+      LEFT JOIN payment pay ON pay.Tracking_Number = pkg.Tracking_Number
       ${whereClause}
       GROUP BY pkg.Zone
       ORDER BY pkg.Zone ASC`,
@@ -1494,10 +1529,14 @@ if (method === 'GET' && pathname === '/api/packages/full') {
 
     try {
       const [rows] = await pool.query(
-        `SELECT Customer_ID, First_Name, Last_Name, Email_Address,
-                Phone_Number, House_Number, Street, Apt_Number,
-                City, State, Zip_First3, Zip_Last2
-         FROM customer WHERE Email_Address = ? LIMIT 1`,
+        `SELECT c.Customer_ID, c.First_Name, c.Last_Name, c.Email_Address,
+                c.Phone_Number, a.House_Number, a.Street, a.Apt_Number,
+                a.City, a.State, a.Zip_Code,
+                SUBSTRING(a.Zip_Code, 1, 3) AS Zip_First3,
+                SUBSTRING(a.Zip_Code, 4, 2) AS Zip_Last2
+         FROM customer c
+         JOIN address a ON c.Address_ID = a.Address_ID
+         WHERE c.Email_Address = ? LIMIT 1`,
         [email]
       )
       if (!rows.length) return send(res, 404, { message: 'Customer not found' })
