@@ -333,3 +333,12 @@ ALTER TABLE Package
     DROP COLUMN Payment_ID;
  alter table package drop column Created_At;
  alter table package drop column price;
+
+UPDATE package p
+JOIN customer c
+    ON c.Customer_ID = p.Recipient_ID
+SET p.Recipient_Name = CONCAT(
+    c.First_Name, ' ',
+    IFNULL(CONCAT(c.Middle_Name, ' '), ''),
+    c.Last_Name
+);

@@ -19,19 +19,16 @@ function getAllPackages(pool, callback) {
 
       p.Sender_ID,
       CONCAT(cs.First_Name, ' ', cs.Last_Name) AS Sender_Name,
-      -- Pulling from the NEW Address table via Customer
-      addr_s.Street AS Sender_Street,
-      addr_s.City AS Sender_City,
-      addr_s.State AS Sender_State,
-      addr_s.Zip_Code AS Sender_Zip,
+      CONCAT(cs.House_Number, ' ', cs.Street) AS Sender_Street,
+      cs.City AS Sender_City,
+      cs.State AS Sender_State,
+      cs.Zip_Code;
 
-      p.Recipient_ID,
-      CONCAT(cr.First_Name, ' ', cr.Last_Name) AS Recipient_Name,
-      -- Pulling from the NEW Address table via Recipient
-      addr_r.Street AS Recipient_Street,
-      addr_r.City AS Recipient_City,
-      addr_r.State AS Recipient_State,
-      addr_r.Zip_Code AS Recipient_Zip,
+      p.Recipient_Name,
+      CONCAT(cr.House_Number, ' ', cr.Street)   AS Recipient_Street,
+      cr.City                                    AS Recipient_City,
+      cr.State                                   AS Recipient_State,
+      cr.Zip_Code;
 
       sc.Status_Name,
       d.Delivery_Status_Code,
@@ -41,16 +38,13 @@ function getAllPackages(pool, callback) {
       d.Signature_Received
 
     FROM package p
-    JOIN package_type pt  ON p.Package_Type_Code = pt.Package_Type_Code
-    JOIN customer cs      ON p.Sender_ID         = cs.Customer_ID
-    -- Join the Address table for the Sender
-    LEFT JOIN Address addr_s ON cs.Address_ID    = addr_s.Address_ID
-    LEFT JOIN customer cr ON p.Recipient_ID      = cr.Customer_ID
-    -- Join the Address table for the Recipient
-    LEFT JOIN Address addr_r ON cr.Address_ID    = addr_r.Address_ID
-    LEFT JOIN delivery d  ON p.Tracking_Number   = d.Tracking_Number
-    LEFT JOIN status_code sc ON d.Delivery_Status_Code = sc.Status_Code
-    ORDER BY p.Date_Updated DESC
+    JOIN package_type pt ON p.Package_Type_Code = pt.Package_Type_Code
+    JOIN customer cs ON p.Sender_ID = cs.Customer_ID
+    LEFT JOIN address cr ON p.Address_ID = p.To_Address_ID
+    JOIN status_code sc ON p.Status_Code = sc.Status_Code
+    -- delivery is optional event info only
+    LEFT JOIN delivery d ON p.Tracking_Number = d.Tracking_Number
+    ORDER BY p.Date_Created DESC
   `)
   .then(([results]) => callback(null, results))
   .catch(err => callback(err, null))
@@ -84,14 +78,14 @@ function getPackagesForCustomer(pool, customerID, callback) {
       p.Weight,
       p.Dim_X, p.Dim_Y, p.Dim_Z,
       p.Zone,
-      p.Price,
+      q.payment_amount,
       p.Oversize,
       p.Requires_Signature,
       p.Date_Created,
       p.Date_Updated,
       p.Package_Type_Code,
       pt.Type_Name,
-      pt.Description  AS Type_Description,
+      pt.Description AS Type_Description,
 
       p.Sender_ID,
       CONCAT(cs.First_Name, ' ', cs.Last_Name)  AS Sender_Name,
@@ -100,9 +94,11 @@ function getPackagesForCustomer(pool, customerID, callback) {
 
       sc.Status_Name,
       sc.Is_Final_Status,
+
       d.Delivered_Date,
       d.Signature_Required,
       d.Signature_Received,
+
       CASE
         WHEN p.Sender_ID = ? THEN 'Sending'
         WHEN p.Recipient_ID = ? THEN 'Receiving'
@@ -131,15 +127,15 @@ function getPackagesForCustomer(pool, customerID, callback) {
         ELSE DATEDIFF(CURDATE(), DATE(pp.Arrival_Time))
       END AS Days_At_Post_Office
 
-    FROM package p
-    JOIN package_type pt  ON p.Package_Type_Code = pt.Package_Type_Code
-    JOIN customer cs      ON p.Sender_ID         = cs.Customer_ID
-    LEFT JOIN customer cr ON p.Recipient_ID       = cr.Customer_ID
-    LEFT JOIN delivery d  ON p.Tracking_Number    = d.Tracking_Number
-    LEFT JOIN status_code sc ON d.Delivery_Status_Code = sc.Status_Code
-    LEFT JOIN package_pickup pp ON pp.Tracking_Number = p.Tracking_Number AND pp.Recipient_ID = ?
-    WHERE p.Sender_ID = ? OR p.Recipient_ID = ?
-    ORDER BY p.Date_Created DESC
+    JOIN package_type pt ON p.Package_Type_Code = pt.Package_Type_Code
+    JOIN customer cs ON p.Sender_ID = cs.Customer_ID
+    LEFT JOIN payment q ON q.Tracking_Number = p.Tracking_Number
+    LEFT JOIN customer cr ON p.Recipient_ID = cr.Customer_ID
+    JOIN status_code sc ON p.Status_Code = sc.Status_Code
+    LEFT JOIN delivery d ON p.Tracking_Number = d.Tracking_Number
+    LEFT JOIN package_pickup pp 
+    ON pp.Tracking_Number = p.Tracking_Number 
+    AND pp.Recipient_ID = ?
   `, [customerID, customerID, customerID, customerID, customerID])
   .then(([results]) => callback(null, results))
   .catch(err => callback(err, null))
