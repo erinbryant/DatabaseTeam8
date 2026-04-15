@@ -184,6 +184,8 @@ export default function AllCustomers() {
                     <th>Phone</th>
                     <th>Address</th>
                     <th>Status</th>
+                    <th></th>
+                    <th></th>
                     <th />
                   </tr>
                 </thead>
@@ -245,17 +247,13 @@ export default function AllCustomers() {
 
                       {expanded === c.Customer_ID && (
                         <tr className="detail-row">
-                          <td colSpan={6}>
+                          <td colSpan={8}>
                             <div className="detail-grid">
                               <div className="detail-item">
                                 <label>Country</label>
                                 <p>{c.Country || '—'}</p>
                               </div>
-                              <div className="detail-item">
-                                <label>ZIP+4</label>
-                                <p>{c.Zip_Plus4 || '—'}</p>
-                              </div>
-
+                             
                               <div className="detail-item">
                                 <label>Sending</label>
                                 <p>
