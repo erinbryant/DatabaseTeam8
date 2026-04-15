@@ -78,9 +78,9 @@ export default function AllCustomers() {
   }
 
   const toggleCustomerStatus = async (id, currentStatus) => {
-    const isActive = Number(currentStatus) === 1
-    const newStatus = isActive ? 0 : 1
-    const actionText = newStatus === 0 ? 'deactivate' : 'reinstate'
+    const isActive = Number(currentStatus) === 0
+    const newStatus = isActive ? 1 : 0
+    const actionText = isActive ? 'deactivate' : 'reinstate'
 
     if (window.confirm(`Are you sure you want to ${actionText} this customer?`)) {
       try {
@@ -204,7 +204,7 @@ export default function AllCustomers() {
 
                         <td>
                           {(() => {
-                            const isActive = Number(c.is_Active) === 1
+                            const isActive = Number(c.is_Active) === 0
                             return (
                           <span style={{
                             padding: '4px 8px',
@@ -223,7 +223,7 @@ export default function AllCustomers() {
 
                         <td>
                           {(() => {
-                            const isActive = Number(c.is_Active) === 1
+                            const isActive = Number(c.is_Active) === 0
                             return (
                           <button
                             className='button'

@@ -66,9 +66,11 @@ function getCustomerByID(pool, customerID, callback) {
 }
 
 function updateCustomerStatus(pool, customerID, isActive, callback){
+  const dbStatus = isActive ? 0 : 1;
+
   pool.query(
     'UPDATE customer SET is_Active = ? WHERE Customer_ID = ?',
-    [Number(isActive), customerID]
+    [dbStatus, customerID]
   )
   .then(([result]) => {
     if(result.affectedRows === 0) {
@@ -149,7 +151,7 @@ async function registerCustomer(pool, rawBody) {
       First_Name, Middle_Name, Last_Name,
       Password_Hash, Email_Address, Phone_Number,
       Address_ID, is_Active
-    ) VALUES (?,?,?,?,?,?,?,0)`,
+    ) VALUES (?,?,?,?,?,?,?,?)`,
     [
       first_name.trim().slice(0, 30),
       middle_name || null,
@@ -157,7 +159,8 @@ async function registerCustomer(pool, rawBody) {
       hash,
       email.trim().toLowerCase().slice(0, 255),
       phone_number || null,
-      addressId
+      addressId,
+      0
     ]
   )
 
@@ -176,12 +179,10 @@ async function registerCustomer(pool, rawBody) {
 async function getCustomerByEmail(pool, email) {
   if (!email?.trim()) return null
   const [rows] = await pool.query(`
-    SELECT 
-      c.*, 
-      a.House_Number, a.Street, a.City, a.State, a.Zip_Code, a.Country
-    FROM customer c
-    INNER JOIN address a ON c.Address_ID = a.Address_ID
-    WHERE LOWER(c.Email_Address) = ? AND c.is_Active = 0
+    SELECT
+      *
+    FROM customer
+    WHERE LOWER(Email_Address) = ? AND is_Active = 0
   `, [email.trim().toLowerCase()])
   
   return rows[0] || null
