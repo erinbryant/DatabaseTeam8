@@ -20,7 +20,6 @@ import AllPackages from './pages/package_list'
 import AllCustomers from './pages/all_customers'
 import AllShipments from './pages/all_shipments'
 
-import Inventory from './pages/inventory'
 import PackageTracking from './pages/package_tracking'
 
 import SubmitTicket from './pages/SubmitTicket'
@@ -80,7 +79,6 @@ function App() {
 
         {/* Shared / Authenticated */}
         <Route path="/package_list" element={<RequireAuth><AllPackages /></RequireAuth>} />
-        <Route path="/inventory" element={<RequireEmployee><Inventory /></RequireEmployee>} />
       
         <Route path="/package_tracking" element={<PackageTracking/>} />
         <Route path="/price_calculator" element={<PriceCalculator/>} />
