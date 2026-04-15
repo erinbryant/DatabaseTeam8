@@ -149,7 +149,7 @@ async function registerCustomer(pool, rawBody) {
       First_Name, Middle_Name, Last_Name,
       Password_Hash, Email_Address, Phone_Number,
       Address_ID, is_Active
-    ) VALUES (?,?,?,?,?,?,?,1)`,
+    ) VALUES (?,?,?,?,?,?,?,0)`,
     [
       first_name.trim().slice(0, 30),
       middle_name || null,
@@ -162,7 +162,15 @@ async function registerCustomer(pool, rawBody) {
   )
 
   const customerId = result.insertId
-  return { customer_id: customerId }
+  const [rows] = await pool.query(
+    'SELECT Customer_ID, Email_Address, First_Name, Last_Name FROM customer WHERE Customer_ID = ?',
+    [customerId]
+  );
+
+  return { 
+    customer_id: customerId,
+    user:rows[0]
+  };
 }
 
 async function getCustomerByEmail(pool, email) {
@@ -173,7 +181,7 @@ async function getCustomerByEmail(pool, email) {
       a.House_Number, a.Street, a.City, a.State, a.Zip_Code, a.Country
     FROM customer c
     INNER JOIN address a ON c.Address_ID = a.Address_ID
-    WHERE LOWER(c.Email_Address) = ? AND c.is_Active = 1
+    WHERE LOWER(c.Email_Address) = ? AND c.is_Active = 0
   `, [email.trim().toLowerCase()])
   
   return rows[0] || null

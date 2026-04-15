@@ -300,12 +300,12 @@ async function router(req, res) {
     }
   }
 
-  // ── POST /api/auth/customer-login ────────────────────────────────────────
+  // ── POST /api/auth/customer-login
   if (method === 'POST' && pathname === '/api/auth/customer-login') {
     const { email, password } = await getBody(req)
     if (!email || !password) return send(res, 400, { message: 'Email and password required' })
     try {
-      const [rows] = await pool.query('SELECT * FROM customer WHERE Email_Address = ?', [email])
+      const [rows] = await pool.query('SELECT * FROM customer WHERE Email_Address = ? AND is_Active = 0', [email])
       if (!rows.length) return send(res, 401, { message: 'Invalid credentials' })
       const customer = rows[0]
       const valid = await bcrypt.compare(password, customer.Password_Hash)
