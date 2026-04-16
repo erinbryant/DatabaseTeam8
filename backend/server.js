@@ -2199,9 +2199,11 @@ ORDER BY pkg.Tracking_Number ASC`,
     if (!user) return
 
     const customerId = pathname.split('/').pop()
+    console.log(`[lost-notif] customerId=${customerId}, user.customer_id=${user.customer_id}`)
 
     try {
       const results = await lostNotifsDB.getLostPackagesByCustomer(pool, customerId)
+      console.log(`[lost-notif] results count=${results.length}`, results)
       return send(res, 200, results)
     } catch (err) {
       return send(res, 500, { error: err.message })
