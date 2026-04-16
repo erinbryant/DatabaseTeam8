@@ -772,220 +772,516 @@ async function router(req, res) {
   }
 
   // ── POST /api/employee/packages ──────────────────────────────────────────
+  // if (method === 'POST' && pathname === '/api/employee/packages') {
+  //   const user = authenticate(req, res)
+  //   if (!user) return
+  //   if (!requireEmployee(user, res)) return
+
+  //   const b = await getBody(req)
+  //   const {
+  //     sender_email, 
+  //     sender_first_name, sender_last_name,
+  //     sender_house_number, sender_street, sender_city, 
+  //     sender_state, sender_zip_code, sender_apt_number,sender_country,
+      
+  //     recipient_email, recipient_first_name, recipient_last_name,
+  //     recipient_house_number, recipient_street, recipient_city,
+  //     recipient_state, recipient_zip_code, recipient_apt_number, recipient_country,
+  //     package_type,
+  //     weight,
+  //     zone,
+  //     excess_fee,
+  //     dim_x, dim_y,dim_z,
+  //   } = b
+
+  //   const pt = normalizePackageTypeName(package_type)
+  //   const typeCode = TYPE_NAME_TO_CODE[pt]
+  //   if (!typeCode) return send(res, 400, { message: 'Invalid package_type' })
+
+  //   const w = Number(weight)
+  //   const z = Number(zone)
+  //   if (Number.isNaN(w) || Number.isNaN(z)) return send(res, 400, { message: 'weight and zone must be numbers' })
+
+  //   const dx = dim_x != null && dim_x !== '' ? Number(dim_x) : 12
+  //   const dy = dim_y != null && dim_y !== '' ? Number(dim_y) : 10
+  //   const dz = dim_z != null && dim_z !== '' ? Number(dim_z) : 8
+  //   if (!(dx > 0 && dy > 0 && dz > 0)) return send(res, 400, { message: 'Dimensions must be positive numbers' })
+
+  //   const excessName = excess_fee && String(excess_fee).trim() ? String(excess_fee).trim() : null
+  //   const sigRequired = excessName === 'Signature Required'
+
+  //   let priceAmount
+  //   try {
+  //     priceAmount = await getPricePromise(pool, excessName, pt, w, z)
+  //   } catch (err) {
+  //     return send(res, err.status === 400 ? 400 : 500, { message: err.message || 'Pricing failed' })
+  //   }
+
+  //   const senderEmail = (sender_email || '').trim().toLowerCase()
+  //   if ( !sender_first_name?.trim() || !sender_last_name?.trim()) {
+  //     return send(res, 400, { message: 'Sender first name, and last name are required' })
+  //   }
+  //   if (!sender_house_number || !sender_street || !sender_city || !sender_state || !sender_zip_first3 || !sender_zip_last2) {
+  //     return send(res, 400, { message: 'Sender address fields are required' })
+  //   }
+
+  //   let recipientEmail = (recipient_email || '').trim().toLowerCase()
+  //   if (!recipient_first_name?.trim() || !recipient_last_name?.trim()) {
+  //     return send(res, 400, { message: 'Recipient first and last name are required' })
+  //   }
+  //   if (!recipient_house_number || !recipient_street || !recipient_city || !recipient_state || !recipient_zip_first3 || !recipient_zip_last2) {
+  //     return send(res, 400, { message: 'Recipient address fields are required' })
+  //   }
+  //   // if (!recipientEmail) {
+  //   //   recipientEmail = `recipient.${Date.now()}.${Math.random().toString(36).slice(2, 8)}@pkg.internal`
+  //   // }
+  //   if (recipientEmail === senderEmail) {
+  //     return send(res, 400, { message: 'Sender and recipient must be different people (different emails)' })
+  //   }
+
+  //   const conn = await pool.getConnection()
+  //   try {
+  //     await conn.beginTransaction()
+
+  //     let senderId = (await customerDB.getCustomerByEmail(conn, senderEmail))?.Customer_ID
+  //     // if (!senderId) {
+  //     //   const created = await customerDB.createCustomerMinimal(conn, {
+  //     //     first_name: sender_first_name,
+  //     //     last_name: sender_last_name,
+  //     //     email: senderEmail,
+  //     //     house_number: sender_house_number,
+  //     //     street: sender_street,
+  //     //     city: sender_city,
+  //     //     state: sender_state,
+  //     //     zip_first3: sender_zip_first3,
+  //     //     zip_last2: sender_zip_last2,
+  //     //     apt_number: sender_apt_number,
+  //     //     zip_plus4: b.sender_zip_plus4,
+  //     //     country: sender_country,
+  //     //     phone_number: sender_phone,
+  //     //   })
+  //     //   senderId = created.customerId
+  //     //   // created.initialPassword exists but unused in this server
+  //     // }
+
+  //     let recipientId = (await customerDB.getCustomerByEmail(conn, recipientEmail))?.Customer_ID
+  //     if (!recipientId) {
+  //       const created = await customerDB.createCustomerMinimal(conn, {
+  //         first_name: recipient_first_name,
+  //         last_name: recipient_last_name,
+  //         email: recipientEmail,
+  //         house_number: recipient_house_number,
+  //         street: recipient_street,
+  //         city: recipient_city,
+  //         state: recipient_state,
+  //         zip_first3: recipient_zip_first3,
+  //         zip_last2: recipient_zip_last2,
+  //         apt_number: recipient_apt_number,
+  //         zip_plus4: b.recipient_zip_plus4,
+  //         country: recipient_country,
+  //         phone_number: recipient_phone,
+  //       })
+  //       recipientId = created.customerId
+  //     }
+
+  //     const tracking = await nextTrackingNumber(conn)
+  //     const oversize = typeCode === 'OVR' ? 1 : 0
+
+  //     const actingEmployeeId = Number(user.employee_id)
+  //     if (!Number.isFinite(actingEmployeeId)) {
+  //       await conn.rollback()
+  //       return send(res, 401, { message: 'Invalid employee session' })
+  //     }
+
+  //     const [empRows] = await conn.query(
+  //       `SELECT s.Store_ID FROM employee e
+  //        JOIN post_office p ON e.Post_Office_ID = p.Post_Office_ID
+  //        JOIN store s ON s.Post_Office_ID = p.Post_Office_ID
+  //        WHERE e.Employee_ID = ?`,
+  //       [actingEmployeeId]
+  //     )
+  //     if (!empRows.length) {
+  //       await conn.rollback()
+  //       return send(res, 404, { error: 'Employee or store not found' })
+  //     }
+  //     const sid = empRows[0].Store_ID
+
+  //     await conn.query(
+  //       `INSERT INTO package (Tracking_Number, Sender_ID, Recipient_ID, Dim_X, Dim_Y, Dim_Z,
+  //         Package_Type_Code, Weight, Zone, Oversize, Requires_Signature, Status_Code, To_Address_ID, Recipient_Name, Recipient_Email_Address)
+  //        VALUES (?,?,'NULL',?,?,?,?,?,?,?,?,?,1,?,?,?)`,
+  //       [tracking, senderId,, dx, dy, dz, typeCode, w, z, oversize, sigRequired ? 1 : 0, priceAmount, payId]
+  //     )
+      
+  //     await conn.query(
+  //       `INSERT INTO payment (Customer_ID, Store_ID, Payment_Amount, Employee_ID,Tracking_Number)
+  //        VALUES (?,?,?,?,?)`,
+  //       [senderId, sid, priceAmount, actingEmployeeId, tracking]
+  //     )
+      
+
+
+  //     const [[pending]] = await conn.query(`SELECT Status_Code FROM status_code WHERE Status_Name = 'Pending' LIMIT 1`)
+  //     if (!pending) throw new Error('Missing Pending status in status_code')
+  //     const pendingCode = pending.Status_Code
+
+  //     await conn.query(
+  //       `INSERT INTO delivery (Tracking_Number, Delivered_Date, Signature_Required, Signature_Received, Delivery_Status_Code, Delivered_By)
+  //        VALUES (?,NULL,?,NULL,?,NULL)`,
+  //       [tracking, sigRequired ? 1 : 0, pendingCode]
+  //     )
+
+  //     const [shipRes] = await conn.query(
+  //       `INSERT INTO shipment (Status_Code, Employee_ID,
+  //         From_Apt_Number, From_House_Number, From_Street, From_City, From_State, From_Zip_First3, From_Zip_Last2, From_Zip_Plus4, From_Country,
+  //         To_Apt_Number, To_House_Number, To_Street, To_City, To_State, To_Zip_First3, To_Zip_Last2, To_Zip_Plus4, To_Country,
+  //         Departure_Time_Stamp, Arrival_Time_Stamp)
+  //        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NULL,NULL)`,
+  //       [
+  //         pendingCode,
+  //         actingEmployeeId,
+  //         sender_apt_number || null,
+  //         String(sender_house_number).slice(0, 10),
+  //         String(sender_street).slice(0, 100),
+  //         String(sender_city).slice(0, 100),
+  //         String(sender_state).slice(0, 50),
+  //         String(sender_zip_first3).replace(/\D/g, '').slice(0, 3),
+  //         String(sender_zip_last2).replace(/\D/g, '').slice(0, 2),
+  //         b.sender_zip_plus4 ? String(b.sender_zip_plus4).replace(/\D/g, '').slice(0, 4) : null,
+  //         (sender_country || 'USA').toString().slice(0, 50),
+  //         recipient_apt_number || null,
+  //         String(recipient_house_number).slice(0, 10),
+  //         String(recipient_street).slice(0, 100),
+  //         String(recipient_city).slice(0, 100),
+  //         String(recipient_state).slice(0, 50),
+  //         String(recipient_zip_first3).replace(/\D/g, '').slice(0, 3),
+  //         String(recipient_zip_last2).replace(/\D/g, '').slice(0, 2),
+  //         b.recipient_zip_plus4 ? String(b.recipient_zip_plus4).replace(/\D/g, '').slice(0, 4) : null,
+  //         (recipient_country || 'USA').toString().slice(0, 50),
+  //       ]
+  //     )
+
+  //     const shipmentId = shipRes.insertId
+  //     await conn.query(`INSERT INTO shipment_package (Shipment_ID, Tracking_Number) VALUES (?,?)`, [shipmentId, tracking])
+
+  //     await conn.commit()
+  //     return send(res, 201, {
+  //       tracking_number: tracking,
+  //       price: priceAmount,
+  //       sender_id: senderId,
+  //       recipient_id: recipientId,
+  //     })
+  //   } catch (err) {
+  //     await conn.rollback()
+  //     console.error(err)
+  //     if (err.code === 'ER_DUP_ENTRY') {
+  //       return send(res, 400, { message: 'Duplicate email or tracking conflict; try again' })
+  //     }
+  //     return send(res, 500, { message: err.message || 'Could not create package' })
+  //   } finally {
+  //     conn.release()
+  //   }
+  // }
+
   if (method === 'POST' && pathname === '/api/employee/packages') {
-    const user = authenticate(req, res)
-    if (!user) return
-    if (!requireEmployee(user, res)) return
+  const user = authenticate(req, res)
+  if (!user) return
+  if (!requireEmployee(user, res)) return
 
-    const b = await getBody(req)
-    const {
-      sender_email, sender_first_name, sender_last_name,
-      sender_house_number, sender_street, sender_city, 
-      sender_state, sender_zip_first3, sender_zip_last2, sender_apt_number,sender_country,
-      sender_phone,
-      recipient_email, recipient_first_name, recipient_last_name,
-      recipient_house_number, recipient_street, recipient_city,
-      recipient_state, recipient_zip_first3, recipient_zip_last2, recipient_apt_number, recipient_country,
-      recipient_phone,
-      package_type,
-      weight,
-      zone,
-      excess_fee,
-      dim_x, dim_y,dim_z,
-    } = b
+  const b = await getBody(req)
+  const {
+    sender_email,
+    sender_first_name, sender_last_name,
+    sender_house_number, sender_street, sender_city,
+    sender_state, sender_zip_code, sender_apt_number, sender_country,
 
-    const pt = normalizePackageTypeName(package_type)
-    const typeCode = TYPE_NAME_TO_CODE[pt]
-    if (!typeCode) return send(res, 400, { message: 'Invalid package_type' })
+    recipient_email, recipient_first_name, recipient_last_name,
+    recipient_house_number, recipient_street, recipient_city,
+    recipient_state, recipient_zip_code, recipient_apt_number, recipient_country,
+    package_type,
+    weight,
+    zone,
+    excess_fee,
+    dim_x, dim_y, dim_z,
+  } = b
 
-    const w = Number(weight)
-    const z = Number(zone)
-    if (Number.isNaN(w) || Number.isNaN(z)) return send(res, 400, { message: 'weight and zone must be numbers' })
+  const pt = normalizePackageTypeName(package_type)
+  const typeCode = TYPE_NAME_TO_CODE[pt]
+  if (!typeCode) return send(res, 400, { message: 'Invalid package_type' })
 
-    const dx = dim_x != null && dim_x !== '' ? Number(dim_x) : 12
-    const dy = dim_y != null && dim_y !== '' ? Number(dim_y) : 10
-    const dz = dim_z != null && dim_z !== '' ? Number(dim_z) : 8
-    if (!(dx > 0 && dy > 0 && dz > 0)) return send(res, 400, { message: 'Dimensions must be positive numbers' })
+  const w = Number(weight)
+  const z = Number(zone)
+  if (Number.isNaN(w) || Number.isNaN(z)) return send(res, 400, { message: 'weight and zone must be numbers' })
 
-    const excessName = excess_fee && String(excess_fee).trim() ? String(excess_fee).trim() : null
-    const sigRequired = excessName === 'Signature Required'
+  const dx = dim_x != null && dim_x !== '' ? Number(dim_x) : 12
+  const dy = dim_y != null && dim_y !== '' ? Number(dim_y) : 10
+  const dz = dim_z != null && dim_z !== '' ? Number(dim_z) : 8
+  if (!(dx > 0 && dy > 0 && dz > 0)) return send(res, 400, { message: 'Dimensions must be positive numbers' })
 
-    let priceAmount
-    try {
-      priceAmount = await getPricePromise(pool, excessName, pt, w, z)
-    } catch (err) {
-      return send(res, err.status === 400 ? 400 : 500, { message: err.message || 'Pricing failed' })
-    }
+  const excessName = excess_fee && String(excess_fee).trim() ? String(excess_fee).trim() : null
+  const sigRequired = excessName === 'Signature Required'
 
-    const senderEmail = (sender_email || '').trim().toLowerCase()
-    if (!senderEmail || !sender_first_name?.trim() || !sender_last_name?.trim()) {
-      return send(res, 400, { message: 'Sender email, first name, and last name are required' })
-    }
-    if (!sender_house_number || !sender_street || !sender_city || !sender_state || !sender_zip_first3 || !sender_zip_last2) {
-      return send(res, 400, { message: 'Sender address fields are required' })
-    }
-
-    let recipientEmail = (recipient_email || '').trim().toLowerCase()
-    if (!recipient_first_name?.trim() || !recipient_last_name?.trim()) {
-      return send(res, 400, { message: 'Recipient first and last name are required' })
-    }
-    if (!recipient_house_number || !recipient_street || !recipient_city || !recipient_state || !recipient_zip_first3 || !recipient_zip_last2) {
-      return send(res, 400, { message: 'Recipient address fields are required' })
-    }
-    if (!recipientEmail) {
-      recipientEmail = `recipient.${Date.now()}.${Math.random().toString(36).slice(2, 8)}@pkg.internal`
-    }
-    if (recipientEmail === senderEmail) {
-      return send(res, 400, { message: 'Sender and recipient must be different people (different emails)' })
-    }
-
-    const conn = await pool.getConnection()
-    try {
-      await conn.beginTransaction()
-
-      let senderId = (await customerDB.getCustomerByEmail(conn, senderEmail))?.Customer_ID
-      if (!senderId) {
-        const created = await customerDB.createCustomerMinimal(conn, {
-          first_name: sender_first_name,
-          last_name: sender_last_name,
-          email: senderEmail,
-          house_number: sender_house_number,
-          street: sender_street,
-          city: sender_city,
-          state: sender_state,
-          zip_first3: sender_zip_first3,
-          zip_last2: sender_zip_last2,
-          apt_number: sender_apt_number,
-          zip_plus4: b.sender_zip_plus4,
-          country: sender_country,
-          phone_number: sender_phone,
-        })
-        senderId = created.customerId
-        // created.initialPassword exists but unused in this server
-      }
-
-      let recipientId = (await customerDB.getCustomerByEmail(conn, recipientEmail))?.Customer_ID
-      if (!recipientId) {
-        const created = await customerDB.createCustomerMinimal(conn, {
-          first_name: recipient_first_name,
-          last_name: recipient_last_name,
-          email: recipientEmail,
-          house_number: recipient_house_number,
-          street: recipient_street,
-          city: recipient_city,
-          state: recipient_state,
-          zip_first3: recipient_zip_first3,
-          zip_last2: recipient_zip_last2,
-          apt_number: recipient_apt_number,
-          zip_plus4: b.recipient_zip_plus4,
-          country: recipient_country,
-          phone_number: recipient_phone,
-        })
-        recipientId = created.customerId
-      }
-
-      if (senderId === recipientId) {
-        await conn.rollback()
-        return send(res, 400, { message: 'Sender and recipient must be different customers' })
-      }
-
-      const tracking = await nextTrackingNumber(conn)
-      const oversize = typeCode === 'OVR' ? 1 : 0
-
-      const actingEmployeeId = Number(user.employee_id)
-      if (!Number.isFinite(actingEmployeeId)) {
-        await conn.rollback()
-        return send(res, 401, { message: 'Invalid employee session' })
-      }
-
-      const [empRows] = await conn.query(
-        `SELECT s.Store_ID FROM employee e
-         JOIN post_office p ON e.Post_Office_ID = p.Post_Office_ID
-         JOIN store s ON s.Post_Office_ID = p.Post_Office_ID
-         WHERE e.Employee_ID = ?`,
-        [actingEmployeeId]
-      )
-      if (!empRows.length) {
-        await conn.rollback()
-        return send(res, 404, { error: 'Employee or store not found' })
-      }
-      const sid = empRows[0].Store_ID
-
-      const [payRes] = await conn.query(
-        `INSERT INTO payment (Customer_ID, Store_ID, Items, Payment_Type, Payment_Amount, Payment_Status, Employee_ID)
-         VALUES (?,?,?,?,?,'completed',?)`,
-        [senderId, sid, 1, 1, priceAmount, actingEmployeeId]
-      )
-      const payId = payRes.insertId
-
-      await conn.query(
-        `INSERT INTO package (Tracking_Number, Sender_ID, Recipient_ID, Dim_X, Dim_Y, Dim_Z,
-          Package_Type_Code, Weight, Zone, Oversize, Requires_Signature, Price, Payment_ID)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-        [tracking, senderId, recipientId, dx, dy, dz, typeCode, w, z, oversize, sigRequired ? 1 : 0, priceAmount, payId]
-      )
-
-      const [[pending]] = await conn.query(`SELECT Status_Code FROM status_code WHERE Status_Name = 'Pending' LIMIT 1`)
-      if (!pending) throw new Error('Missing Pending status in status_code')
-      const pendingCode = pending.Status_Code
-
-      await conn.query(
-        `INSERT INTO delivery (Tracking_Number, Delivered_Date, Signature_Required, Signature_Received, Delivery_Status_Code, Delivered_By)
-         VALUES (?,NULL,?,NULL,?,NULL)`,
-        [tracking, sigRequired ? 1 : 0, pendingCode]
-      )
-
-      const [shipRes] = await conn.query(
-        `INSERT INTO shipment (Status_Code, Employee_ID,
-          From_Apt_Number, From_House_Number, From_Street, From_City, From_State, From_Zip_First3, From_Zip_Last2, From_Zip_Plus4, From_Country,
-          To_Apt_Number, To_House_Number, To_Street, To_City, To_State, To_Zip_First3, To_Zip_Last2, To_Zip_Plus4, To_Country,
-          Departure_Time_Stamp, Arrival_Time_Stamp)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NULL,NULL)`,
-        [
-          pendingCode,
-          actingEmployeeId,
-          sender_apt_number || null,
-          String(sender_house_number).slice(0, 10),
-          String(sender_street).slice(0, 100),
-          String(sender_city).slice(0, 100),
-          String(sender_state).slice(0, 50),
-          String(sender_zip_first3).replace(/\D/g, '').slice(0, 3),
-          String(sender_zip_last2).replace(/\D/g, '').slice(0, 2),
-          b.sender_zip_plus4 ? String(b.sender_zip_plus4).replace(/\D/g, '').slice(0, 4) : null,
-          (sender_country || 'USA').toString().slice(0, 50),
-          recipient_apt_number || null,
-          String(recipient_house_number).slice(0, 10),
-          String(recipient_street).slice(0, 100),
-          String(recipient_city).slice(0, 100),
-          String(recipient_state).slice(0, 50),
-          String(recipient_zip_first3).replace(/\D/g, '').slice(0, 3),
-          String(recipient_zip_last2).replace(/\D/g, '').slice(0, 2),
-          b.recipient_zip_plus4 ? String(b.recipient_zip_plus4).replace(/\D/g, '').slice(0, 4) : null,
-          (recipient_country || 'USA').toString().slice(0, 50),
-        ]
-      )
-
-      const shipmentId = shipRes.insertId
-      await conn.query(`INSERT INTO shipment_package (Shipment_ID, Tracking_Number) VALUES (?,?)`, [shipmentId, tracking])
-
-      await conn.commit()
-      return send(res, 201, {
-        tracking_number: tracking,
-        price: priceAmount,
-        sender_id: senderId,
-        recipient_id: recipientId,
-      })
-    } catch (err) {
-      await conn.rollback()
-      console.error(err)
-      if (err.code === 'ER_DUP_ENTRY') {
-        return send(res, 400, { message: 'Duplicate email or tracking conflict; try again' })
-      }
-      return send(res, 500, { message: err.message || 'Could not create package' })
-    } finally {
-      conn.release()
-    }
+  let priceAmount
+  try {
+    priceAmount = await getPricePromise(pool, excessName, pt, w, z)
+  } catch (err) {
+    return send(res, err.status === 400 ? 400 : 500, { message: err.message || 'Pricing failed' })
   }
+
+  const senderEmail = (sender_email || '').trim().toLowerCase()
+  if (!sender_first_name?.trim() || !sender_last_name?.trim()) {
+    return send(res, 400, { message: 'Sender first name and last name are required' })
+  }
+  if (!sender_house_number || !sender_street || !sender_city || !sender_state || !sender_zip_first3 || !sender_zip_last2) {
+    return send(res, 400, { message: 'Sender address fields are required' })
+  }
+
+  let recipientEmail = (recipient_email || '').trim().toLowerCase()
+  if (!recipient_first_name?.trim() || !recipient_last_name?.trim()) {
+    return send(res, 400, { message: 'Recipient first and last name are required' })
+  }
+  if (!recipient_house_number || !recipient_street || !recipient_city || !recipient_state || !recipient_zip_first3 || !recipient_zip_last2) {
+    return send(res, 400, { message: 'Recipient address fields are required' })
+  }
+
+  if (recipientEmail && senderEmail && recipientEmail === senderEmail) {
+    return send(res, 400, { message: 'Sender and recipient must be different people (different emails)' })
+  }
+
+  // ── Helper: resolve or create an address, then resolve or create a holder ──
+  async function resolveAddress(conn, {house_number, street, city, state, zip_code, apt_number, country }) {
+    const [addrRows] = await conn.query(
+      `SELECT Address_ID FROM address
+      WHERE House_Number = ? AND Street = ? AND City = ? AND State = ?
+        AND Zip_First3 = ? AND Zip_Last2 = ?
+        AND (Apt_Number <=> ?)
+      LIMIT 1`,
+      [
+        house_number,
+        street,
+        city,
+        state,
+        zip_first3,
+        zip_last2,
+        apt_number || null
+      ]
+    )
+
+    let addressId
+
+  if (!addrRows.length) {
+    const [addrRes] = await conn.query(
+      `INSERT INTO address 
+      (House_Number, Street, City, State, Zip_First3, Zip_Last2, Apt_Number, Country)
+      VALUES (?,?,?,?,?,?,?,?)`,
+      [
+        String(house_number).slice(0, 10),
+        String(street).slice(0, 100),
+        String(city).slice(0, 100),
+        String(state).slice(0, 50),
+        String(zip_code).replace(/\D/g, '').slice(0, 3),
+        apt_number || null,
+        (country || 'USA').toString().slice(0, 50),
+      ]
+    )
+
+    addressId = addrRes.insertId
+  } else {
+    addressId = addrRows[0].Address_ID
+  }
+  return addressId;
+}
+async function resolveHolder(conn, { first_name, last_name, addressId}) {
+      const [holderRows] = await conn.query(
+        `SELECT Holder_ID FROM holder
+         WHERE First_Name = ? AND Last_Name = ? AND Address_ID = ?
+         LIMIT 1`,
+        [first_name, last_name, addressId]
+      )
+      if (!holderRows.length){
+        const [holderRes] = await conn.query(
+        `INSERT INTO holder (First_Name, Last_Name, Address_ID)
+        VALUES (?,?,?)`,
+        [first_name, last_name, addressId]
+      )
+      return holderRes.insertId
+        
+      } return holderRows[0].Holder_ID
+    
+    }
+
+  const conn = await pool.getConnection()
+  try {
+    await conn.beginTransaction()
+
+    // ── Sender ──
+    let senderId = (await customerDB.getCustomerByEmail(conn, senderEmail))?.Customer_ID
+    let senderHolderId
+    //Let senderAddId
+    
+    if (senderId) {
+      const [[senderRow]] = await conn.query(`SELECT Holder_ID FROM customer WHERE Customer_ID = ?`, [senderId])
+      senderHolderId = senderRow?.Holder_ID
+    }
+    if (!senderHolderId) {
+      senderAddId = await resolveAddress(conn,{
+        house_number: sender_house_number,
+        street:       sender_street,
+        city:         sender_city,
+        state:        sender_state,
+        zip_code:   sender_zip_code,
+        apt_number:   sender_apt_number,
+        country:      sender_country
+      })
+      senderHolderId = await resolveHolder(conn, {
+        first_name:   sender_first_name,
+        last_name:    sender_last_name,
+        addressId:    senderAddId
+
+        
+      })
+    }
+
+    // ── Recipient ──
+    let recipientId = (await customerDB.getCustomerByEmail(conn, recipientEmail))?.Customer_ID
+    let receiverHolderId
+    if (recipientId) {
+      const [[recipientRow]] = await conn.query(`SELECT Holder_ID FROM customer WHERE Customer_ID = ?`, [recipientId])
+      receiverHolderId = recipientRow?.Holder_ID
+    }
+    if (!recipientId) {
+      const created = await customerDB.createCustomerMinimal(conn, {
+        first_name:   recipient_first_name,
+        last_name:    recipient_last_name,
+        email:        recipientEmail,
+        house_number: recipient_house_number,
+        street:       recipient_street,
+        city:         recipient_city,
+        state:        recipient_state,
+        zip_first3:   recipient_zip_first3,
+        zip_last2:    recipient_zip_last2,
+        apt_number:   recipient_apt_number,
+        zip_plus4:    b.recipient_zip_plus4,
+        country:      recipient_country,
+        phone_number: recipient_phone,
+      })
+      recipientId = created.customerId
+    }
+    if (!receiverHolderId) {
+      receiverHolderId = await resolveHolder(conn, {
+        first_name:   recipient_first_name,
+        last_name:    recipient_last_name,
+        house_number: recipient_house_number,
+        street:       recipient_street,
+        city:         recipient_city,
+        state:        recipient_state,
+        zip_first3:   recipient_zip_first3,
+        zip_last2:    recipient_zip_last2,
+        zip_plus4:    b.recipient_zip_plus4,
+        apt_number:   recipient_apt_number,
+        country:      recipient_country,
+      })
+    }
+
+    // ── Rest of the logic (unchanged) ──
+    const tracking = await nextTrackingNumber(conn)
+    const oversize = typeCode === 'OVR' ? 1 : 0
+
+    const actingEmployeeId = Number(user.employee_id)
+    if (!Number.isFinite(actingEmployeeId)) {
+      await conn.rollback()
+      return send(res, 401, { message: 'Invalid employee session' })
+    }
+
+    const [empRows] = await conn.query(
+      `SELECT s.Store_ID FROM employee e
+       JOIN post_office p ON e.Post_Office_ID = p.Post_Office_ID
+       JOIN store s ON s.Post_Office_ID = p.Post_Office_ID
+       WHERE e.Employee_ID = ?`,
+      [actingEmployeeId]
+    )
+    if (!empRows.length) {
+      await conn.rollback()
+      return send(res, 404, { error: 'Employee or store not found' })
+    }
+    const sid = empRows[0].Store_ID
+
+    await conn.query(
+      `INSERT INTO package (Tracking_Number, Sender_ID, Recipient_ID, Dim_X, Dim_Y, Dim_Z,
+        Package_Type_Code, Weight, Zone, Oversize, Requires_Signature, Status_Code, To_Address_ID,
+        Recipient_Name, Recipient_Email_Address, Sender_Holder_ID, Receiver_Holder_ID)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,1,?,?,?,?,?)`,
+      [tracking, senderId, recipientId, dx, dy, dz, typeCode, w, z, oversize, sigRequired ? 1 : 0,
+       null, `${recipient_first_name} ${recipient_last_name}`, recipientEmail || null,
+       senderHolderId, receiverHolderId]
+    )
+
+    await conn.query(
+      `INSERT INTO payment (Customer_ID, Store_ID, Payment_Amount, Employee_ID, Tracking_Number)
+       VALUES (?,?,?,?,?)`,
+      [senderId, sid, priceAmount, actingEmployeeId, tracking]
+    )
+
+    const [[pending]] = await conn.query(`SELECT Status_Code FROM status_code WHERE Status_Name = 'Pending' LIMIT 1`)
+    if (!pending) throw new Error('Missing Pending status in status_code')
+    const pendingCode = pending.Status_Code
+
+    await conn.query(
+      `INSERT INTO delivery (Tracking_Number, Delivered_Date, Signature_Required, Signature_Received, Delivery_Status_Code, Delivered_By)
+       VALUES (?,NULL,?,NULL,?,NULL)`,
+      [tracking, sigRequired ? 1 : 0, pendingCode]
+    )
+
+    const [shipRes] = await conn.query(
+      `INSERT INTO shipment (Status_Code, Employee_ID,
+        From_Apt_Number, From_House_Number, From_Street, From_City, From_State, From_Zip_First3, From_Zip_Last2, From_Zip_Plus4, From_Country,
+        To_Apt_Number, To_House_Number, To_Street, To_City, To_State, To_Zip_Code,  To_Country,
+        Departure_Time_Stamp, Arrival_Time_Stamp)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NULL,NULL)`,
+      [
+        pendingCode, actingEmployeeId,
+        sender_apt_number || null,
+        String(sender_house_number).slice(0, 10),
+        String(sender_street).slice(0, 100),
+        String(sender_city).slice(0, 100),
+        String(sender_state).slice(0, 50),
+        String(sender_zip_first3).replace(/\D/g, '').slice(0, 3),
+        String(sender_zip_last2).replace(/\D/g, '').slice(0, 2),
+        b.sender_zip_plus4 ? String(b.sender_zip_plus4).replace(/\D/g, '').slice(0, 4) : null,
+        (sender_country || 'USA').toString().slice(0, 50),
+        recipient_apt_number || null,
+        String(recipient_house_number).slice(0, 10),
+        String(recipient_street).slice(0, 100),
+        String(recipient_city).slice(0, 100),
+        String(recipient_state).slice(0, 50),
+        String(recipient_zip_first3).replace(/\D/g, '').slice(0, 3),
+        String(recipient_zip_last2).replace(/\D/g, '').slice(0, 2),
+        b.recipient_zip_plus4 ? String(b.recipient_zip_plus4).replace(/\D/g, '').slice(0, 4) : null,
+        (recipient_country || 'USA').toString().slice(0, 50),
+      ]
+    )
+
+    const shipmentId = shipRes.insertId
+    await conn.query(`INSERT INTO shipment_package (Shipment_ID, Tracking_Number) VALUES (?,?)`, [shipmentId, tracking])
+
+    await conn.commit()
+    return send(res, 201, {
+      tracking_number: tracking,
+      price: priceAmount,
+      sender_id: senderId,
+      recipient_id: recipientId,
+    })
+  } catch (err) {
+    await conn.rollback()
+    console.error(err)
+    if (err.code === 'ER_DUP_ENTRY') {
+      return send(res, 400, { message: 'Duplicate email or tracking conflict; try again' })
+    }
+    return send(res, 500, { message: err.message || 'Could not create package' })
+  } finally {
+    conn.release()
+  }
+}
 
   // ── GET /api/reports/employee-performance ────────────────────────────────
 
@@ -1429,8 +1725,8 @@ if (method === 'GET' && pathname === '/api/employee/packages-at-office') {
          pp.Arrival_Time AS Pickup_Arrival_Time,
          MAX(sh.Arrival_Time_Stamp) AS Shipment_Arrival_Stamp
        FROM package pkg
-       INNER JOIN delivery d ON d.Tracking_Number = pkg.Tracking_Number
-       INNER JOIN status_code sc ON sc.Status_Code = d.Delivery_Status_Code
+       INNER JOIN package d ON d.Tracking_Number = pkg.Tracking_Number
+       INNER JOIN status_code sc ON sc.Status_Code = d.Status_Code
        LEFT JOIN customer r ON r.Customer_ID = pkg.Recipient_ID
        LEFT JOIN package_pickup pp ON pp.Tracking_Number = pkg.Tracking_Number
        LEFT JOIN shipment_package sp ON sp.Tracking_Number = pkg.Tracking_Number
@@ -1622,7 +1918,10 @@ if (method === 'GET' && pathname === '/api/reports/post-offices') {
   if (!user) return
   if (!requireEmployee(user, res)) return
   try {
-    const [rows] = await pool.query('SELECT Post_Office_ID, City, State FROM post_office ORDER BY State, City ASC')
+    const [rows] = await pool.query(`SELECT po.Post_Office_ID, a.City, a.State
+      FROM post_office po
+      JOIN address a ON po.Address_ID = a.Address_ID
+      ORDER BY a.State ASC, a.City ASC;`)
     return send(res, 200, rows)
   } catch (err) {
     return send(res, 500, { message: 'Server error' })
@@ -1674,7 +1973,7 @@ if (method === 'GET' && pathname === '/api/packages/full') {
 
         -- Delivery info
         pkg.Status_Code,
-        d.Delivery_Status_Code,
+        pkg.Status_Code,
         d.Delivered_Date,
         d.Signature_Required,
         sc.Status_Name,

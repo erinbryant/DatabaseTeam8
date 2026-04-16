@@ -407,68 +407,82 @@ export default function EmployeeHome() {
       <div style={{ display: 'flex', flex: 1 }}>
 
         {/* ── SIDEBAR ── */}
-        {sidebarOpen && (
-          <aside style={{ width: 230, background: '#1a1f4e', flexShrink: 0, position: 'sticky', top: 56, height: 'calc(100vh - 56px)', overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ flex: 1, padding: '20px 0' }}>
-              <div style={{ padding: '0 20px 20px', borderBottom: '1px solid rgba(255,255,255,0.1)', marginBottom: 8 }}>
-                <div style={{ width: 42, height: 42, borderRadius: '50%', background: '#2d3a8c', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem', fontWeight: 700, color: '#fff', marginBottom: 10 }}>
-                  {name?.charAt(0) ?? 'E'}
-                </div>
-                <div style={{ color: '#fff', fontWeight: 700, fontSize: '0.88rem' }}>{name ?? 'Employee'}</div>
-                <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.73rem', marginTop: 2 }}>
-                  {isAdmin ? 'Administrator' : isDriver ? 'Driver' : 'Clerk'}
-                </div>
-              </div>
-
-              <div style={{ paddingTop: 8 }}>
-                <div style={{ padding: '0 20px 6px', color: 'rgba(255,255,255,0.35)', fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-                  Navigation
-                </div>
-                {mainNav.map(item => {
-                  const active = item.path === '/employee_home'
-                  return (
-                    <a key={item.path} href="#"
-                      onClick={e => { e.preventDefault(); navigate(item.path) }}
-                      style={{ display: 'block', padding: '8px 20px', color: active ? '#fff' : 'rgba(255,255,255,0.65)', textDecoration: 'none', fontSize: '0.86rem', fontWeight: active ? 700 : 400, background: active ? 'rgba(255,255,255,0.1)' : 'none', borderLeft: active ? '3px solid #c8922a' : '3px solid transparent', transition: 'all 0.15s' }}
-                      onMouseEnter={e => { if (!active) { e.currentTarget.style.color = '#fff'; e.currentTarget.style.background = 'rgba(255,255,255,0.06)' }}}
-                      onMouseLeave={e => { if (!active) { e.currentTarget.style.color = 'rgba(255,255,255,0.65)'; e.currentTarget.style.background = 'none' }}}
-                    >
-                      {item.label}
-                    </a>
-                  )
-                })}
-              </div>
-
-              {isAdmin && (
-                <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-                  <div style={{ padding: '0 20px 6px', color: '#c8922a', fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-                    Admin Tools
+          <aside 
+            style={{ 
+              width: sidebarOpen ? 230 : 0,
+              opacity: sidebarOpen ? 1 : 0,
+              background: '#1a1f4e',
+              flexShrink: 0,
+              position: 'sticky',
+              top: 56,
+              height: 'calc(100vh - 56px)',
+              overflowY: 'auto',
+              display: 'flex',
+              flexDirection: 'column',
+              transition: 'width 0.3s ease, opacity 0.3s ease',
+            }}
+          >
+            <div style={{ width: 230}}>
+              <div style={{ flex: 1, padding: '20px 0' }}>
+                <div style={{ padding: '0 20px 20px', borderBottom: '1px solid rgba(255,255,255,0.1)', marginBottom: 8 }}>
+                  <div style={{ width: 42, height: 42, borderRadius: '50%', background: '#2d3a8c', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem', fontWeight: 700, color: '#fff', marginBottom: 10 }}>
+                    {name?.charAt(0) ?? 'E'}
                   </div>
-                  {adminNav.map(item => (
-                    <a key={item.path} href="#"
-                      onClick={e => { e.preventDefault(); navigate(item.path) }}
-                      style={{ display: 'block', padding: '8px 20px', color: 'rgba(255,255,255,0.65)', textDecoration: 'none', fontSize: '0.86rem', fontWeight: 400, borderLeft: '3px solid transparent', transition: 'all 0.15s' }}
-                      onMouseEnter={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.background = 'rgba(255,255,255,0.06)' }}
-                      onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.65)'; e.currentTarget.style.background = 'none' }}
-                    >
-                      {item.label}
-                    </a>
-                  ))}
+                  <div style={{ color: '#fff', fontWeight: 700, fontSize: '0.88rem' }}>{name ?? 'Employee'}</div>
+                  <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.73rem', marginTop: 2 }}>
+                    {isAdmin ? 'Administrator' : isDriver ? 'Driver' : 'Clerk'}
+                  </div>
                 </div>
-              )}
-            </div>
 
-            <div style={{ padding: '16px 20px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-              <a href="#" onClick={handleLogout}
-                style={{ color: 'rgba(255,255,255,0.45)', textDecoration: 'none', fontSize: '0.82rem', transition: 'color 0.15s' }}
-                onMouseEnter={e => e.target.style.color = '#fca5a5'}
-                onMouseLeave={e => e.target.style.color = 'rgba(255,255,255,0.45)'}
-              >
-                Sign out
-              </a>
+                <div style={{ paddingTop: 8 }}>
+                  <div style={{ padding: '0 20px 6px', color: 'rgba(255,255,255,0.35)', fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+                    Navigation
+                  </div>
+                  {mainNav.map(item => {
+                    const active = item.path === '/employee_home'
+                    return (
+                      <a key={item.path} href="#"
+                        onClick={e => { e.preventDefault(); navigate(item.path) }}
+                        style={{ display: 'block', padding: '8px 20px', color: active ? '#fff' : 'rgba(255,255,255,0.65)', textDecoration: 'none', fontSize: '0.86rem', fontWeight: active ? 700 : 400, background: active ? 'rgba(255,255,255,0.1)' : 'none', borderLeft: active ? '3px solid #c8922a' : '3px solid transparent', transition: 'all 0.15s' }}
+                        onMouseEnter={e => { if (!active) { e.currentTarget.style.color = '#fff'; e.currentTarget.style.background = 'rgba(255,255,255,0.06)' }}}
+                        onMouseLeave={e => { if (!active) { e.currentTarget.style.color = 'rgba(255,255,255,0.65)'; e.currentTarget.style.background = 'none' }}}
+                      >
+                        {item.label}
+                      </a>
+                    )
+                  })}
+                </div>
+
+                {isAdmin && (
+                  <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+                    <div style={{ padding: '0 20px 6px', color: '#c8922a', fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+                      Admin Tools
+                    </div>
+                    {adminNav.map(item => (
+                      <a key={item.path} href="#"
+                        onClick={e => { e.preventDefault(); navigate(item.path) }}
+                        style={{ display: 'block', padding: '8px 20px', color: 'rgba(255,255,255,0.65)', textDecoration: 'none', fontSize: '0.86rem', fontWeight: 400, borderLeft: '3px solid transparent', transition: 'all 0.15s' }}
+                        onMouseEnter={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.background = 'rgba(255,255,255,0.06)' }}
+                        onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.65)'; e.currentTarget.style.background = 'none' }}
+                      >
+                        {item.label}
+                      </a>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div style={{ padding: '16px 20px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+                <a href="#" onClick={handleLogout}
+                  style={{ color: 'rgba(255,255,255,0.45)', textDecoration: 'none', fontSize: '0.82rem', transition: 'color 0.15s' }}
+                  onMouseEnter={e => e.target.style.color = '#fca5a5'}
+                  onMouseLeave={e => e.target.style.color = 'rgba(255,255,255,0.45)'}
+                >
+                  Sign out
+                </a>
+              </div>
             </div>
           </aside>
-        )}
 
         {/* ── MAIN CONTENT ── */}
         <div style={{ flex: 1, overflowX: 'hidden' }}>

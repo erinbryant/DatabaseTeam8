@@ -178,6 +178,9 @@ export default function AllPackages() {
   const token      = localStorage.getItem('token')
   const userType   = localStorage.getItem('userType')
 
+  //Add sidebar using this
+  const [sidebarOpen, setSidebarOpen] = useState(true)
+
   const [packages,       setPackages]       = useState([])
   const [statusCodes,    setStatusCodes]    = useState([])
   const [postOffices,    setPostOffices]    = useState([])
@@ -185,13 +188,14 @@ export default function AllPackages() {
   const [error,          setError]          = useState(null)
   const [expanded,       setExpanded]       = useState(null)
   const [statusUpdating, setStatusUpdating] = useState(null)
+  
 
   // Filters
   const [search,        setSearch]        = useState('')
   const [zoneFilter,    setZoneFilter]    = useState('')
   const [typeFilter,    setTypeFilter]    = useState('')
   const [officeFilter,  setOfficeFilter]  = useState('')
-  const [showFilters,   setShowFilters]   = useState(false)
+  //const [showFilters,   setShowFilters]   = useState(false)
   const [statusFilter,   setStatusFilter]   = useState('')
   const [dateFromFilter, setDateFromFilter] = useState('')
   const [dateToFilter,   setDateToFilter]   = useState('')
@@ -342,15 +346,11 @@ const filtered = packages.filter(p => {
               value={search} onChange={e => setSearch(e.target.value)}
               style={{ flex: 1, minWidth: 220, padding: '9px 14px', border: '1px solid #dbe4ef', borderRadius: 10, fontSize: '0.9rem' }}
             />
-            <button onClick={() => setShowFilters(f => !f)}
-              style={{ padding: '9px 16px', background: showFilters ? '#eff6ff' : '#fff', border: '1px solid #dbe4ef', borderRadius: 10, cursor: 'pointer', fontWeight: 600, color: '#374151' }}>
-              🔽 {showFilters ? 'Hide Filters' : 'Filters'}
-            </button>
             <span style={{ fontSize: '0.85rem', color: '#64748b' }}>{filtered.length} of {packages.length} packages</span>
           </div>
 
           {/* Filter panel */}
-          {showFilters && (
+          
             <div style={{ background: '#fff', border: '1px solid #dbe4ef', borderRadius: 14, padding: '18px 20px', marginBottom: 20, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 14 }}>
               <div>
                 <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, marginBottom: 5, color: '#374151' }}>Zone</label>
@@ -421,15 +421,15 @@ const filtered = packages.filter(p => {
                 </button>
               </div>
             </div>
-          )}
+          
 
           {loading ? (
             <div style={{ textAlign: 'center', padding: 48, color: '#64748b' }}>Loading packages…</div>
           ) : (
             <>
-              <PackageTable title="Active Packages"    packages={active}       color="#1d4ed8" {...commonProps} />
-              <PackageTable title="Completed"          packages={completed}    color="#059669" collapsible {...commonProps} />
-              <PackageTable title="Lost & Returned"   packages={lostReturned} color="#dc2626" collapsible {...commonProps} />
+              <PackageTable title="🚚 Active Packages"    packages={active}       color="#1d4ed8" {...commonProps} />
+              <PackageTable title="✅ Completed"          packages={completed}    color="#059669" collapsible {...commonProps} />
+              <PackageTable title="⚠️ Lost & Returned"   packages={lostReturned} color="#dc2626" collapsible {...commonProps} />
             </>
           )}
         </div>

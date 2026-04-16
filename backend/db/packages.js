@@ -31,7 +31,7 @@ function getAllPackages(pool, callback) {
       ar.Zip_Code AS Recipient_Zip_Code,
 
       sc.Status_Name,
-      d.Delivery_Status_Code,
+      p.Status_Code,
       sc.Is_Final_Status,
       d.Delivered_Date,
       d.Signature_Required,
