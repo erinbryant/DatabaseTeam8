@@ -33,17 +33,14 @@ async function getLostPackagesByCustomer(pool, customerId) {
   try {
     const [rows] = await pool.query(
       `SELECT
-          d.Tracking_Number,
-          d.Delivery_Status_Code,
+          pkg.Tracking_Number,
+          COALESCE(d.Delivery_Status_Code, pkg.Status_Code) AS Delivery_Status_Code,
           d.Date_Updated,
           d.Date_Created
-      FROM delivery d
-      WHERE d.Tracking_Number IN (
-          SELECT p.Tracking_Number
-          FROM package p
-          WHERE p.Recipient_ID = ?
-      )
-      AND d.Delivery_Status_Code = 7;`,
+      FROM package pkg
+      LEFT JOIN delivery d ON d.Tracking_Number = pkg.Tracking_Number
+      WHERE pkg.Recipient_ID = ?
+        AND pkg.Lost_Status = 'lost';`,
       [customerId]
     );
     return rows;
