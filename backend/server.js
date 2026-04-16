@@ -1836,6 +1836,7 @@ ORDER BY pkg.Tracking_Number ASC`,
   // ── GET /api/packages/:tracking_number/tracking (employee+admin) ─────────
   {
     const m = matchPath('/api/packages/:tracking_number/tracking', pathname)
+    console.log('TRACKING ROUTE HIT')
     if (method === 'GET' && m.matched) {
       const user = authenticate(req, res)
       if (!user) return

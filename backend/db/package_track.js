@@ -50,7 +50,7 @@ const getPackageTracking = (pool, tracking_number, callback) => {
     ORDER BY
         CASE WHEN Instance_Type = 'Shipment' THEN 0 ELSE 1 END,
         Departure_Time_Stamp,
-        Delivered_Date,`,
+        Delivered_Date`,
     [tracking_number, tracking_number]
   )
   .then(([rows]) => callback(null, rows))
