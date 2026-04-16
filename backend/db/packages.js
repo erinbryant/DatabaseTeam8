@@ -136,8 +136,9 @@ function getPackagesForCustomer(pool, customerID, callback) {
     JOIN package_type pt  ON p.Package_Type_Code = pt.Package_Type_Code
     JOIN customer cs      ON p.Sender_ID         = cs.Customer_ID
     LEFT JOIN customer cr ON p.Recipient_ID       = cr.Customer_ID
+    LEFT JOIN payment q   ON q.Tracking_Number   = p.Tracking_Number
     LEFT JOIN delivery d  ON p.Tracking_Number    = d.Tracking_Number
-    LEFT JOIN status_code sc ON d.Delivery_Status_Code = sc.Status_Code
+    LEFT JOIN status_code sc ON p.Status_Code = sc.Status_Code
     LEFT JOIN package_pickup pp ON pp.Tracking_Number = p.Tracking_Number
     WHERE p.Sender_ID = ? OR p.Recipient_ID = ?
     ORDER BY p.Date_Created DESC

@@ -269,13 +269,14 @@ async function router(req, res) {
     const { email, password } = await getBody(req)
     if (!email || !password) return send(res, 400, { message: 'Email and password required' })
     try {
+      const emailNorm = String(email).trim().toLowerCase()
       const [rows] = await pool.query(
         `SELECT e.*, r.Role_Name, d.Department_Name
          FROM employee e
          JOIN role r       ON e.Role_ID       = r.Role_ID
          JOIN department d ON e.Department_ID = d.Department_ID
-         WHERE e.Email_Address = ?`,
-        [email]
+         WHERE LOWER(e.Email_Address) = ?`,
+        [emailNorm]
       )
       if (!rows.length) return send(res, 401, { message: 'Invalid credentials' })
       const emp = rows[0]
@@ -305,8 +306,11 @@ async function router(req, res) {
     const { email, password } = await getBody(req)
     if (!email || !password) return send(res, 400, { message: 'Email and password required' })
     try {
-      const [rows] = await pool.query('SELECT * FROM customer WHERE Email_Address = ? AND is_Active = 0',
-      [email.tri().toLowerCase()])
+      const emailNorm = String(email).trim().toLowerCase()
+      const [rows] = await pool.query(
+        'SELECT * FROM customer WHERE LOWER(Email_Address) = ? AND is_Active = 0',
+        [emailNorm]
+      )
       if (!rows.length) return send(res, 401, { message: 'Invalid credentials' })
       const customer = rows[0]
       const valid = await bcrypt.compare(password, customer.Password_Hash)
@@ -484,11 +488,12 @@ async function router(req, res) {
                 e.Email_Address, e.Phone_Number, e.Salary, e.Hours_Worked, e.Supervisor_ID,
                 CONCAT(s.First_Name, ' ', s.Last_Name) AS Supervisor,
                 r.Role_Name, d.Department_Name,
-                po.City AS Office_City, po.State AS Office_State
+                off_addr.City AS Office_City, off_addr.State AS Office_State
          FROM employee e
          JOIN role r         ON e.Role_ID        = r.Role_ID
          JOIN department d   ON e.Department_ID  = d.Department_ID
          JOIN post_office po ON e.Post_Office_ID = po.Post_Office_ID
+         JOIN address off_addr ON off_addr.Address_ID = po.Address_ID
          LEFT JOIN employee s ON e.Supervisor_ID = s.Employee_ID
          WHERE e.Employee_ID = ?`,
         [user.employee_id]
@@ -519,11 +524,12 @@ async function router(req, res) {
                 e.Email_Address, e.Phone_Number, e.Salary, e.Hours_Worked, e.Supervisor_ID,
                 CONCAT(s.First_Name, ' ', s.Last_Name) AS Supervisor,
                 r.Role_Name, d.Department_Name,
-                po.City AS Office_City, po.State AS Office_State
+                off_addr.City AS Office_City, off_addr.State AS Office_State
          FROM employee e
          JOIN role r         ON e.Role_ID        = r.Role_ID
          JOIN department d   ON e.Department_ID  = d.Department_ID
          JOIN post_office po ON e.Post_Office_ID = po.Post_Office_ID
+         JOIN address off_addr ON off_addr.Address_ID = po.Address_ID
          LEFT JOIN employee s ON e.Supervisor_ID = s.Employee_ID
          WHERE e.Employee_ID = ?`,
         [user.employee_id]
@@ -1310,8 +1316,8 @@ if (method === 'GET' && pathname === '/api/reports/employee-performance') {
         e.Email_Address,
         r.Role_Name,
         d.Department_Name,
-        po.City AS Office_City,
-        po.State AS Office_State,
+        off_addr.City AS Office_City,
+        off_addr.State AS Office_State,
         COUNT(DISTINCT s.Shipment_ID) AS Total_Shipments,
         COUNT(DISTINCT sp.Tracking_Number) AS Total_Packages,
         ROUND(COUNT(DISTINCT sp.Tracking_Number) / NULLIF(COUNT(DISTINCT s.Shipment_ID), 0), 1) AS Avg_Packages_Per_Shipment,
@@ -1331,11 +1337,11 @@ if (method === 'GET' && pathname === '/api/reports/employee-performance') {
         ) AS Avg_Revenue_Per_Shipment,
         (
           SELECT ROUND(
-            // COUNT(CASE WHEN d2.Delivery_Status_Code = 4 THEN 1 END) * 100.0 /
+            COUNT(CASE WHEN pkg2.Status_Code = 4 THEN 1 END) * 100.0 /
             NULLIF(COUNT(*), 0), 1)
           FROM shipment s2
           JOIN shipment_package sp2 ON sp2.Shipment_ID = s2.Shipment_ID
-          JOIN delivery d2 ON d2.Tracking_Number = sp2.Tracking_Number
+          JOIN package pkg2 ON pkg2.Tracking_Number = sp2.Tracking_Number
           WHERE s2.Employee_ID = e.Employee_ID
         ) AS Delivery_Success_Rate,
         (
@@ -1350,12 +1356,13 @@ if (method === 'GET' && pathname === '/api/reports/employee-performance') {
       JOIN role r ON e.Role_ID = r.Role_ID
       JOIN department d ON e.Department_ID = d.Department_ID
       JOIN post_office po ON e.Post_Office_ID = po.Post_Office_ID
+      JOIN address off_addr ON off_addr.Address_ID = po.Address_ID
       LEFT JOIN shipment s ON s.Employee_ID = e.Employee_ID
       LEFT JOIN shipment_package sp ON sp.Shipment_ID = s.Shipment_ID
       LEFT JOIN package pkg ON pkg.Tracking_Number = sp.Tracking_Number
       ${whereClause}
       GROUP BY e.Employee_ID, e.First_Name, e.Last_Name, e.Email_Address,
-               r.Role_Name, d.Department_Name, po.City, po.State
+               r.Role_Name, d.Department_Name, off_addr.City, off_addr.State
       ORDER BY Total_Packages DESC`,
       params
     )
@@ -1452,21 +1459,22 @@ if (method === 'GET' && pathname === '/api/reports/location-stats') {
     const [rows] = await pool.query(
       `SELECT
         po.Post_Office_ID,
-        po.City,
-        po.State,
-        CONCAT(po.House_Number, ' ', po.Street, ', ', po.City, ', ', po.State) AS Full_Address,
+        addr.City,
+        addr.State,
+        CONCAT(addr.House_Number, ' ', addr.Street, ', ', addr.City, ', ', addr.State) AS Full_Address,
         COUNT(DISTINCT s.Shipment_ID) AS Total_Shipments,
         COUNT(DISTINCT sp.Tracking_Number) AS Total_Packages,
         COALESCE(SUM(pay.Payment_Amount), 0) AS Total_Revenue,
         COALESCE(AVG(pay.Payment_Amount), 0) AS Avg_Package_Price,
         COUNT(DISTINCT e.Employee_ID) AS Total_Employees
       FROM post_office po
+      JOIN address addr ON addr.Address_ID = po.Address_ID
       LEFT JOIN employee e ON e.Post_Office_ID = po.Post_Office_ID
       LEFT JOIN shipment s ON s.Employee_ID = e.Employee_ID ${whereClause}
       LEFT JOIN shipment_package sp ON sp.Shipment_ID = s.Shipment_ID
       LEFT JOIN package pkg ON pkg.Tracking_Number = sp.Tracking_Number
       LEFT JOIN payment pay ON pay.Tracking_Number = sp.Tracking_Number
-      GROUP BY po.Post_Office_ID, po.City, po.State, po.House_Number, po.Street
+      GROUP BY po.Post_Office_ID, addr.City, addr.State, addr.House_Number, addr.Street
       ORDER BY Total_Packages DESC`,
       params
     )
@@ -1502,7 +1510,7 @@ if (method === 'GET' && pathname === '/api/reports/department-stats') {
         COUNT(DISTINCT sp.Tracking_Number) AS Total_Packages,
         COALESCE(SUM(pay.Payment_Amount), 0) AS Total_Revenue,
         ROUND(
-          COUNT(CASE WHEN del.Delivery_Status_Code = 4 THEN 1 END) * 100.0 /
+          COUNT(CASE WHEN pkg.Status_Code = 4 THEN 1 END) * 100.0 /
           NULLIF(COUNT(DISTINCT sp.Tracking_Number), 0), 1
         ) AS Delivery_Success_Rate
       FROM department d
@@ -1511,7 +1519,6 @@ if (method === 'GET' && pathname === '/api/reports/department-stats') {
       LEFT JOIN shipment_package sp ON sp.Shipment_ID = s.Shipment_ID
       LEFT JOIN package pkg ON pkg.Tracking_Number = sp.Tracking_Number
       LEFT JOIN payment pay ON pay.Tracking_Number = sp.Tracking_Number
-      LEFT JOIN delivery del ON del.Tracking_Number = sp.Tracking_Number
       GROUP BY d.Department_ID, d.Department_Name
       ORDER BY Total_Packages DESC`,
       params
@@ -1694,13 +1701,16 @@ if (method === 'GET' && pathname === '/api/employee/post-offices') {
   try {
     const [rows] = await pool.query(
       `SELECT
-         Post_Office_ID,
-         Street,
-         City,
-         State,
-         NULLIF(TRIM(CONCAT(COALESCE(Street, ''), ', ', COALESCE(City, ''), ', ', COALESCE(State, ''))), '') AS Street_Label
-       FROM post_office
-       ORDER BY State ASC, City ASC, Street ASC`
+         po.Post_Office_ID,
+         a.House_Number,
+         a.Street,
+         a.City,
+         a.State,
+         a.Zip_Code,
+         NULLIF(TRIM(CONCAT(COALESCE(a.Street, ''), ', ', COALESCE(a.City, ''), ', ', COALESCE(a.State, ''))), '') AS Street_Label
+       FROM post_office po
+       JOIN address a ON a.Address_ID = po.Address_ID
+       ORDER BY a.State ASC, a.City ASC, a.Street ASC`
     )
     return send(res, 200, rows)
   } catch (err) {
@@ -2488,31 +2498,6 @@ if (method === 'GET' && pathname === '/api/packages/full') {
         return send(res, 200, { message: 'Status updated successfully' })
       })
       return
-    }
-  }
-
-  // GET /api/employee/post-offices
-  if(method === 'GET' && pathname === '/api/employee/post-offices') {
-    const user = authenticate(req,res)
-    if(!user) return
-    if(!requireEmployee(user, res)) return
-    try {
-      const [rows] = await pool.query(`
-        SELECT
-          po.Post_Office_ID,
-          a.House_Number,
-          a.Street,
-          a.City,
-          a.State,
-          a.Zip_Code,
-          CONCAT(a.House_Number, ' ', a.Street, ', ', a.City, ', ', a.State) AS Street_Label
-        FROM post_office po
-        JOIN address a ON a.Address_ID = po.Address_ID
-        ORDER BY a.State, a.City ASC
-        `)
-        return send(res,200, rows)
-    }catch (err) {
-      return send(res,500, {message: 'Server error' })
     }
   }
 
