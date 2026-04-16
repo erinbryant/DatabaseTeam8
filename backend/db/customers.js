@@ -468,19 +468,24 @@ async function resolveParty(conn, {
   }
 
   // 2. Try to find by name among customers created without a real email
-  const [byName] = await conn.query(
-    `SELECT Customer_ID, Address_ID FROM customer
-     WHERE LOWER(First_Name) = ? AND LOWER(Last_Name) = ?
-       AND Email_Address LIKE 'noemail\\_%@placeholder.invalid'
-     LIMIT 1`,
-    [first_name.trim().toLowerCase(), last_name.trim().toLowerCase()]
-  )
-  if (byName.length) {
-    return { customerId: byName[0].Customer_ID, addressId: byName[0].Address_ID }
-  }
+  // Resolve address first
+const addressId = await resolveAddress(conn, { house_number, street, city, state, zip_code, apt_number, country })
+
+// Then use it in the name lookup
+const [byName] = await conn.query(
+  `SELECT Customer_ID, Address_ID FROM customer
+   WHERE LOWER(First_Name) = ? AND LOWER(Last_Name) = ? AND Address_ID = ?
+   LIMIT 1`,
+  [first_name.trim().toLowerCase(), last_name.trim().toLowerCase(), addressId]
+)
+if (byName.length) {
+  return { customerId: byName[0].Customer_ID, addressId: byName[0].Address_ID }
+}
+
+// Then skip re-resolving address in step 3 since it's already done
 
   // 3. Neither found — resolve/create address then create customer
-  const addressId = await resolveAddress(conn, { house_number, street, city, state, zip_code, apt_number, country })
+  // const addressId = await resolveAddress(conn, { house_number, street, city, state, zip_code, apt_number, country })
 
   const hash = await bcrypt.hash(EMPLOYEE_CREATED_CUSTOMER_PASSWORD, 10)
   const hasEmail = email && email.trim()

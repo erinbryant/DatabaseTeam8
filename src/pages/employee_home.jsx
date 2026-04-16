@@ -235,7 +235,7 @@ function ClerkDashboard({ navigate, token }) {
   const [loading,  setLoading]  = useState(true)
 
   useEffect(() => {
-    fetch(`${API_BASE}/api/packages`, { headers: { Authorization: `Bearer ${token}` } })
+    fetch(`${API_BASE}/api/packages/full`, { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.json())
       .then(d => { setPackages(Array.isArray(d) ? d : []); setLoading(false) })
       .catch(() => setLoading(false))
