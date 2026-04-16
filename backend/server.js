@@ -1841,6 +1841,7 @@ ORDER BY pkg.Tracking_Number ASC`,
   // ── GET /api/packages/:tracking_number/tracking (employee+admin) ─────────
   {
     const m = matchPath('/api/packages/:tracking_number/tracking', pathname)
+    console.log('TRACKING ROUTE HIT')
     if (method === 'GET' && m.matched) {
       packageTrackDB.getPackageTracking(pool, m.params.tracking_number, (err, results) => {
         if (err) return send(res, 500, { error: 'Database error', details: err.message })
