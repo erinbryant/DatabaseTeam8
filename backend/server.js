@@ -1967,6 +1967,49 @@ ORDER BY pkg.Tracking_Number ASC`,
     }
   }
 
+  // ── GET /api/tickets/report ──────────────────────────────────────────────
+  if (method === 'GET' && pathname === '/api/tickets/report') {
+    const user = authenticate(req, res)
+    if (!user) return
+    if (!requireEmployee(user, res)) return
+    try {
+      const page  = parseInt(query.page  || '1')
+      const limit = parseInt(query.limit || '20')
+      const filters = {
+        search:    query.search     || '',
+        dateFrom:  query.date_from  || '',
+        dateTo:    query.date_to    || '',
+        status:    query.status     ?? '',
+        issueType: query.issue_type || '',
+        page, limit
+      }
+      const results = await employeeDB.getTicketsReportTable(pool, filters)
+      return send(res, 200, results)
+    } catch (err) {
+      return send(res, 500, { error: err.message })
+    }
+  }
+
+  // ── GET /api/tickets/report/stats ────────────────────────────────────────
+  if (method === 'GET' && pathname === '/api/tickets/report/stats') {
+    const user = authenticate(req, res)
+    if (!user) return
+    if (!requireEmployee(user, res)) return
+    try {
+      const filters = {
+        search:    query.search     || '',
+        dateFrom:  query.date_from  || '',
+        dateTo:    query.date_to    || '',
+        status:    query.status     ?? '',
+        issueType: query.issue_type || '',
+      }
+      const results = await employeeDB.getTicketsReportStats(pool, filters)
+      return send(res, 200, results)
+    } catch (err) {
+      return send(res, 500, { error: err.message })
+    }
+  }
+
   // ── GET /api/support-tickets (employee+admin) ────────────────────────────
   if (method === 'GET' && pathname === '/api/support-tickets') {
     const user = authenticate(req, res)
