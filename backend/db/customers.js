@@ -150,6 +150,56 @@ const [addrRows] = await conn.query(
   return addressId
 }
 
+async function resolveCustomer(conn, body, hash, addressId, initialPassword) {
+  // 1. Check if customer already exists
+  const [existing] = await conn.query(
+    `SELECT Customer_ID
+     FROM customer
+     WHERE First_Name = ?
+       AND Last_Name = ?
+       AND Address_ID = ?
+     LIMIT 1`,
+    [
+      String(body.first_name).trim(),
+      String(body.last_name).trim(),
+      addressId
+    ]
+  );
+
+  if (existing.length > 0) {
+    return {
+      customerId: existing[0].Customer_ID,
+      initialPassword: null, // already exists, so no new password
+      existed: true
+    };
+  }
+
+  // 2. Otherwise insert new customer
+  const [result] = await conn.query(
+    `INSERT INTO customer (
+      First_Name, Middle_Name, Last_Name,
+      Password_Hash, Email_Address, Phone_Number,
+      Address_ID
+    ) VALUES (?,?,?,?,?,?,?)`,
+    [
+      String(body.first_name).trim(),
+      null,
+      String(body.last_name).trim(),
+      hash,
+      String(body.email).trim().toLowerCase(),
+      body.phone_number || null,
+      addressId
+    ]
+  );
+
+  return {
+    customerId: result.insertId,
+    initialPassword,
+    existed: false
+  };
+}
+
+
 async function registerCustomer(pool, rawBody) {
   const body = { ...rawBody }
   delete body.customer_id
@@ -383,7 +433,9 @@ module.exports = {
   getCustomerPackages,
   registerCustomer,
   getCustomerByEmail,
-  // createCustomerMinimal,
+  createCustomerMinimal,
+  resolveAddress,
+  resolveCustomer,
   updateCustomerStatus,
    resolveAddress,
 }
