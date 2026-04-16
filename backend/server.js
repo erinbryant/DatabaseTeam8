@@ -887,7 +887,7 @@ async function router(req, res) {
     else{
      const [custRows] = await conn.query(
     `SELECT Address_ID FROM customer WHERE Customer_ID = ?`,
-    [recipientIdId]
+    [recipientId]
   )
 
   recipientAddId = custRows[0]?.Address_ID || null
@@ -922,8 +922,8 @@ async function router(req, res) {
 
     await conn.query(
       `INSERT INTO package (Tracking_Number, Sender_ID, Recipient_ID, Dim_X, Dim_Y, Dim_Z,
-        Package_Type_Code, Weight, Zone, Oversize, Requires_Signature, Status_Code)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
+        Package_Type_Code, Weight, Zone, Oversize, Requires_Signature)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
       [tracking, senderId, recipientId, dx, dy, dz, typeCode, w, z, oversize, sigRequired ? 1 : 0,
        pendingCode]
     )
@@ -938,13 +938,12 @@ async function router(req, res) {
 
     await conn.query(
       `INSERT INTO package (
-        Tracking_Number, Sender_ID, Recipient_ID,
-        Dim_X, Dim_Y, Dim_Z,
-        Package_Type_Code, Weight, Zone,
-        Oversize, Requires_Signature,
-        Status_Code
+          Tracking_Number, Sender_ID, Recipient_ID,
+          Dim_X, Dim_Y, Dim_Z,
+          Package_Type_Code, Weight, Zone,
+          Oversize, Requires_Signature
       )
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
+      VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
       [
         tracking,
         senderId,
@@ -957,9 +956,6 @@ async function router(req, res) {
         z,
         oversize,
         sigRequired ? 1 : 0,
-        pendingCode,
-        recipientAddrId,
-        recipientName,
       ]
     )
 
@@ -998,7 +994,7 @@ async function router(req, res) {
         Arrival_Time_Stamp
       )
       VALUES (?,?,?,?,NULL,NULL)`,
-      [pendingCode, actingEmployeeId, senderAddrId, recipientAddrId]
+      [pendingCode, actingEmployeeId, senderAddrId, recipientAddId]
     )
 
     const shipmentId = shipRes.insertId
@@ -1152,10 +1148,10 @@ if (method === 'GET' && pathname === '/api/reports/employee-performance') {
         [code, trackingNumber]
       )
 
-      await conn.query(
-        `UPDATE package SET Status_Code = ? WHERE Tracking_Number = ?`,
-        [code, trackingNumber]
-      )
+      // await conn.query(
+      //   `UPDATE package SET Status_Code = ? WHERE Tracking_Number = ?`,
+      //   [code, trackingNumber]
+      // )
 
       const [sp] = await conn.query(
         `SELECT Shipment_ID FROM shipment_package WHERE Tracking_Number = ? LIMIT 1`,
@@ -1466,41 +1462,53 @@ if (method === 'GET' && pathname === '/api/employee/packages-at-office') {
   try {
     const [rows] = await pool.query(
       `SELECT
-         pkg.Tracking_Number,
-         pkg.Package_Type_Code,
-         pkg.Weight,
-         pkg.Recipient_ID,
-         CONCAT(r.First_Name, ' ', r.Last_Name) AS Recipient_Name,
-         sc.Status_Name,
-         pp.Arrival_Time AS Pickup_Arrival_Time,
-         MAX(sh.Arrival_Time_Stamp) AS Shipment_Arrival_Stamp
-       FROM package pkg
-       INNER JOIN package d ON d.Tracking_Number = pkg.Tracking_Number
-       INNER JOIN status_code sc ON sc.Status_Code = d.Status_Code
-       LEFT JOIN customer r ON r.Customer_ID = pkg.Recipient_ID
-       LEFT JOIN package_pickup pp ON pp.Tracking_Number = pkg.Tracking_Number
-       LEFT JOIN shipment_package sp ON sp.Tracking_Number = pkg.Tracking_Number
-       LEFT JOIN shipment sh ON sh.Shipment_ID = sp.Shipment_ID
-       WHERE (
-         LOWER(TRIM(REPLACE(REPLACE(REPLACE(IFNULL(sc.Status_Name, ''), '-', ' '), '_', ' '), '  ', ' '))) = 'at office'
-         OR REPLACE(LOWER(TRIM(IFNULL(sc.Status_Name, ''))), ' ', '') LIKE '%atoffice%'
-       )
-         AND (pp.Is_picked_Up IS NULL OR TRIM(IFNULL(pp.Is_picked_Up, '0')) = '0')
-       GROUP BY
-         pkg.Tracking_Number,
-         pkg.Package_Type_Code,
-         pkg.Weight,
-         pkg.Recipient_ID,
-         Recipient_Name,
-         sc.Status_Name,
-         pp.Arrival_Time
-       ORDER BY pkg.Tracking_Number ASC`
+    pkg.Tracking_Number,
+    pkg.Package_Type_Code,
+    pkg.Weight,
+    pkg.Recipient_ID,
+    CONCAT(r.First_Name, ' ', r.Last_Name) AS Recipient_Name,
+    sc.Status_Name,
+    pp.Arrival_Time AS Pickup_Arrival_Time,
+    MAX(sh.Arrival_Time_Stamp) AS Shipment_Arrival_Stamp
+FROM package pkg
+LEFT JOIN delivery d ON d.Tracking_Number = pkg.Tracking_Number
+JOIN status_code sc ON sc.Status_Code = d.Delivery_Status_Code
+LEFT JOIN customer r ON r.Customer_ID = pkg.Recipient_ID
+LEFT JOIN package_pickup pp ON pp.Tracking_Number = pkg.Tracking_Number
+LEFT JOIN shipment_package sp ON sp.Tracking_Number = pkg.Tracking_Number
+LEFT JOIN shipment sh ON sh.Shipment_ID = sp.Shipment_ID
+WHERE (
+    LOWER(TRIM(REPLACE(REPLACE(REPLACE(IFNULL(sc.Status_Name, ''), '-', ' '), '_', ' '), '  ', ' '))) = 'at office'
+    OR REPLACE(LOWER(TRIM(IFNULL(sc.Status_Name, ''))), ' ', '') LIKE '%atoffice%'
+)
+  AND (pp.Is_picked_Up IS NULL OR TRIM(IFNULL(pp.Is_picked_Up, '0')) = '0')
+GROUP BY
+    pkg.Tracking_Number,
+    pkg.Package_Type_Code,
+    pkg.Weight,
+    pkg.Recipient_ID,
+    Recipient_Name,
+    sc.Status_Name,
+    pp.Arrival_Time
+ORDER BY pkg.Tracking_Number ASC`
     )
     return send(res, 200, rows)
   } catch (err) {
     console.error(err)
     return send(res, 500, { message: err.sqlMessage || err.message || 'Could not load at-office packages' })
   }
+}
+
+function pickupLateFeeFromArrivalAndPickup(arrivalTime, pickupTime) {
+  const arrival = new Date(arrivalTime)
+  const pickup = new Date(pickupTime)
+
+  if (isNaN(arrival.getTime()) || isNaN(pickup.getTime())) return 0
+
+  const msPerDay = 1000 * 60 * 60 * 24
+  const daysHeld = Math.max(0, Math.floor((pickup - arrival) / msPerDay))
+
+  return daysHeld * 5
 }
 
 // ── POST /api/employee/package-pickup (complete pickup) ─────────────────────
@@ -1568,12 +1576,12 @@ if (method === 'POST' && pathname === '/api/employee/package-pickup') {
 
     let status_updated = false
     if (pickedUpCode != null) {
-      await pool.query(
-        `UPDATE package
-        SET Status_Code = ?
+    await pool.query(
+        `UPDATE delivery
+        SET Delivery_Status_Code = ?
         WHERE Tracking_Number = ?`,
         [pickedUpCode, tracking_number]
-      )
+    )
 
       if (sh?.Shipment_ID != null) {
         await pool.query(
@@ -1706,64 +1714,61 @@ if (method === 'GET' && pathname === '/api/packages/full') {
 
     const [rows] = await pool.query(
       `SELECT
-        pkg.Tracking_Number,
-        pkg.Package_Type_Code,
-        pkg.Weight,
-        pkg.Zone,
-        pay.Payment_Amount AS Price,
-        pkg.Date_Created,
-        pkg.Oversize,
-        pkg.Requires_Signature,
-        pkg.Date_Updated,
-        pkg.Dim_X, pkg.Dim_Y, pkg.Dim_Z,
+    pkg.Tracking_Number,
+    pkg.Package_Type_Code,
+    pkg.Weight,
+    pkg.Zone,
+    pay.Payment_Amount AS Price,
+    pkg.Date_Created,
+    pkg.Oversize,
+    pkg.Requires_Signature,
+    pkg.Date_Updated,
+    pkg.Dim_X, pkg.Dim_Y, pkg.Dim_Z,
 
-        -- Sender info
-        pkg.Sender_ID,
-        CONCAT(s.First_Name, ' ', s.Last_Name) AS Sender_Name,
-        s.Email_Address AS Sender_Email,
+    -- Sender info
+    pkg.Sender_ID,
+    CONCAT(s.First_Name, ' ', s.Last_Name) AS Sender_Name,
+    s.Email_Address AS Sender_Email,
 
-        -- Recipient info
-        pkg.Recipient_ID,
-        CONCAT(r.First_Name, ' ', r.Last_Name) AS Recipient_Name,
-        r.Email_Address AS Recipient_Email,
+    -- Recipient info
+    pkg.Recipient_ID,
+    CONCAT(r.First_Name, ' ', r.Last_Name) AS Recipient_Name,
+    r.Email_Address AS Recipient_Email,
 
-        -- Delivery info
-        -- Delivery info
-          pkg.Status_Code,
-          d.Delivery_Status_Code,
-          d.Delivered_Date,
-          d.Signature_Required,
-          sc.Status_Name,
-          sc.Is_Final_Status,
+    -- Delivery info
+    d.Delivery_Status_Code,
+    d.Delivered_Date,
+    d.Signature_Required,
+    sc.Status_Name,
+    sc.Is_Final_Status,
 
-        -- Shipment info (Now joined from Address table)
-        addr_f.City AS From_City,
-        addr_f.State AS From_State,
-        addr_t.City AS To_City,
-        addr_t.State AS To_State,
+    -- Shipment info
+    addr_f.City AS From_City,
+    addr_f.State AS From_State,
+    addr_t.City AS To_City,
+    addr_t.State AS To_State,
 
-        -- Post Office info (Now joined from Address table)
-        addr_po.City AS Office_City,
-        po.Post_Office_ID,
+    -- Post Office info
+    addr_po.City AS Office_City,
+    po.Post_Office_ID,
 
-        -- Employee who handled it
-        CONCAT(e.First_Name, ' ', e.Last_Name) AS Handled_By
-      FROM package pkg
-      LEFT JOIN Payment pay ON pay.Tracking_Number =  pkg.Tracking_Number
-      LEFT JOIN customer s  ON s.Customer_ID  = pkg.Sender_ID
-      LEFT JOIN customer r  ON r.Customer_ID  = pkg.Recipient_ID
-      LEFT JOIN delivery d  ON d.Tracking_Number = pkg.Tracking_Number
-      LEFT JOIN status_code sc ON sc.Status_Code = d.Delivery_Status_Code
-      LEFT JOIN shipment_package sp ON sp.Tracking_Number = pkg.Tracking_Number
-      LEFT JOIN shipment sh ON sh.Shipment_ID = sp.Shipment_ID
-      -- Joins for the new Address table
-      LEFT JOIN Address addr_f ON sh.From_Address_ID = addr_f.Address_ID
-      LEFT JOIN Address addr_t ON sh.To_Address_ID = addr_t.Address_ID
-      LEFT JOIN employee e  ON e.Employee_ID  = sh.Employee_ID
-      LEFT JOIN post_office po ON po.Post_Office_ID = e.Post_Office_ID
-      LEFT JOIN Address addr_po ON po.Address_ID = addr_po.Address_ID
-      WHERE 1=1 ${whereClause}
-      ORDER BY pkg.Tracking_Number ASC`,
+    -- Employee who handled it
+    CONCAT(e.First_Name, ' ', e.Last_Name) AS Handled_By
+FROM package pkg
+LEFT JOIN payment pay ON pay.Tracking_Number = pkg.Tracking_Number
+LEFT JOIN customer s  ON s.Customer_ID  = pkg.Sender_ID
+LEFT JOIN customer r  ON r.Customer_ID  = pkg.Recipient_ID
+LEFT JOIN delivery d  ON d.Tracking_Number = pkg.Tracking_Number
+LEFT JOIN status_code sc ON sc.Status_Code = d.Delivery_Status_Code
+LEFT JOIN shipment_package sp ON sp.Tracking_Number = pkg.Tracking_Number
+LEFT JOIN shipment sh ON sh.Shipment_ID = sp.Shipment_ID
+LEFT JOIN address addr_f ON sh.From_Address_ID = addr_f.Address_ID
+LEFT JOIN address addr_t ON sh.To_Address_ID = addr_t.Address_ID
+LEFT JOIN employee e  ON e.Employee_ID  = sh.Employee_ID
+LEFT JOIN post_office po ON po.Post_Office_ID = e.Post_Office_ID
+LEFT JOIN address addr_po ON po.Address_ID = addr_po.Address_ID
+WHERE 1=1 ${whereClause}
+ORDER BY pkg.Tracking_Number ASC`,
       params
     )
     return send(res, 200, rows)
@@ -2426,8 +2431,8 @@ if (method === 'GET' && pathname === '/api/packages/full') {
       )
       if (delivered?.Status_Code != null) {
         const deliveredCode = Number(delivered.Status_Code)
-        await conn.query(`UPDATE package SET Status_Code = ? WHERE Tracking_Number = ?`, [deliveredCode, trackingNumber])
-        // await conn.query(`UPDATE delivery SET Delivery_Status_Code = ? WHERE Tracking_Number = ?`, [deliveredCode, trackingNumber])
+        // await conn.query(`UPDATE package SET Status_Code = ? WHERE Tracking_Number = ?`, [deliveredCode, trackingNumber])
+        await conn.query(`UPDATE delivery SET Delivery_Status_Code = ? WHERE Tracking_Number = ?`, [deliveredCode, trackingNumber])
         await conn.query(
           `UPDATE shipment s
            JOIN shipment_package sp ON sp.Shipment_ID = s.Shipment_ID

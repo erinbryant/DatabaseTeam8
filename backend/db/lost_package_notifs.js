@@ -32,14 +32,18 @@ async function ensureLostStatusColumn(pool) {
 async function getLostPackagesByCustomer(pool, customerId) {
   try {
     const [rows] = await pool.query(
-      `SELECT 
-          p.Tracking_Number,
-          p.Status_Code,
-          p.Date_Updated,
-          p.Date_Created
-       FROM package p
-       WHERE p.Recipient_ID = ?
-         AND p.Status_Code = 7`,
+      `SELECT (
+    d.Tracking_Number,
+    d.Delivery_Status_Code,
+    d.Date_Updated,
+    d.Date_Created
+    FROM delivery d
+    WHERE d.Tracking_Number IN (
+        SELECT p.Tracking_Number 
+        FROM package p 
+        WHERE p.Recipient_ID = ?
+    )
+    AND d.Delivery_Status_Code = 7)`,
       [customerId]
     );
     return rows;
