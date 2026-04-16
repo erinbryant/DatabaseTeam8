@@ -2153,6 +2153,8 @@ ORDER BY pkg.Tracking_Number ASC`,
       const body = await getBody(req)
       const { is_Active } = body
 
+      const isActive = is_Active === 0 || is_Active === '0' || is_Active === false
+
       customerDB.updateCustomerStatus(pool, customerId, is_Active, (err, result) => {
         if (err) {
           console.error(err)
