@@ -54,7 +54,7 @@ const NAV_ITEMS = [
   { label: 'Calculator',        path: '/price_calculator',             section: 'main'  },
   { label: 'Employees',         path: '/employees',                    section: 'admin' },
   { label: 'Register Employee', path: '/admin-register',               section: 'admin' },
-  { label: 'Employee Report',   path: '/reports/employee-performance', section: 'admin' },
+  { label: 'Satisfaction Report',   path: '/office-satisfaction', section: 'admin' },
   { label: 'Revenue Report',    path: '/revenue-report',               section: 'admin' },
   { label: 'Ticket Report',     path: '/tickets_employees',            section: 'admin' },
 ]
@@ -67,7 +67,7 @@ const DASHBOARD_CARDS = [
   { title: 'Customers',         desc: 'Search and manage customer accounts.',                           path: '/customers',                    btnLabel: 'View customers',     section: 'main'  },
   { title: 'Employees',         desc: 'View and manage all employee accounts.',                         path: '/employees',                    btnLabel: 'View employees',     section: 'admin' },
   { title: 'Register Employee', desc: 'Create a new employee account.',                                 path: '/admin-register',               btnLabel: 'Add employee',       section: 'admin' },
-  { title: 'Employee Report',   desc: 'View performance rankings and employee metrics.',                path: '/reports/employee-performance', btnLabel: 'View report',        section: 'admin' },
+  { title: 'Satisfaction Report',   desc: 'View performance rankings and employee metrics.',                path: '/reports/employee-performance', btnLabel: 'View report',        section: 'admin' },
   { title: 'Revenue Report',    desc: 'Sort by pricing type and view revenue reports.',                 path: '/revenue-report',               btnLabel: 'View report',        section: 'admin' },
   { title: 'Ticket Report',     desc: 'View ticket records and support analytics.',                     path: '/tickets_employees',            btnLabel: 'View report',        section: 'admin' },
 ]
@@ -145,14 +145,14 @@ useEffect(() => {
           {/* Stat cards */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 16, marginBottom: 32 }}>
             <StatCard label="Total Packages" value={total}     color="#1a1f4e" onClick={() => navigate('/package_list')} />
-            <StatCard label="In Transit"     value={inTransit} color="#0891b2" onClick={() => navigate('/package_list')} />
-            <StatCard label="Pending"        value={pending}   color="#d97706" onClick={() => navigate('/package_list')} />
-            <StatCard label="Delivered"      value={delivered} color="#059669" onClick={() => navigate('/package_list')} />
-            <StatCard label="Lost"           value={lost}      color="#dc2626" onClick={() => navigate('/package_list')} />
+            <StatCard label="In Transit"     value={inTransit} color="#1a1f4e" onClick={() => navigate('/package_list')} />
+            <StatCard label="Pending"        value={pending}   color="#1a1f4e" onClick={() => navigate('/package_list')} />
+            <StatCard label="Delivered"      value={delivered} color="#1a1f4e" onClick={() => navigate('/package_list')} />
+            <StatCard label="Lost"           value={lost}      color="#1a1f4e" onClick={() => navigate('/package_list')} />
             <StatCard
               label="Total Revenue"
               value={`$${revenue.toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
-              color="#7c3aed"
+              color="#1a1f4e"
               onClick={() => navigate('/revenue-report')}
             />
           </div>
