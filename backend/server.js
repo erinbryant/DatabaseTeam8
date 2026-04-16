@@ -1217,11 +1217,7 @@ async function router(req, res) {
         return send(res, 404, { message: 'Delivery record not found for this package' })
       }
 
-      await conn.query(
-        `UPDATE delivery SET Delivery_Status_Code = ? WHERE Tracking_Number = ?`,
-        [code, trackingNumber]
-      )
-
+      // Update shipment status (delivery table doesn't have a status code column)
       // await conn.query(
       //   `UPDATE package SET Status_Code = ? WHERE Tracking_Number = ?`,
       //   [code, trackingNumber]
