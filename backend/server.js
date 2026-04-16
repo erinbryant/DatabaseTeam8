@@ -1147,10 +1147,10 @@ if (method === 'GET' && pathname === '/api/reports/employee-performance') {
         return send(res, 404, { message: 'Delivery record not found for this package' })
       }
 
-      // await conn.query(
-      //   `UPDATE delivery SET Delivery_Status_Code = ? WHERE Tracking_Number = ?`,
-      //   [code, trackingNumber]
-      // )
+      await conn.query(
+        `UPDATE delivery SET Delivery_Status_Code = ? WHERE Tracking_Number = ?`,
+        [code, trackingNumber]
+      )
 
       await conn.query(
         `UPDATE package SET Status_Code = ? WHERE Tracking_Number = ?`,
@@ -1728,12 +1728,13 @@ if (method === 'GET' && pathname === '/api/packages/full') {
         r.Email_Address AS Recipient_Email,
 
         -- Delivery info
-        pkg.Status_Code,
-        pkg.Status_Code,
-        d.Delivered_Date,
-        d.Signature_Required,
-        sc.Status_Name,
-        sc.Is_Final_Status,
+        -- Delivery info
+          pkg.Status_Code,
+          d.Delivery_Status_Code,
+          d.Delivered_Date,
+          d.Signature_Required,
+          sc.Status_Name,
+          sc.Is_Final_Status,
 
         -- Shipment info (Now joined from Address table)
         addr_f.City AS From_City,
@@ -1752,7 +1753,7 @@ if (method === 'GET' && pathname === '/api/packages/full') {
       LEFT JOIN customer s  ON s.Customer_ID  = pkg.Sender_ID
       LEFT JOIN customer r  ON r.Customer_ID  = pkg.Recipient_ID
       LEFT JOIN delivery d  ON d.Tracking_Number = pkg.Tracking_Number
-      LEFT JOIN status_code sc ON sc.Status_Code = pkg.Status_Code
+      LEFT JOIN status_code sc ON sc.Status_Code = d.Delivery_Status_Code
       LEFT JOIN shipment_package sp ON sp.Tracking_Number = pkg.Tracking_Number
       LEFT JOIN shipment sh ON sh.Shipment_ID = sp.Shipment_ID
       -- Joins for the new Address table

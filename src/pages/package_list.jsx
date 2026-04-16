@@ -88,6 +88,7 @@ function PackageTable({ title, packages, expanded, onToggle, statusCodes, onStat
               </thead>
               <tbody>
                 {packages.map((p, i) => (
+                  
                   <Fragment key={p.Tracking_Number}>
                     <tr style={{ background: i % 2 === 0 ? '#fff' : '#fafbfc', borderBottom: '1px solid #f1f5f9' }}>
                       <td style={{ padding: '10px 14px' }}>
@@ -108,7 +109,7 @@ function PackageTable({ title, packages, expanded, onToggle, statusCodes, onStat
                       <td style={{ padding: '10px 14px', color: '#374151' }}>Zone {p.Zone}</td>
                       <td style={{ padding: '10px 14px', fontWeight: 700, color: '#1e40af' }}>${parseFloat(p.Price || 0).toFixed(2)}</td>
                       <td style={{ padding: '10px 14px' }}>
-                        {statusCodes.length > 0 && p.Delivery_Status_Code != null && !p.Is_Final_Status ? (
+                        {statusCodes.length > 0 && p.Delivery_Status_Code != null && !p.Is_Final_Status  ? (
                           <select
                             value={String(p.Delivery_Status_Code)}
                             onChange={e => onStatusChange(p.Tracking_Number, e.target.value)}
@@ -211,6 +212,8 @@ export default function AllPackages() {
       authFetch(`${API_BASE}/api/reports/post-offices`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()).catch(() => []),
     ])
     .then(([pkgs, codes, offices]) => {
+      console.log('PACKAGES:', pkgs)
+  console.log('STATUS CODES:', codes)
       setPackages(Array.isArray(pkgs) ? pkgs : [])
       setStatusCodes(Array.isArray(codes) ? codes : [])
       setPostOffices(Array.isArray(offices) ? offices : [])
