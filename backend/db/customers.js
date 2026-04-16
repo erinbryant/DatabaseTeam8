@@ -65,24 +65,6 @@ function getCustomerByID(pool, customerID, callback) {
   .catch(err => callback(err, null))
 }
 
-function updateCustomerStatus(pool, customerID, isActive, callback){
-  const dbStatus = isActive ? 0 : 1;
-
-  console.log(`Attempted DB Update: ID ${customerID} to Status ${dbStatus}`);
-
-  pool.query(
-    'UPDATE customer SET is_Active = ? WHERE Customer_ID = ?',
-    [dbStatus, customerID]
-  )
-  .then(([result]) => {
-    if(result.affectedRows === 0) {
-      return callback(new Error('Customer not found'), null);
-    }
-    callback(null, result);
-  })
-  .catch(err => callback(err,null));
-}
-
 async function resolveAddress(conn, {
   house_number,
   street,
@@ -419,7 +401,7 @@ async function resolveRecipient(conn, body) {
     addressId
   }
 }
-
+/**
 async function resolveCustomer(conn, body, hash, addressId, initialPassword) {
   // 1. Check if customer already exists
   const [existing] = await conn.query(
@@ -467,7 +449,7 @@ async function resolveCustomer(conn, body, hash, addressId, initialPassword) {
     initialPassword,
     existed: false
   };
-}
+}*/
 
 
 async function resolveParty(conn, {
@@ -561,5 +543,4 @@ module.exports = {
   resolveAddress,
   resolveCustomer,
   resolveParty,
-  updateCustomerStatus,
 }

@@ -11,7 +11,7 @@ const customerDB = require('./db/customers')
 const packageTrackDB = require('./db/package_track')
 const employeeDB = require('./db/employees')
 const priceDB = require('./db/package_type')
-const packagePickupStorageJob = require('./db/package_pickup_storage_job')
+// const packagePickupStorageJob = require('./db/package_pickup_storage_job')
 const revenueReportDB = require('./db/revenue_report')
 const lostNotifsDB = require('./db/lost_package_notifs')
 const { report } = require('process')
@@ -48,14 +48,12 @@ if (
 ) {
   const jobMs = Number(process.env.PACKAGE_PICKUP_JOB_MS)
   const runOnStartEnv = process.env.PACKAGE_PICKUP_JOB_RUN_ON_START
-  packagePickupStorageJob.startPackagePickupStorageJob(pool, {
-    intervalMs: Number.isFinite(jobMs) && jobMs > 0 ? jobMs : undefined,
-    // Default: run once at startup so 30-day disposal applies without waiting for the first 24h tick.
-    runOnStart: runOnStartEnv !== '0' && runOnStartEnv !== 'false',
-  })
+  // packagePickupStorageJob.startPackagePickupStorageJob(pool, {
+  //   intervalMs: Number.isFinite(jobMs) && jobMs > 0 ? jobMs : undefined,
+  //   // Default: run once at startup so 30-day disposal applies without waiting for the first 24h tick.
+  //   runOnStart: runOnStartEnv !== '0' && runOnStartEnv !== 'false',
+  // })
 }
-// const { method, url } = req
-//   const { pathname } = new URL(url, `http://${req.headers.host}`)
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 
@@ -82,9 +80,6 @@ function send(res, status, body) {
   res.writeHead(status, {
     'Content-Type': 'application/json',
     'Content-Length': Buffer.byteLength(json),
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
   })
   res.end(json)
 }
@@ -901,11 +896,11 @@ async function router(req, res) {
       return send(res, 403, { message: 'Customer access required' })
     }
 
-    try {
-      await packagePickupStorageJob.runNodeDisposalSweep(pool)
-    } catch (e) {
-      console.error('[my-packages] disposal sweep:', e.message || e)
-    }
+    // try {
+    //   await packagePickupStorageJob.runNodeDisposalSweep(pool)
+    // } catch (e) {
+    //   console.error('[my-packages] disposal sweep:', e.message || e)
+    // }
 
     packagesDB.getPackagesForCustomer(pool, user.customer_id, (err, results) => {
       if (err) {
@@ -1837,7 +1832,12 @@ ORDER BY pkg.Tracking_Number ASC`,
   // ── GET /api/packages/:tracking_number/tracking (employee+admin) ─────────
   {
     const m = matchPath('/api/packages/:tracking_number/tracking', pathname)
+    console.log('TRACKING ROUTE HIT')
     if (method === 'GET' && m.matched) {
+      const user = authenticate(req, res)
+      if (!user) return
+      // if (!requireEmployee(user, res)) return
+
       packageTrackDB.getPackageTracking(pool, m.params.tracking_number, (err, results) => {
         if (err) return send(res, 500, { error: 'Database error', details: err.message })
         return send(res, 200, results)
@@ -1956,6 +1956,49 @@ ORDER BY pkg.Tracking_Number ASC`,
     if (!requireEmployee(user, res)) return
     try {
       const results = await employeeDB.ticketByIssue(pool)
+      return send(res, 200, results)
+    } catch (err) {
+      return send(res, 500, { error: err.message })
+    }
+  }
+
+  // ── GET /api/tickets/report ──────────────────────────────────────────────
+  if (method === 'GET' && pathname === '/api/tickets/report') {
+    const user = authenticate(req, res)
+    if (!user) return
+    if (!requireEmployee(user, res)) return
+    try {
+      const page  = parseInt(query.page  || '1')
+      const limit = parseInt(query.limit || '20')
+      const filters = {
+        search:    query.search     || '',
+        dateFrom:  query.date_from  || '',
+        dateTo:    query.date_to    || '',
+        status:    query.status     ?? '',
+        issueType: query.issue_type || '',
+        page, limit
+      }
+      const results = await employeeDB.getTicketsReportTable(pool, filters)
+      return send(res, 200, results)
+    } catch (err) {
+      return send(res, 500, { error: err.message })
+    }
+  }
+
+  // ── GET /api/tickets/report/stats ────────────────────────────────────────
+  if (method === 'GET' && pathname === '/api/tickets/report/stats') {
+    const user = authenticate(req, res)
+    if (!user) return
+    if (!requireEmployee(user, res)) return
+    try {
+      const filters = {
+        search:    query.search     || '',
+        dateFrom:  query.date_from  || '',
+        dateTo:    query.date_to    || '',
+        status:    query.status     ?? '',
+        issueType: query.issue_type || '',
+      }
+      const results = await employeeDB.getTicketsReportStats(pool, filters)
       return send(res, 200, results)
     } catch (err) {
       return send(res, 500, { error: err.message })
@@ -2149,14 +2192,17 @@ ORDER BY pkg.Tracking_Number ASC`,
       const customerId = m.params.id
       const body = await getBody(req)
       const { is_Active } = body
-
-      pool.query('UPDATE customer SET is_Active = ? WHERE Customer_ID = ?', [is_Active, customerId])
-      customerDB.updateCustomerStatus(pool, customerId, is_Active, (err, result) => {
-        if (err) {
-          console.error(err)
-          return send(res, 500, { error: 'Failed to update customer status' })
-        }
+      pool.query(
+        'UPDATE customer SET is_Active = ? WHERE Customer_ID = ?',
+        [is_Active, customerId]
+      )
+      .then(([result]) => {
+        if (result.affectedRows === 0) return send(res, 404, { error: 'Customer not found' })
         return send(res, 200, { message: 'Status updated successfully' })
+      })
+      .catch(err => {
+        console.error(err)
+        return send(res, 500, { error: 'Failed to update customer status' })
       })
       return
     }

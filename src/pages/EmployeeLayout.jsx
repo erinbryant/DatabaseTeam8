@@ -48,7 +48,7 @@ const NAV_ITEMS = [
   { label: 'Register Employee', path: '/admin-register',            section: 'admin' },
   { label: 'Revenue Report',    path: '/revenue-report',            section: 'admin' },
   { label: 'Satisfaction Report', path: '/office-satisfaction',     section: 'admin' },
-  { label: 'Ticket Report',     path: '/tickets_employees',         section: 'admin' },
+  { label: 'Ticket Report',     path: '/ticket-report',         section: 'admin' },
 ]
 
 export default function EmployeeLayout({ children }) {

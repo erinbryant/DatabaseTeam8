@@ -35,6 +35,7 @@ import EmployeeSupport from './pages/Employeesupport.jsx'
 import Employee_SubmitTicket from './pages/Employee_SubmitTicket.jsx'
 
 import TicketsReport from './pages/tickets_report.jsx'
+import TicketReport from './pages/Ticket_Report.jsx'
 import RevenueReport from './pages/Revenue_Report.jsx'
 import EmployeesPage from './pages/employees.jsx'
 import OfficeSatisfactionReport from './pages/office_satisfaction_report.jsx'
@@ -56,6 +57,7 @@ function App() {
         <Route path="/revenue-report" element={<RequireEmployee><RevenueReport /></RequireEmployee>} />
         <Route path="/office-satisfaction" element={<RequireEmployee><OfficeSatisfactionReport /></RequireEmployee>} />
         <Route path="/tickets_employees" element={<RequireEmployee><TicketsReport /></RequireEmployee>} />
+        <Route path="/ticket-report" element={<RequireEmployee><TicketReport /></RequireEmployee>} />
         <Route path="/revenue-report" element={<RequireEmployee><RevenueReport /></RequireEmployee>} />
 
         {/* Customer Routes */}

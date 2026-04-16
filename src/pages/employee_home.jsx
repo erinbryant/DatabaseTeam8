@@ -56,7 +56,7 @@ const NAV_ITEMS = [
   { label: 'Register Employee', path: '/admin-register',               section: 'admin' },
   { label: 'Satisfaction Report',   path: '/office-satisfaction', section: 'admin' },
   { label: 'Revenue Report',    path: '/revenue-report',               section: 'admin' },
-  { label: 'Ticket Report',     path: '/tickets_employees',            section: 'admin' },
+  { label: 'Ticket Report',     path: '/ticket-report',            section: 'admin' },
 ]
 const DASHBOARD_CARDS = [
   { title: 'Packages',          desc: 'Browse and manage all package records.',                          path: '/package_list',                 btnLabel: 'View packages',      section: 'main'  },
@@ -69,7 +69,7 @@ const DASHBOARD_CARDS = [
   { title: 'Register Employee', desc: 'Create a new employee account.',                                 path: '/admin-register',               btnLabel: 'Add employee',       section: 'admin' },
   { title: 'Satisfaction Report',   desc: 'View performance rankings and employee metrics.',                path: '/reports/employee-performance', btnLabel: 'View report',        section: 'admin' },
   { title: 'Revenue Report',    desc: 'Sort by pricing type and view revenue reports.',                 path: '/revenue-report',               btnLabel: 'View report',        section: 'admin' },
-  { title: 'Ticket Report',     desc: 'View ticket records and support analytics.',                     path: '/tickets_employees',            btnLabel: 'View report',        section: 'admin' },
+  { title: 'Ticket Report',     desc: 'View ticket records and support analytics.',                     path: '/ticket-report',            btnLabel: 'View report',        section: 'admin' },
 ]
 
 // Shared stat card 
