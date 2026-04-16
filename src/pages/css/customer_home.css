@@ -135,9 +135,9 @@
 .lost-icon { width: 20px; height: 20px; flex-shrink: 0; margin-top: 2px; color: var(--color-text-danger, #dc2626); }
 .lost-title { font-size: 14px; font-weight: 500; color: var(--color-text-danger, #dc2626); margin: 0 0 4px; }
 .lost-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
-.lost-list li { font-size: 13px; color: var(--color-text-danger, #dc2626); display: flex; align-items: center; gap: 8px; }
-.lost-list li span.track { font-family: monospace; font-size: 12px; background: white; border: 0.5px solid var(--color-border-danger, #fca5a5); border-radius: 6px; padding: 1px 7px; }
-.lost-list li span.date { opacity: 0.75; font-size: 12px; }
+.lost-list li { font-size: 13px; color: var(--color-text-danger, #dc2626); display: flex; align-items: center; flex-wrap: nowrap; gap: 8px; white-space: nowrap; }
+.lost-list li span.track { font-family: monospace; font-size: 12px; background: white; border: 0.5px solid var(--color-border-danger, #fca5a5); border-radius: 6px; padding: 1px 7px; white-space: nowrap;   flex-shrink: 0;}
+.lost-list li span.date { opacity: 0.75; font-size: 12px; white-space: nowrap;}
 .lost-action { font-size: 13px; margin: 8px 0 0; color: var(--color-text-danger, #dc2626); }
 .lost-action a { color: inherit; font-weight: 500; }
 .lost-dismiss { background: none; border: none; cursor: pointer; color: var(--color-text-danger, #dc2626); opacity: 0.6; flex-shrink: 0; padding: 2px; }

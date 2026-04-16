@@ -583,8 +583,6 @@ async function router(req, res) {
       const [rows] = await pool.query(
         `SELECT c.Customer_ID, c.First_Name, c.Last_Name, c.Email_Address,
                 c.Phone_Number, a.House_Number, a.Street, a.City, a.State,
-                SUBSTRING(a.Zip_Code, 1, 3) AS Zip_First3,
-                SUBSTRING(a.Zip_Code, 4, 2) AS Zip_Last2,
                 a.Zip_Code, a.Address_ID
          FROM customer c
          JOIN address a ON c.Address_ID = a.Address_ID
@@ -611,8 +609,7 @@ async function router(req, res) {
       Street,
       City,
       State,
-      Zip_First3,
-      Zip_Last2,
+      Zip_Code
     } = await getBody(req)
 
     try {
@@ -634,7 +631,7 @@ async function router(req, res) {
       if (!customerRows.length) return send(res, 404, { message: 'Customer not found' })
       
       const addressId = customerRows[0].Address_ID
-      const fullZip = (Zip_First3 || '') + (Zip_Last2 || '')
+      // const fullZip = (Zip_First3 || '') + (Zip_Last2 || '')
 
       // Update address info
       await pool.query(
@@ -644,7 +641,7 @@ async function router(req, res) {
           Street,
           City,
           State,
-          fullZip || null,
+          Zip_Code || null,
           addressId,
         ]
       )
@@ -653,8 +650,6 @@ async function router(req, res) {
       const [rows] = await pool.query(
         `SELECT c.Customer_ID, c.First_Name, c.Last_Name, c.Email_Address,
                 c.Phone_Number, a.House_Number, a.Street, a.City, a.State,
-                SUBSTRING(a.Zip_Code, 1, 3) AS Zip_First3,
-                SUBSTRING(a.Zip_Code, 4, 2) AS Zip_Last2,
                 a.Zip_Code, a.Address_ID
          FROM customer c
          JOIN address a ON c.Address_ID = a.Address_ID
@@ -1038,7 +1033,7 @@ async function router(req, res) {
   if (!sender_first_name?.trim() || !sender_last_name?.trim()) {
     return send(res, 400, { message: 'Sender first name and last name are required' })
   }
-  if (!sender_house_number || !sender_street || !sender_city || !sender_state || !sender_zip_first3 || !sender_zip_last2) {
+  if (!sender_house_number || !sender_street || !sender_city || !sender_state || !sender_zip_code) {
     return send(res, 400, { message: 'Sender address fields are required' })
   }
 
@@ -1046,7 +1041,7 @@ async function router(req, res) {
   if (!recipient_first_name?.trim() || !recipient_last_name?.trim()) {
     return send(res, 400, { message: 'Recipient first and last name are required' })
   }
-  if (!recipient_house_number || !recipient_street || !recipient_city || !recipient_state || !recipient_zip_first3 || !recipient_zip_last2) {
+  if (!recipient_house_number || !recipient_street || !recipient_city || !recipient_state ||  !recipient_zip_code) {
     return send(res, 400, { message: 'Recipient address fields are required' })
   }
 
@@ -1055,82 +1050,58 @@ async function router(req, res) {
   }
 
   // ── Helper: resolve or create an address, then resolve or create a holder ──
-  async function resolveAddress(conn, {house_number, street, city, state, zip_code, apt_number, country }) {
-    const [addrRows] = await conn.query(
-      `SELECT Address_ID FROM address
-      WHERE House_Number = ? AND Street = ? AND City = ? AND State = ?
-        AND Zip_First3 = ? AND Zip_Last2 = ?
-        AND (Apt_Number <=> ?)
-      LIMIT 1`,
-      [
-        house_number,
-        street,
-        city,
-        state,
-        zip_first3,
-        zip_last2,
-        apt_number || null
-      ]
-    )
+//   async function resolveAddress(conn, {house_number, street, city, state, zip_code, apt_number, country }) {
+//     const [addrRows] = await conn.query(
+//       `SELECT Address_ID FROM address
+//       WHERE House_Number = ? AND Street = ? AND City = ? AND State = ?
+//         AND Zip_Code = ?
+//         AND (Apt_Number <=> ?)
+//       LIMIT 1`,
+//       [
+//         house_number,
+//         street,
+//         city,
+//         state,
+//         zip_code,
+//         apt_number || null
+//       ]
+//     )
 
-    let addressId
+//     let addressId
 
-  if (!addrRows.length) {
-    const [addrRes] = await conn.query(
-      `INSERT INTO address 
-      (House_Number, Street, City, State, Zip_First3, Zip_Last2, Apt_Number, Country)
-      VALUES (?,?,?,?,?,?,?,?)`,
-      [
-        String(house_number).slice(0, 10),
-        String(street).slice(0, 100),
-        String(city).slice(0, 100),
-        String(state).slice(0, 50),
-        String(zip_code).replace(/\D/g, '').slice(0, 3),
-        apt_number || null,
-        (country || 'USA').toString().slice(0, 50),
-      ]
-    )
+//   if (!addrRows.length) {
+//     const [addrRes] = await conn.query(
+//       `INSERT INTO address 
+//       (House_Number, Street, City, State, Zip_Code, Apt_Number, Country)
+//       VALUES (?,?,?,?,?,?,?)`,
+//       [
+//         String(house_number).slice(0, 10),
+//         String(street).slice(0, 100),
+//         String(city).slice(0, 100),
+//         String(state).slice(0, 50),
+//         String(zip_code).replace(/\D/g, '').slice(0, 3),
+//         apt_number || null,
+//         (country || 'USA').toString().slice(0, 50),
+//       ]
+//     )
 
-    addressId = addrRes.insertId
-  } else {
-    addressId = addrRows[0].Address_ID
-  }
-  return addressId;
-}
-async function resolveHolder(conn, { first_name, last_name, addressId}) {
-      const [holderRows] = await conn.query(
-        `SELECT Holder_ID FROM holder
-         WHERE First_Name = ? AND Last_Name = ? AND Address_ID = ?
-         LIMIT 1`,
-        [first_name, last_name, addressId]
-      )
-      if (!holderRows.length){
-        const [holderRes] = await conn.query(
-        `INSERT INTO holder (First_Name, Last_Name, Address_ID)
-        VALUES (?,?,?)`,
-        [first_name, last_name, addressId]
-      )
-      return holderRes.insertId
-        
-      } return holderRows[0].Holder_ID
-    
-    }
-
+//     addressId = addrRes.insertId
+//   } else {
+//     addressId = addrRows[0].Address_ID
+//   }
+//   return addressId;
+// }
   const conn = await pool.getConnection()
   try {
     await conn.beginTransaction()
 
     // ── Sender ──
     let senderId = (await customerDB.getCustomerByEmail(conn, senderEmail))?.Customer_ID
-    let senderHolderId
-    //Let senderAddId
     
-    if (senderId) {
-      const [[senderRow]] = await conn.query(`SELECT Holder_ID FROM customer WHERE Customer_ID = ?`, [senderId])
-      senderHolderId = senderRow?.Holder_ID
-    }
-    if (!senderHolderId) {
-      senderAddId = await resolveAddress(conn,{
+    let senderAddId
+    
+    if (!senderId) {
+      senderAddId = await customerDB.resolveAddress(conn,{
         house_number: sender_house_number,
         street:       sender_street,
         city:         sender_city,
@@ -1139,57 +1110,57 @@ async function resolveHolder(conn, { first_name, last_name, addressId}) {
         apt_number:   sender_apt_number,
         country:      sender_country
       })
-      senderHolderId = await resolveHolder(conn, {
+      const created = await customerDB.createCustomerMinimal(conn, {
         first_name:   sender_first_name,
         last_name:    sender_last_name,
-        addressId:    senderAddId
-
-        
+        email:        senderEmail,
+        address_Id:   senderAddId,
+        phone_number: sender_phone,
       })
+      recipientId = created.customerId
+      
     }
+  else{
+     const [custRows] = await conn.query(
+    `SELECT Address_ID FROM customer WHERE Customer_ID = ?`,
+    [senderId]
+  )
+
+  senderAddId = custRows[0]?.Address_ID || null
+  }
 
     // ── Recipient ──
     let recipientId = (await customerDB.getCustomerByEmail(conn, recipientEmail))?.Customer_ID
-    let receiverHolderId
-    if (recipientId) {
-      const [[recipientRow]] = await conn.query(`SELECT Holder_ID FROM customer WHERE Customer_ID = ?`, [recipientId])
-      receiverHolderId = recipientRow?.Holder_ID
-    }
+    let recipientAddId
     if (!recipientId) {
+      recipientAddId = await customerDB.resolveAddress(conn,{
+        house_number: recipient_house_number,
+        street:       recipient_street,
+        city:         recipient_city,
+        state:        recipient_state,
+        zip_code:     recipient_zip_code,
+        apt_number:   recipient_apt_number,
+        country:      recipient_country
+      })
+
       const created = await customerDB.createCustomerMinimal(conn, {
         first_name:   recipient_first_name,
         last_name:    recipient_last_name,
         email:        recipientEmail,
-        house_number: recipient_house_number,
-        street:       recipient_street,
-        city:         recipient_city,
-        state:        recipient_state,
-        zip_first3:   recipient_zip_first3,
-        zip_last2:    recipient_zip_last2,
-        apt_number:   recipient_apt_number,
-        zip_plus4:    b.recipient_zip_plus4,
-        country:      recipient_country,
+        address_Id:   recipientAddId,
         phone_number: recipient_phone,
       })
       recipientId = created.customerId
     }
-    if (!receiverHolderId) {
-      receiverHolderId = await resolveHolder(conn, {
-        first_name:   recipient_first_name,
-        last_name:    recipient_last_name,
-        house_number: recipient_house_number,
-        street:       recipient_street,
-        city:         recipient_city,
-        state:        recipient_state,
-        zip_first3:   recipient_zip_first3,
-        zip_last2:    recipient_zip_last2,
-        zip_plus4:    b.recipient_zip_plus4,
-        apt_number:   recipient_apt_number,
-        country:      recipient_country,
-      })
-    }
+    else{
+     const [custRows] = await conn.query(
+    `SELECT Address_ID FROM customer WHERE Customer_ID = ?`,
+    [recipientIdId]
+  )
 
-    // ── Rest of the logic (unchanged) ──
+  recipientAddId = custRows[0]?.Address_ID || null
+  }
+    
     const tracking = await nextTrackingNumber(conn)
     const oversize = typeCode === 'OVR' ? 1 : 0
 
@@ -1199,71 +1170,42 @@ async function resolveHolder(conn, { first_name, last_name, addressId}) {
       return send(res, 401, { message: 'Invalid employee session' })
     }
 
-    const [empRows] = await conn.query(
-      `SELECT s.Store_ID FROM employee e
-       JOIN post_office p ON e.Post_Office_ID = p.Post_Office_ID
-       JOIN store s ON s.Post_Office_ID = p.Post_Office_ID
-       WHERE e.Employee_ID = ?`,
-      [actingEmployeeId]
-    )
-    if (!empRows.length) {
-      await conn.rollback()
-      return send(res, 404, { error: 'Employee or store not found' })
-    }
-    const sid = empRows[0].Store_ID
+    const [rows] = await conn.execute('SELECT Post_Office_ID FROM employee WHERE Employee_ID = ?',[actingEmployeeId]);
+    const postOfficeId = rows[0]?.Post_Office_ID;
 
-    await conn.query(
-      `INSERT INTO package (Tracking_Number, Sender_ID, Recipient_ID, Dim_X, Dim_Y, Dim_Z,
-        Package_Type_Code, Weight, Zone, Oversize, Requires_Signature, Status_Code, To_Address_ID,
-        Recipient_Name, Recipient_Email_Address, Sender_Holder_ID, Receiver_Holder_ID)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,1,?,?,?,?,?)`,
-      [tracking, senderId, recipientId, dx, dy, dz, typeCode, w, z, oversize, sigRequired ? 1 : 0,
-       null, `${recipient_first_name} ${recipient_last_name}`, recipientEmail || null,
-       senderHolderId, receiverHolderId]
-    )
 
-    await conn.query(
-      `INSERT INTO payment (Customer_ID, Store_ID, Payment_Amount, Employee_ID, Tracking_Number)
-       VALUES (?,?,?,?,?)`,
-      [senderId, sid, priceAmount, actingEmployeeId, tracking]
-    )
 
-    const [[pending]] = await conn.query(`SELECT Status_Code FROM status_code WHERE Status_Name = 'Pending' LIMIT 1`)
+     const [[pending]] = await conn.query(`SELECT Status_Code FROM status_code WHERE Status_Name = 'Pending' LIMIT 1`)
     if (!pending) throw new Error('Missing Pending status in status_code')
     const pendingCode = pending.Status_Code
 
     await conn.query(
-      `INSERT INTO delivery (Tracking_Number, Delivered_Date, Signature_Required, Signature_Received, Delivery_Status_Code, Delivered_By)
-       VALUES (?,NULL,?,NULL,?,NULL)`,
-      [tracking, sigRequired ? 1 : 0, pendingCode]
+      `INSERT INTO package (Tracking_Number, Sender_ID, Recipient_ID, Dim_X, Dim_Y, Dim_Z,
+        Package_Type_Code, Weight, Zone, Oversize, Requires_Signature, Status_Code)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
+      [tracking, senderId, recipientId, dx, dy, dz, typeCode, w, z, oversize, sigRequired ? 1 : 0,
+       pendingCode]
+    )
+
+    await conn.query(
+      `INSERT INTO payment (Customer_ID, Payment_Amount, Employee_ID, Tracking_Number)
+       VALUES (?,?,?,?)`,
+      [senderId, priceAmount, actingEmployeeId, tracking]
+    )
+
+   
+
+    await conn.query(
+      `INSERT INTO delivery (Tracking_Number, Delivered_Date, Signature_Required, Signature_Received, Delivered_By)
+       VALUES (?,NULL,?,NULL, NULL)`,
+      [tracking, sigRequired ? 1 : 0]
     )
 
     const [shipRes] = await conn.query(
-      `INSERT INTO shipment (Status_Code, Employee_ID,
-        From_Apt_Number, From_House_Number, From_Street, From_City, From_State, From_Zip_First3, From_Zip_Last2, From_Zip_Plus4, From_Country,
-        To_Apt_Number, To_House_Number, To_Street, To_City, To_State, To_Zip_Code,  To_Country,
-        Departure_Time_Stamp, Arrival_Time_Stamp)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NULL,NULL)`,
+      `INSERT INTO shipment (Status_Code, Employee_ID, From_Address_ID, To_Address_ID)
+       VALUES (?,?,?,?)`,
       [
-        pendingCode, actingEmployeeId,
-        sender_apt_number || null,
-        String(sender_house_number).slice(0, 10),
-        String(sender_street).slice(0, 100),
-        String(sender_city).slice(0, 100),
-        String(sender_state).slice(0, 50),
-        String(sender_zip_first3).replace(/\D/g, '').slice(0, 3),
-        String(sender_zip_last2).replace(/\D/g, '').slice(0, 2),
-        b.sender_zip_plus4 ? String(b.sender_zip_plus4).replace(/\D/g, '').slice(0, 4) : null,
-        (sender_country || 'USA').toString().slice(0, 50),
-        recipient_apt_number || null,
-        String(recipient_house_number).slice(0, 10),
-        String(recipient_street).slice(0, 100),
-        String(recipient_city).slice(0, 100),
-        String(recipient_state).slice(0, 50),
-        String(recipient_zip_first3).replace(/\D/g, '').slice(0, 3),
-        String(recipient_zip_last2).replace(/\D/g, '').slice(0, 2),
-        b.recipient_zip_plus4 ? String(b.recipient_zip_plus4).replace(/\D/g, '').slice(0, 4) : null,
-        (recipient_country || 'USA').toString().slice(0, 50),
+        pendingCode, actingEmployeeId, postOfficeId, recipientAddId
       ]
     )
 
@@ -1407,10 +1349,10 @@ if (method === 'GET' && pathname === '/api/reports/employee-performance') {
         return send(res, 404, { message: 'Delivery record not found for this package' })
       }
 
-      await conn.query(
-        `UPDATE delivery SET Delivery_Status_Code = ? WHERE Tracking_Number = ?`,
-        [code, trackingNumber]
-      )
+      // await conn.query(
+      //   `UPDATE delivery SET Delivery_Status_Code = ? WHERE Tracking_Number = ?`,
+      //   [code, trackingNumber]
+      // )
 
       await conn.query(
         `UPDATE package SET Status_Code = ? WHERE Tracking_Number = ?`,
@@ -1828,18 +1770,24 @@ if (method === 'POST' && pathname === '/api/employee/package-pickup') {
 
     let status_updated = false
     if (pickedUpCode != null) {
-      await pool.query(`UPDATE delivery SET Delivery_Status_Code = ? WHERE Tracking_Number = ?`, [
-        pickedUpCode,
-        tracking_number,
-      ])
+      await pool.query(
+        `UPDATE package
+        SET Status_Code = ?
+        WHERE Tracking_Number = ?`,
+        [pickedUpCode, tracking_number]
+      )
+
       if (sh?.Shipment_ID != null) {
-        await pool.query(`UPDATE shipment SET Status_Code = ? WHERE Shipment_ID = ?`, [
-          pickedUpCode,
-          sh.Shipment_ID,
-        ])
+        await pool.query(
+          `UPDATE shipment
+          SET Status_Code = ?
+          WHERE Shipment_ID = ?`,
+          [pickedUpCode, sh.Shipment_ID]
+        )
       }
-      status_updated = true
-    }
+
+  status_updated = true
+}
 
     const [[partiesPickup]] = await pool.query(
       `SELECT
@@ -2199,8 +2147,7 @@ if (method === 'GET' && pathname === '/api/packages/full') {
         `SELECT c.Customer_ID, c.First_Name, c.Last_Name, c.Email_Address,
                 c.Phone_Number, a.House_Number, a.Street, a.Apt_Number,
                 a.City, a.State, a.Zip_Code,
-                SUBSTRING(a.Zip_Code, 1, 3) AS Zip_First3,
-                SUBSTRING(a.Zip_Code, 4, 2) AS Zip_Last2
+                a.Zip_Code
          FROM customer c
          JOIN address a ON c.Address_ID = a.Address_ID
          WHERE c.Email_Address = ? LIMIT 1`,
@@ -2681,7 +2628,7 @@ if (method === 'GET' && pathname === '/api/packages/full') {
       if (delivered?.Status_Code != null) {
         const deliveredCode = Number(delivered.Status_Code)
         await conn.query(`UPDATE package SET Status_Code = ? WHERE Tracking_Number = ?`, [deliveredCode, trackingNumber])
-        await conn.query(`UPDATE delivery SET Delivery_Status_Code = ? WHERE Tracking_Number = ?`, [deliveredCode, trackingNumber])
+        // await conn.query(`UPDATE delivery SET Delivery_Status_Code = ? WHERE Tracking_Number = ?`, [deliveredCode, trackingNumber])
         await conn.query(
           `UPDATE shipment s
            JOIN shipment_package sp ON sp.Shipment_ID = s.Shipment_ID
