@@ -30,26 +30,57 @@ async function ensureLostStatusColumn(pool) {
 }
 
 async function getLostPackagesByCustomer(pool, customerId) {
+  // Primary: use Lost_Status column (exists if migration ran)
   try {
     const [rows] = await pool.query(
       `SELECT
-          d.Tracking_Number,
-          d.Delivery_Status_Code,
-          d.Date_Updated,
-          d.Date_Created
-      FROM delivery d
-      WHERE d.Tracking_Number IN (
-          SELECT p.Tracking_Number
-          FROM package p
-          WHERE p.Recipient_ID = ?
-      )
-      AND d.Delivery_Status_Code = 7;`,
+          pkg.Tracking_Number,
+          COALESCE(d.Delivery_Status_Code, pkg.Status_Code) AS Delivery_Status_Code,
+          COALESCE(d.Date_Updated, pkg.Date_Updated) AS Date_Updated,
+          COALESCE(d.Date_Created, pkg.Date_Created) AS Date_Created
+      FROM package pkg
+      LEFT JOIN delivery d ON d.Tracking_Number = pkg.Tracking_Number
+      WHERE pkg.Recipient_ID = ?
+        AND pkg.Lost_Status = 'lost';`,
       [customerId]
     );
-    return rows;
+    if (rows.length > 0) return rows;
+
+    // Also catch packages marked lost by delivery status but before Lost_Status was set
+    const [fallbackRows] = await pool.query(
+      `SELECT
+          pkg.Tracking_Number,
+          COALESCE(d.Delivery_Status_Code, pkg.Status_Code) AS Delivery_Status_Code,
+          COALESCE(d.Date_Updated, pkg.Date_Updated) AS Date_Updated,
+          COALESCE(d.Date_Created, pkg.Date_Created) AS Date_Created
+      FROM package pkg
+      LEFT JOIN delivery d ON d.Tracking_Number = pkg.Tracking_Number
+      WHERE pkg.Recipient_ID = ?
+        AND COALESCE(d.Delivery_Status_Code, pkg.Status_Code) = 7
+        AND (pkg.Lost_Status IS NULL OR pkg.Lost_Status != 'notified');`,
+      [customerId]
+    );
+    return fallbackRows;
   } catch (err) {
-    console.error('Error fetching lost packages:', err.message);
-    return [];
+    // Lost_Status column may not exist — fall back to delivery status only
+    try {
+      const [rows] = await pool.query(
+        `SELECT
+            pkg.Tracking_Number,
+            COALESCE(d.Delivery_Status_Code, pkg.Status_Code) AS Delivery_Status_Code,
+            COALESCE(d.Date_Updated, pkg.Date_Updated) AS Date_Updated,
+            COALESCE(d.Date_Created, pkg.Date_Created) AS Date_Created
+        FROM package pkg
+        LEFT JOIN delivery d ON d.Tracking_Number = pkg.Tracking_Number
+        WHERE pkg.Recipient_ID = ?
+          AND COALESCE(d.Delivery_Status_Code, pkg.Status_Code) = 7;`,
+        [customerId]
+      );
+      return rows;
+    } catch (err2) {
+      console.error('Error fetching lost packages:', err2.message);
+      return [];
+    }
   }
 }
 
