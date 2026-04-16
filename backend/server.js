@@ -1203,6 +1203,15 @@ async function router(req, res) {
     try {
       await conn.beginTransaction()
 
+      const [[validStatus]] = await conn.query(
+        `SELECT Status_Code FROM status_code WHERE Status_Code = ? LIMIT 1`,
+        [code]
+      )
+      if (!validStatus) {
+        await conn.rollback()
+        return send(res, 400, { message: 'Invalid status_code' })
+      }
+
       const [[d]] = await conn.query(
         `SELECT Delivery_ID FROM delivery WHERE Tracking_Number = ?`,
         [trackingNumber]
@@ -1229,6 +1238,28 @@ async function router(req, res) {
         [code, trackingNumber]
       )
 
+      await conn.query(
+        `UPDATE package SET Status_Code = ? WHERE Tracking_Number = ?`,
+        [code, trackingNumber]
+      )
+
+      // Keep package-level lost lifecycle in sync when this column exists.
+      try {
+        if (code === 7) {
+          await conn.query(
+            `UPDATE package SET Lost_Status = 'lost' WHERE Tracking_Number = ?`,
+            [trackingNumber]
+          )
+        } else {
+          await conn.query(
+            `UPDATE package SET Lost_Status = 'active' WHERE Tracking_Number = ? AND Lost_Status = 'lost'`,
+            [trackingNumber]
+          )
+        }
+      } catch (lostErr) {
+        console.warn('Lost status sync warning:', lostErr.message)
+      }
+
       const [sp] = await conn.query(
         `SELECT Shipment_ID FROM shipment_package WHERE Tracking_Number = ? LIMIT 1`,
         [trackingNumber]
@@ -1240,7 +1271,7 @@ async function router(req, res) {
             [code, sp[0].Shipment_ID]
           )
         } catch (shipErr) {
-          // Keep delivery status update even if legacy shipment row cannot accept this status.
+          // Keep delivery/package status update even if legacy shipment row cannot accept this status.
           console.warn('Shipment status sync warning:', shipErr.message)
         }
       }
