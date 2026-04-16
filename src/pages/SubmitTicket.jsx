@@ -28,6 +28,7 @@ function SubmitTicket() {
 
   useEffect(() => {
     authFetch('/api/customer/my-packages')
+    
       .then((res) => {
         if (res.status === 401) {
           navigate('/login')
@@ -43,6 +44,10 @@ function SubmitTicket() {
       })
       .catch((err) => setErrorMessage(err.message))
   }, [navigate])
+  console.log("Sending ticket:", {
+  Tracking_Number: formData.packageId,
+  Issue_Type: Number(formData.issueType),
+  Description: formData.description,});
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -55,6 +60,7 @@ function SubmitTicket() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMessage('')
+  console.log("SUBMIT CLICKED")
 
     const validationError = validateAll([
       [formData.packageId, validateTrackingNumber],
@@ -91,6 +97,10 @@ function SubmitTicket() {
       setErrorMessage('Failed to submit ticket. Please try again.')
     }
   }
+  console.log("Sending ticket:", {
+  Tracking_Number: formData.packageId,
+  Issue_Type: Number(formData.issueType),
+  Description: formData.description,});
 
   return (
     <div className="form-container">
@@ -104,6 +114,11 @@ function SubmitTicket() {
       {successMessage && (
         <div className="success-message">
           ✓ Ticket submitted successfully!
+        </div>
+      )}
+      {errorMessage && (
+        <div className="error-message">
+          {errorMessage}
         </div>
       )}
 

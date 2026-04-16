@@ -269,8 +269,8 @@ export default function AddPackage() {
     setError(null)
     setSubmitResult(null)
 
-    if (!senderEmail.trim() || !senderFirst.trim() || !senderLast.trim()) {
-      setError('Sender email and name are required.')
+    if (!senderFirst.trim() || !senderLast.trim()) {
+      setError('Sender name is required.')
       return
     }
     if (!recipientFirst.trim() || !recipientLast.trim()) {

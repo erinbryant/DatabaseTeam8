@@ -14,8 +14,7 @@ import {
   validateStreet,
   validateCity,
   validateState,
-  validateZip3,
-  validateZip2,
+  validateZip,
   validateRequired,
 } from '../Validation'
 
@@ -42,9 +41,7 @@ const Register = () => {
     street: '',
     city: '',
     state: '',
-    zip_first3: '',
-    zip_last2: '',
-    zip_plus4: '',
+    zip_code: '',
     country: 'USA',
     sex: 'U',
   })
@@ -73,8 +70,7 @@ const Register = () => {
       [formData.street, validateStreet],
       [formData.city, validateCity],
       [formData.state, validateState],
-      [formData.zip_first3, validateZip3],
-      [formData.zip_last2, validateZip2],
+      [formData.zip_code, validateZip],
       [formData.country, validateRequired, 'Country'],
       [formData.password, validatePassword],
       [formData.password, validateConfirmPassword, formData.confirmPassword],
@@ -84,7 +80,7 @@ const Register = () => {
       setError(validationError)
       return
     }
-    const fullZip = `${formData.zip_first3}${formData.zip_last2}`;
+    // const fullZip = `${formData.zip_first3}${formData.zip_last2}`;
 
     setLoading(true)
 
@@ -107,11 +103,11 @@ const Register = () => {
           city: formData.city,
           state: formData.state,
 
-          zip_code: fullZip,
+          zip_code: formData.zip_code,
 
-          zip_first3: formData.zip_first3,
-          zip_last2: formData.zip_last2,
-          zip_plus4: formData.zip_plus4 || null,
+          // zip_first3: formData.zip_first3,
+          // zip_last2: formData.zip_last2,
+          // zip_plus4: formData.zip_plus4 || null,
           country: formData.country || 'USA',
           sex: formData.sex,
         }),
@@ -307,40 +303,15 @@ const Register = () => {
 
             <div className="form-row form-row--3">
               <div className="form-group">
-                <label>ZIP (first 3) *</label>
+                <label>ZIP *</label>
                 <input
                   type="text"
-                  name="zip_first3"
-                  value={formData.zip_first3}
+                  name="zip_code"
+                  value={formData.zip_code}
                   onChange={handleChange}
                   required
                   placeholder="770"
-                  maxLength={3}
-                  inputMode="numeric"
-                />
-              </div>
-              <div className="form-group">
-                <label>ZIP (last 2) *</label>
-                <input
-                  type="text"
-                  name="zip_last2"
-                  value={formData.zip_last2}
-                  onChange={handleChange}
-                  required
-                  placeholder="01"
-                  maxLength={2}
-                  inputMode="numeric"
-                />
-              </div>
-              <div className="form-group">
-                <label>ZIP +4</label>
-                <input
-                  type="text"
-                  name="zip_plus4"
-                  value={formData.zip_plus4}
-                  onChange={handleChange}
-                  placeholder="Optional"
-                  maxLength={4}
+                  maxLength={5}
                   inputMode="numeric"
                 />
               </div>

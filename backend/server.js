@@ -999,6 +999,7 @@ async function router(req, res) {
     recipient_email, recipient_first_name, recipient_last_name,
     recipient_house_number, recipient_street, recipient_city,
     recipient_state, recipient_zip_code, recipient_apt_number, recipient_country,
+
     package_type,
     weight,
     zone,
@@ -1012,21 +1013,30 @@ async function router(req, res) {
 
   const w = Number(weight)
   const z = Number(zone)
-  if (Number.isNaN(w) || Number.isNaN(z)) return send(res, 400, { message: 'weight and zone must be numbers' })
+  if (Number.isNaN(w) || Number.isNaN(z)) {
+    return send(res, 400, { message: 'weight and zone must be numbers' })
+  }
 
-  const dx = dim_x != null && dim_x !== '' ? Number(dim_x) : 12
-  const dy = dim_y != null && dim_y !== '' ? Number(dim_y) : 10
-  const dz = dim_z != null && dim_z !== '' ? Number(dim_z) : 8
-  if (!(dx > 0 && dy > 0 && dz > 0)) return send(res, 400, { message: 'Dimensions must be positive numbers' })
+  const dx = dim_x ? Number(dim_x) : 12
+  const dy = dim_y ? Number(dim_y) : 10
+  const dz = dim_z ? Number(dim_z) : 8
 
-  const excessName = excess_fee && String(excess_fee).trim() ? String(excess_fee).trim() : null
+  if (!(dx > 0 && dy > 0 && dz > 0)) {
+    return send(res, 400, { message: 'Dimensions must be positive numbers' })
+  }
+
+  const excessName =
+    excess_fee && String(excess_fee).trim() ? String(excess_fee).trim() : null
+
   const sigRequired = excessName === 'Signature Required'
 
   let priceAmount
   try {
     priceAmount = await getPricePromise(pool, excessName, pt, w, z)
   } catch (err) {
-    return send(res, err.status === 400 ? 400 : 500, { message: err.message || 'Pricing failed' })
+    return send(res, err.status === 400 ? 400 : 500, {
+      message: err.message || 'Pricing failed'
+    })
   }
 
   const senderEmail = (sender_email || '').trim().toLowerCase()
@@ -1036,17 +1046,21 @@ async function router(req, res) {
   if (!sender_house_number || !sender_street || !sender_city || !sender_state || !sender_zip_code) {
     return send(res, 400, { message: 'Sender address fields are required' })
   }
+  const recipientEmail = (recipient_email || '').trim().toLowerCase()
 
-  let recipientEmail = (recipient_email || '').trim().toLowerCase()
-  if (!recipient_first_name?.trim() || !recipient_last_name?.trim()) {
-    return send(res, 400, { message: 'Recipient first and last name are required' })
+  if (!sender_first_name?.trim() || !sender_last_name?.trim()) {
+    return send(res, 400, { message: 'Sender name required' })
   }
   if (!recipient_house_number || !recipient_street || !recipient_city || !recipient_state ||  !recipient_zip_code) {
     return send(res, 400, { message: 'Recipient address fields are required' })
+  if (!recipient_first_name?.trim() || !recipient_last_name?.trim()) {
+    return send(res, 400, { message: 'Recipient name required' })
   }
 
   if (recipientEmail && senderEmail && recipientEmail === senderEmail) {
-    return send(res, 400, { message: 'Sender and recipient must be different people (different emails)' })
+    return send(res, 400, {
+      message: 'Sender and recipient must be different people'
+    })
   }
 
   // ── Helper: resolve or create an address, then resolve or create a holder ──
@@ -1092,6 +1106,7 @@ async function router(req, res) {
 //   return addressId;
 // }
   const conn = await pool.getConnection()
+
   try {
     await conn.beginTransaction()
 
@@ -1165,6 +1180,16 @@ async function router(req, res) {
     const oversize = typeCode === 'OVR' ? 1 : 0
 
     const actingEmployeeId = Number(user.employee_id)
+
+    const [[empRow]] = await conn.query(
+      `SELECT Post_Office_ID
+       FROM employee
+       WHERE Employee_ID = ?`,
+      [actingEmployeeId]
+    )
+
+    const postOfficeId = empRow?.Post_Office_ID
+
     if (!Number.isFinite(actingEmployeeId)) {
       await conn.rollback()
       return send(res, 401, { message: 'Invalid employee session' })
@@ -1209,10 +1234,46 @@ async function router(req, res) {
       ]
     )
 
+    // ── PAYMENT ──
+    await conn.query(
+      `INSERT INTO payment
+       (Customer_ID, Payment_Amount, Employee_ID, Tracking_Number)
+       VALUES (?,?,?,?)`,
+      [senderId, priceAmount, actingEmployeeId, tracking]
+    )
+
+    // ── DELIVERY ──
+    await conn.query(
+      `INSERT INTO delivery
+       (Tracking_Number, Delivered_Date, Signature_Required, Signature_Received, Delivered_By)
+       VALUES (?,NULL,?,NULL,NULL)`,
+      [tracking, sigRequired ? 1 : 0]
+    )
+
+    // ── SHIPMENT ──
+    const [shipRes] = await conn.query(
+      `INSERT INTO shipment (
+        Status_Code,
+        Employee_ID,
+        From_Address_ID,
+        To_Address_ID,
+        Departure_Time_Stamp,
+        Arrival_Time_Stamp
+      )
+      VALUES (?,?,?,?,NULL,NULL)`,
+      [pendingCode, actingEmployeeId, senderAddrId, recipientAddrId]
+    )
+
     const shipmentId = shipRes.insertId
-    await conn.query(`INSERT INTO shipment_package (Shipment_ID, Tracking_Number) VALUES (?,?)`, [shipmentId, tracking])
+
+    await conn.query(
+      `INSERT INTO shipment_package (Shipment_ID, Tracking_Number)
+       VALUES (?,?)`,
+      [shipmentId, tracking]
+    )
 
     await conn.commit()
+
     return send(res, 201, {
       tracking_number: tracking,
       price: priceAmount,
@@ -1222,15 +1283,14 @@ async function router(req, res) {
   } catch (err) {
     await conn.rollback()
     console.error(err)
-    if (err.code === 'ER_DUP_ENTRY') {
-      return send(res, 400, { message: 'Duplicate email or tracking conflict; try again' })
-    }
-    return send(res, 500, { message: err.message || 'Could not create package' })
+
+    return send(res, 500, {
+      message: err.message || 'Could not create package',
+    })
   } finally {
     conn.release()
   }
 }
-
   // ── GET /api/reports/employee-performance ────────────────────────────────
 
 if (method === 'GET' && pathname === '/api/reports/employee-performance') {
@@ -2655,20 +2715,10 @@ if (method === 'GET' && pathname === '/api/packages/full') {
 
 
 // ── Start ─────────────────────────────────────────────────────────────────
-console.log('Connecting to Database:', process.env.MYSQL_DATABASE)
-
-pool
-  .getConnection()
-  .then(async (c) => {
-    console.log('✅ MySQL connected')
-    const [results] = await c.query('SELECT CURRENT_USER() AS user')
-    console.log('Connected as:', results[0].user)
-    c.release()
-  })
-  .catch((e) => console.error('❌ MySQL connection failed:', e))
-
-console.log('[api] admin routes: GET /api/admin/employees, PATCH /api/admin/employees/:employeeId/deactivate')
 const PORT = process.env.PORT || 5000
-http.createServer(router).listen(PORT, '0.0.0.0', () => 
-  console.log(`🚀 Server running on http://localhost:${PORT}`)
-)
+console.log('Connecting to Database:', process.env.MYSQL_DATABASE)
+console.log("POOL CONFIG HOST =", process.env.MYSQLHOST)
+http.createServer(router).listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`))
+// console.log('[api] admin routes: GET /api/admin/employees, PATCH /api/admin/employees/:employeeId/deactivate')
+// http.createServer(router).listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`))
+// console.log('Connecting to Database:', process.env.MYSQL_DATABASE)

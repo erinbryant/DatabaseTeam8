@@ -81,6 +81,75 @@ function updateCustomerStatus(pool, customerID, isActive, callback){
   .catch(err => callback(err,null));
 }
 
+async function resolveAddress(conn, {
+  house_number,
+  street,
+  city,
+  state,
+  zip_code,
+  apt_number,
+  country
+}) {
+  const normalizedApt =
+  apt_number && apt_number.trim() !== '' ? apt_number.trim() : null;
+
+const [addrRows] = await conn.query(
+  `SELECT Address_ID FROM address
+   WHERE House_Number = ? AND Street = ? AND City = ? AND State = ?
+     AND Zip_Code = ?
+     AND (Apt_Number <=> ?)
+   LIMIT 1`,
+  [
+    house_number,
+    street,
+    city,
+    state,
+    zip_code,
+    normalizedApt
+  ]
+);
+
+  let addressId
+
+  if (!addrRows.length) {
+    const [addrRes] = await conn.query(
+      `INSERT INTO address 
+       (House_Number, Street, City, State, Zip_Code, Apt_Number, Country)
+       VALUES (?,?,?,?,?,?,?)`,
+      [
+        String(house_number).slice(0, 10),
+        String(street).slice(0, 100),
+        String(city).slice(0, 100),
+        String(state).slice(0, 50),
+        String(zip_code).replace(/\D/g, '').slice(0, 5),
+        normalizedApt,
+        (country || 'USA').toString().slice(0, 50),
+      ]
+    )
+
+    addressId = addrRes.insertId
+
+    console.log("INSERT RESULT:", addrRes)
+    console.log("INSERT ID:", addrRes.insertId)
+
+    const [db] = await conn.query("SELECT DATABASE() AS db")
+    console.log("DB IN USE:", db[0].db)
+
+    const [row] = await conn.query(
+      "SELECT * FROM address WHERE Address_ID = ?",
+      [addressId]
+    )
+
+    console.log("ROW INSIDE SAME CONNECTION:", row)
+
+  } else {
+    addressId = addrRows[0].Address_ID
+    console.log("FOUND EXISTING ADDRESS ID:", addressId)
+  }
+
+  return addressId
+}
+
 async function registerCustomer(pool, rawBody) {
   const body = { ...rawBody }
   delete body.customer_id
@@ -102,6 +171,8 @@ async function registerCustomer(pool, rawBody) {
     country,
     sex,
   } = body
+
+  const normalizedZipCode = zip_code?.toString().trim()
 
   const missing = []
   if (!first_name?.trim()) missing.push('first_name')
@@ -312,7 +383,7 @@ module.exports = {
   getCustomerPackages,
   registerCustomer,
   getCustomerByEmail,
-  createCustomerMinimal,
+  // createCustomerMinimal,
   updateCustomerStatus,
    resolveAddress,
 }
