@@ -351,6 +351,177 @@ async function router(req, res) {
     }
   }
 
+
+  // ── GET /api/operations/post-offices ─────────────────────────────────────
+  if (method === 'GET' && pathname === '/api/operations/post-offices') {
+    const user = authenticate(req, res)
+    if (!user) return
+    if (!requireAdmin(user, res)) return
+    operationsDB.getPostOffices(pool, query, (err, results) => {
+      if (err) return send(res, 500, { error: err.message })
+      return send(res, 200, results)
+    })
+    return
+  }
+  
+  // ── GET /api/operations/departments ──────────────────────────────────────
+  if (method === 'GET' && pathname === '/api/operations/departments') {
+    const user = authenticate(req, res)
+    if (!user) return
+    if (!requireAdmin(user, res)) return
+    operationsDB.getDepartments(pool, (err, results) => {
+      if (err) return send(res, 500, { error: err.message })
+      return send(res, 200, results)
+    })
+    return
+  }
+  
+  // ── GET /api/operations/revenue ───────────────────────────────────────────
+  if (method === 'GET' && pathname === '/api/operations/revenue') {
+    const user = authenticate(req, res)
+    if (!user) return
+    if (!requireAdmin(user, res)) return
+    operationsDB.getRevenueData(pool, query, (err, results) => {
+      if (err) return send(res, 500, { error: err.message })
+      return send(res, 200, results)
+    })
+    return
+  }
+  
+  // ── GET /api/operations/revenue/stats ────────────────────────────────────
+  if (method === 'GET' && pathname === '/api/operations/revenue/stats') {
+    const user = authenticate(req, res)
+    if (!user) return
+    if (!requireAdmin(user, res)) return
+    operationsDB.getRevenueStats(pool, query, (err, results) => {
+      if (err) return send(res, 500, { error: err.message })
+      return send(res, 200, results)
+    })
+    return
+  }
+  
+  // ── GET /api/operations/employees ─────────────────────────────────────────
+  if (method === 'GET' && pathname === '/api/operations/employees') {
+    const user = authenticate(req, res)
+    if (!user) return
+    if (!requireAdmin(user, res)) return
+    operationsDB.getEmployeePerformance(pool, query, (err, results) => {
+      if (err) return send(res, 500, { error: err.message })
+      return send(res, 200, results)
+    })
+    return
+  }
+  
+  // ── GET /api/operations/employees/stats ──────────────────────────────────
+  if (method === 'GET' && pathname === '/api/operations/employees/stats') {
+    const user = authenticate(req, res)
+    if (!user) return
+    if (!requireAdmin(user, res)) return
+    operationsDB.getEmployeeStats(pool, query, (err, results) => {
+      if (err) return send(res, 500, { error: err.message })
+      return send(res, 200, results)
+    })
+    return
+  }
+  // ── OPERATIONS HUB ROUTES ─────────────────────────────────────────────────
+  // Add near top of server.js:
+  // const operationsDB = require('./db/operations')
+
+  // ── GET /api/operations/post-offices ─────────────────────────────────────
+  if (method === 'GET' && pathname === '/api/operations/post-offices') {
+    const user = authenticate(req, res)
+    if (!user) return
+    if (!requireAdmin(user, res)) return
+    operationsDB.getPostOffices(pool, query, (err, results) => {
+      if (err) return send(res, 500, { error: err.message })
+      return send(res, 200, results)
+    })
+    return
+  }
+
+  // ── GET /api/operations/departments ──────────────────────────────────────
+  if (method === 'GET' && pathname === '/api/operations/departments') {
+    const user = authenticate(req, res)
+    if (!user) return
+    if (!requireAdmin(user, res)) return
+    operationsDB.getDepartments(pool, (err, results) => {
+      if (err) return send(res, 500, { error: err.message })
+      return send(res, 200, results)
+    })
+    return
+  }
+
+  // ── GET /api/operations/revenue ───────────────────────────────────────────
+  if (method === 'GET' && pathname === '/api/operations/revenue') {
+    const user = authenticate(req, res)
+    if (!user) return
+    if (!requireAdmin(user, res)) return
+    operationsDB.getRevenueData(pool, query, (err, results) => {
+      if (err) return send(res, 500, { error: err.message })
+      return send(res, 200, results)
+    })
+    return
+  }
+
+  // ── GET /api/operations/revenue/stats ────────────────────────────────────
+  if (method === 'GET' && pathname === '/api/operations/revenue/stats') {
+    const user = authenticate(req, res)
+    if (!user) return
+    if (!requireAdmin(user, res)) return
+    operationsDB.getRevenueStats(pool, query, (err, results) => {
+      if (err) return send(res, 500, { error: err.message })
+      return send(res, 200, results)
+    })
+    return
+  }
+
+  // ── GET /api/operations/office-satisfaction ───────────────────────────────
+  if (method === 'GET' && pathname === '/api/operations/office-satisfaction') {
+    const user = authenticate(req, res)
+    if (!user) return
+    if (!requireAdmin(user, res)) return
+    operationsDB.getOfficeSatisfaction(pool, query, (err, results) => {
+      if (err) return send(res, 500, { error: err.message })
+      return send(res, 200, results)
+    })
+    return
+  }
+
+  // ── GET /api/operations/office-trend ─────────────────────────────────────
+  if (method === 'GET' && pathname === '/api/operations/office-trend') {
+    const user = authenticate(req, res)
+    if (!user) return
+    if (!requireAdmin(user, res)) return
+    operationsDB.getOfficeTrend(pool, query, (err, results) => {
+      if (err) return send(res, 500, { error: err.message })
+      return send(res, 200, results)
+    })
+    return
+  }
+
+  // ── GET /api/operations/office-employees ─────────────────────────────────
+  if (method === 'GET' && pathname === '/api/operations/office-employees') {
+    const user = authenticate(req, res)
+    if (!user) return
+    if (!requireAdmin(user, res)) return
+    operationsDB.getOfficeEmployees(pool, query, (err, results) => {
+      if (err) return send(res, 500, { error: err.message })
+      return send(res, 200, results)
+    })
+    return
+  }
+
+  if (method === 'GET' && pathname === '/api/operations/office-raw') {
+    const user = authenticate(req, res)
+    if (!user) return
+    if (!requireAdmin(user, res)) return
+    operationsDB.getOfficeRawData(pool, query, (err, results) => {
+      if (err) return send(res, 500, { error: err.message })
+      return send(res, 200, results)
+    })
+    return
+  }
+
   // ── POST /api/auth/admin-register ────────────────────────────────────────
   if (method === 'POST' && pathname === '/api/auth/admin-register') {
     const user = authenticate(req, res)
@@ -2213,175 +2384,6 @@ ORDER BY pkg.Tracking_Number ASC`,
     }
   }
 
-  // ── GET /api/operations/post-offices ─────────────────────────────────────
-  if (method === 'GET' && pathname === '/api/operations/post-offices') {
-    const user = authenticate(req, res)
-    if (!user) return
-    if (!requireAdmin(user, res)) return
-    operationsDB.getPostOffices(pool, query, (err, results) => {
-      if (err) return send(res, 500, { error: err.message })
-      return send(res, 200, results)
-    })
-    return
-  }
-  
-  // ── GET /api/operations/departments ──────────────────────────────────────
-  if (method === 'GET' && pathname === '/api/operations/departments') {
-    const user = authenticate(req, res)
-    if (!user) return
-    if (!requireAdmin(user, res)) return
-    operationsDB.getDepartments(pool, (err, results) => {
-      if (err) return send(res, 500, { error: err.message })
-      return send(res, 200, results)
-    })
-    return
-  }
-  
-  // ── GET /api/operations/revenue ───────────────────────────────────────────
-  if (method === 'GET' && pathname === '/api/operations/revenue') {
-    const user = authenticate(req, res)
-    if (!user) return
-    if (!requireAdmin(user, res)) return
-    operationsDB.getRevenueData(pool, query, (err, results) => {
-      if (err) return send(res, 500, { error: err.message })
-      return send(res, 200, results)
-    })
-    return
-  }
-  
-  // ── GET /api/operations/revenue/stats ────────────────────────────────────
-  if (method === 'GET' && pathname === '/api/operations/revenue/stats') {
-    const user = authenticate(req, res)
-    if (!user) return
-    if (!requireAdmin(user, res)) return
-    operationsDB.getRevenueStats(pool, query, (err, results) => {
-      if (err) return send(res, 500, { error: err.message })
-      return send(res, 200, results)
-    })
-    return
-  }
-  
-  // ── GET /api/operations/employees ─────────────────────────────────────────
-  if (method === 'GET' && pathname === '/api/operations/employees') {
-    const user = authenticate(req, res)
-    if (!user) return
-    if (!requireAdmin(user, res)) return
-    operationsDB.getEmployeePerformance(pool, query, (err, results) => {
-      if (err) return send(res, 500, { error: err.message })
-      return send(res, 200, results)
-    })
-    return
-  }
-  
-  // ── GET /api/operations/employees/stats ──────────────────────────────────
-  if (method === 'GET' && pathname === '/api/operations/employees/stats') {
-    const user = authenticate(req, res)
-    if (!user) return
-    if (!requireAdmin(user, res)) return
-    operationsDB.getEmployeeStats(pool, query, (err, results) => {
-      if (err) return send(res, 500, { error: err.message })
-      return send(res, 200, results)
-    })
-    return
-  }
-// ── OPERATIONS HUB ROUTES ─────────────────────────────────────────────────
-// Add near top of server.js:
-// const operationsDB = require('./db/operations')
-
-// ── GET /api/operations/post-offices ─────────────────────────────────────
-if (method === 'GET' && pathname === '/api/operations/post-offices') {
-  const user = authenticate(req, res)
-  if (!user) return
-  if (!requireAdmin(user, res)) return
-  operationsDB.getPostOffices(pool, query, (err, results) => {
-    if (err) return send(res, 500, { error: err.message })
-    return send(res, 200, results)
-  })
-  return
-}
-
-// ── GET /api/operations/departments ──────────────────────────────────────
-if (method === 'GET' && pathname === '/api/operations/departments') {
-  const user = authenticate(req, res)
-  if (!user) return
-  if (!requireAdmin(user, res)) return
-  operationsDB.getDepartments(pool, (err, results) => {
-    if (err) return send(res, 500, { error: err.message })
-    return send(res, 200, results)
-  })
-  return
-}
-
-// ── GET /api/operations/revenue ───────────────────────────────────────────
-if (method === 'GET' && pathname === '/api/operations/revenue') {
-  const user = authenticate(req, res)
-  if (!user) return
-  if (!requireAdmin(user, res)) return
-  operationsDB.getRevenueData(pool, query, (err, results) => {
-    if (err) return send(res, 500, { error: err.message })
-    return send(res, 200, results)
-  })
-  return
-}
-
-// ── GET /api/operations/revenue/stats ────────────────────────────────────
-if (method === 'GET' && pathname === '/api/operations/revenue/stats') {
-  const user = authenticate(req, res)
-  if (!user) return
-  if (!requireAdmin(user, res)) return
-  operationsDB.getRevenueStats(pool, query, (err, results) => {
-    if (err) return send(res, 500, { error: err.message })
-    return send(res, 200, results)
-  })
-  return
-}
-
-// ── GET /api/operations/office-satisfaction ───────────────────────────────
-if (method === 'GET' && pathname === '/api/operations/office-satisfaction') {
-  const user = authenticate(req, res)
-  if (!user) return
-  if (!requireAdmin(user, res)) return
-  operationsDB.getOfficeSatisfaction(pool, query, (err, results) => {
-    if (err) return send(res, 500, { error: err.message })
-    return send(res, 200, results)
-  })
-  return
-}
-
-// ── GET /api/operations/office-trend ─────────────────────────────────────
-if (method === 'GET' && pathname === '/api/operations/office-trend') {
-  const user = authenticate(req, res)
-  if (!user) return
-  if (!requireAdmin(user, res)) return
-  operationsDB.getOfficeTrend(pool, query, (err, results) => {
-    if (err) return send(res, 500, { error: err.message })
-    return send(res, 200, results)
-  })
-  return
-}
-
-// ── GET /api/operations/office-employees ─────────────────────────────────
-if (method === 'GET' && pathname === '/api/operations/office-employees') {
-  const user = authenticate(req, res)
-  if (!user) return
-  if (!requireAdmin(user, res)) return
-  operationsDB.getOfficeEmployees(pool, query, (err, results) => {
-    if (err) return send(res, 500, { error: err.message })
-    return send(res, 200, results)
-  })
-  return
-}
-
-if (method === 'GET' && pathname === '/api/operations/office-raw') {
-  const user = authenticate(req, res)
-  if (!user) return
-  if (!requireAdmin(user, res)) return
-  operationsDB.getOfficeRawData(pool, query, (err, results) => {
-    if (err) return send(res, 500, { error: err.message })
-    return send(res, 200, results)
-  })
-  return
-}
 
   // Default
   return send(res, 404, { message: 'Not found' })
