@@ -81,6 +81,93 @@ function updateCustomerStatus(pool, customerID, isActive, callback){
   .catch(err => callback(err,null));
 }
 
+async function resolveAddress(conn, {
+  house_number,
+  street,
+  city,
+  state,
+  zip_code,
+  apt_number,
+  country
+}) {
+  const normalizedApt =
+  apt_number && apt_number.trim() !== '' ? apt_number.trim() : null;
+
+const [addrRows] = await conn.query(
+  `SELECT Address_ID FROM address
+   WHERE House_Number = ? AND Street = ? AND City = ? AND State = ?
+     AND Zip_Code = ?
+     AND (Apt_Number <=> ?)
+   LIMIT 1`,
+  [
+    house_number,
+    street,
+    city,
+    state,
+    zip_code,
+    normalizedApt
+  ]
+);
+
+  let addressId
+
+  if (!addrRows.length) {
+    const [addrRes] = await conn.query(
+      `INSERT INTO address 
+       (House_Number, Street, City, State, Zip_Code, Apt_Number, Country)
+       VALUES (?,?,?,?,?,?,?)`,
+      [
+        String(house_number).slice(0, 10),
+        String(street).slice(0, 100),
+        String(city).slice(0, 100),
+        String(state).slice(0, 50),
+        String(zip_code).replace(/\D/g, '').slice(0, 5),
+        normalizedApt,
+        (country || 'USA').toString().slice(0, 50),
+      ]
+    )
+
+    addressId = addrRes.insertId
+
+    console.log("INSERT RESULT:", addrRes)
+    console.log("INSERT ID:", addrRes.insertId)
+
+    const [db] = await conn.query("SELECT DATABASE() AS db")
+    console.log("DB IN USE:", db[0].db)
+
+    const [row] = await conn.query(
+      "SELECT * FROM address WHERE Address_ID = ?",
+      [addressId]
+    )
+
+    console.log("ROW INSIDE SAME CONNECTION:", row)
+
+  } else {
+    addressId = addrRows[0].Address_ID
+    console.log("FOUND EXISTING ADDRESS ID:", addressId)
+  }
+
+  return addressId
+}
+async function resolveHolder(conn, { first_name, last_name, addressId}) {
+      const [holderRows] = await conn.query(
+        `SELECT Holder_ID FROM holder
+         WHERE First_Name = ? AND Last_Name = ? AND Address_ID = ?
+         LIMIT 1`,
+        [first_name, last_name, addressId]
+      )
+      if (!holderRows.length){
+        const [holderRes] = await conn.query(
+        `INSERT INTO holder (First_Name, Last_Name, Address_ID)
+        VALUES (?,?,?)`,
+        [first_name, last_name, addressId]
+      )
+      return holderRes.insertId
+        
+      } return holderRows[0].Holder_ID
+    
+}
+
 async function registerCustomer(pool, rawBody) {
   const body = { ...rawBody }
   delete body.customer_id
@@ -99,16 +186,11 @@ async function registerCustomer(pool, rawBody) {
     city,
     state,
     zip_code,
-    zip_first3,
-    zip_last2,
-    zip_plus4,
     country,
     sex,
   } = body
 
-  const normalizedZipCode =
-    zip_code?.toString().trim() ||
-    `${String(zip_first3 || '').trim()}${String(zip_last2 || '').trim()}`
+  const normalizedZipCode = zip_code?.toString().trim()
 
   const missing = []
   if (!first_name?.trim()) missing.push('first_name')
@@ -139,30 +221,28 @@ async function registerCustomer(pool, rawBody) {
 
   const hash = await bcrypt.hash(password, 10)
 
-  const [addrResult] = await pool.query(
-    `INSERT INTO address (Apt_Number, House_Number, Street, City, State, Zip_Code, Country) 
-     VALUES (?, ?, ?, ?, ?, ?, ?)`,
-    [
-      apt_number || null,
-      String(house_number).trim(),
-      street.trim(),
-      city.trim(),
-      state.trim(),
-      `${normalizedZipCode}`.slice(0, 5),
-      country || 'USA'
-    ]
-  )
-  const addressId = addrResult.insertId
-
   const normalizedSex = String(sex || 'U').trim().toUpperCase()
   const safeSex = ['M', 'F', 'O', 'U'].includes(normalizedSex) ? normalizedSex : 'U'
 
+  // 1. Resolve address first
+  const addressId = await resolveAddress(pool, {
+    house_number, street, city, state, zip_code, apt_number, country
+  })
+
+  // 2. Resolve holder using that addressId
+  const holderId = await resolveHolder(pool, {
+    first_name,
+    last_name,
+    addressId
+  })
+
+  // 3. Insert customer
   const [result] = await pool.query(
     `INSERT INTO customer (
       First_Name, Middle_Name, Last_Name,
       Password_Hash, Email_Address, Phone_Number,
-      Sex, Address_ID, is_Active
-    ) VALUES (?,?,?,?,?,?,?,?,0)`,
+      Sex, Address_ID, Holder_ID, is_Active
+    ) VALUES (?,?,?,?,?,?,?,?,?,0)`,
     [
       first_name.trim().slice(0, 30),
       middle_name || null,
@@ -171,13 +251,15 @@ async function registerCustomer(pool, rawBody) {
       email.trim().toLowerCase().slice(0, 255),
       phone_number || null,
       safeSex,
-      addressId
+      addressId,
+      holderId
     ]
   )
 
   const customerId = result.insertId
   const user = {
     Customer_ID: customerId,
+    Holder_ID: holderId,
     First_Name: first_name.trim().slice(0, 30),
     Middle_Name: middle_name || null,
     Last_Name: last_name.trim().slice(0, 30),
@@ -186,7 +268,6 @@ async function registerCustomer(pool, rawBody) {
     Sex: safeSex,
     Address_ID: addressId,
     is_Active: 0,
-    Zip_Plus4: zip_plus4 || null,
   }
   return { customer_id: customerId, user }
 }
@@ -205,44 +286,44 @@ async function getCustomerByEmail(pool, email) {
 
 const EMPLOYEE_CREATED_CUSTOMER_PASSWORD = 'customer123'
 
-async function createCustomerMinimal(pool, body) {
-  const initialPassword = EMPLOYEE_CREATED_CUSTOMER_PASSWORD
-  const hash = await bcrypt.hash(initialPassword, 10)
+// async function createCustomerMinimal(pool, body) {
+//   const initialPassword = EMPLOYEE_CREATED_CUSTOMER_PASSWORD
+//   const hash = await bcrypt.hash(initialPassword, 10)
 
-  const [addrResult] = await pool.query(
-    `INSERT INTO address (Apt_Number, House_Number, Street, City, State, Zip_Code, Country) 
-     VALUES (?, ?, ?, ?, ?, ?, ?)`,
-    [
-      body.apt_number || null,
-      String(body.house_number).trim(),
-      body.street.trim(),
-      body.city.trim(),
-      body.state.trim(),
-      String(body.zip_code || body.zip_first3).trim().slice(0, 5),
-      body.country || 'USA'
-    ]
-  )
+//   const [addrResult] = await pool.query(
+//     `INSERT INTO address (Apt_Number, House_Number, Street, City, State, Zip_Code, Country) 
+//      VALUES (?, ?, ?, ?, ?, ?, ?)`,
+//     [
+//       body.apt_number || null,
+//       String(body.house_number).trim(),
+//       body.street.trim(),
+//       body.city.trim(),
+//       body.state.trim(),
+//       String(body.zip_code).trim().slice(0, 5),
+//       body.country || 'USA'
+//     ]
+//   )
   
-  const addressId = addrResult.insertId
+//   const addressId = addrResult.insertId
 
-  const [result] = await pool.query(
-    `INSERT INTO customer (
-      First_Name, Middle_Name, Last_Name,
-      Password_Hash, Email_Address, Phone_Number,
-      Address_ID
-    ) VALUES (?,?,?,?,?,?,?)`,
-    [
-      String(body.first_name).trim(),
-      null,
-      String(body.last_name).trim(),
-      hash,
-      String(body.email).trim().toLowerCase(),
-      body.phone_number || null,
-      addressId
-    ]
-  )
-  return { customerId: result.insertId, initialPassword }
-}
+//   const [result] = await pool.query(
+//     `INSERT INTO customer (
+//       First_Name, Middle_Name, Last_Name,
+//       Password_Hash, Email_Address, Phone_Number,
+//       Address_ID
+//     ) VALUES (?,?,?,?,?,?,?)`,
+//     [
+//       String(body.first_name).trim(),
+//       null,
+//       String(body.last_name).trim(),
+//       hash,
+//       String(body.email).trim().toLowerCase(),
+//       body.phone_number || null,
+//       addressId
+//     ]
+//   )
+//   return { customerId: result.insertId, initialPassword }
+// }
 
 module.exports = {
   getAllCustomers,
@@ -250,6 +331,6 @@ module.exports = {
   getCustomerPackages,
   registerCustomer,
   getCustomerByEmail,
-  createCustomerMinimal,
+  // createCustomerMinimal,
   updateCustomerStatus,
 }

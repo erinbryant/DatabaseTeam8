@@ -306,7 +306,7 @@ async function router(req, res) {
     if (!email || !password) return send(res, 400, { message: 'Email and password required' })
     try {
       const [rows] = await pool.query('SELECT * FROM customer WHERE Email_Address = ? AND is_Active = 0',
-      [email.tri().toLowerCase()])
+      [email.trim().toLowerCase()])
       if (!rows.length) return send(res, 401, { message: 'Invalid credentials' })
       const customer = rows[0]
       const valid = await bcrypt.compare(password, customer.Password_Hash)
@@ -577,8 +577,6 @@ async function router(req, res) {
       const [rows] = await pool.query(
         `SELECT c.Customer_ID, c.First_Name, c.Last_Name, c.Email_Address,
                 c.Phone_Number, a.House_Number, a.Street, a.City, a.State,
-                SUBSTRING(a.Zip_Code, 1, 3) AS Zip_First3,
-                SUBSTRING(a.Zip_Code, 4, 2) AS Zip_Last2,
                 a.Zip_Code, a.Address_ID
          FROM customer c
          JOIN address a ON c.Address_ID = a.Address_ID
@@ -605,8 +603,7 @@ async function router(req, res) {
       Street,
       City,
       State,
-      Zip_First3,
-      Zip_Last2,
+      Zip_Code,
     } = await getBody(req)
 
     try {
@@ -628,7 +625,7 @@ async function router(req, res) {
       if (!customerRows.length) return send(res, 404, { message: 'Customer not found' })
       
       const addressId = customerRows[0].Address_ID
-      const fullZip = (Zip_First3 || '') + (Zip_Last2 || '')
+      //  const fullZip = (Zip_First3 || '') + (Zip_Last2 || '')
 
       // Update address info
       await pool.query(
@@ -638,7 +635,7 @@ async function router(req, res) {
           Street,
           City,
           State,
-          fullZip || null,
+          Zip_Code || null,
           addressId,
         ]
       )
@@ -647,8 +644,6 @@ async function router(req, res) {
       const [rows] = await pool.query(
         `SELECT c.Customer_ID, c.First_Name, c.Last_Name, c.Email_Address,
                 c.Phone_Number, a.House_Number, a.Street, a.City, a.State,
-                SUBSTRING(a.Zip_Code, 1, 3) AS Zip_First3,
-                SUBSTRING(a.Zip_Code, 4, 2) AS Zip_Last2,
                 a.Zip_Code, a.Address_ID
          FROM customer c
          JOIN address a ON c.Address_ID = a.Address_ID
@@ -2063,14 +2058,18 @@ if (method === 'GET' && pathname === '/api/packages/full') {
     if (!Number.isInteger(issueTypeNum) || issueTypeNum < 1 || issueTypeNum > 4) {
       return send(res, 400, { message: 'Invalid issue type' })
     }
-    
+    const [rows] = await pool.query(
+      'SELECT Holder_ID FROM customer WHERE Customer_ID = ?',
+      [user.customer_id]
+    )
+    const holderId = rows[0]?.Holder_ID
     try {
       const [ownedPackage] = await pool.query(
         `SELECT Tracking_Number
          FROM package
-         WHERE Tracking_Number = ? AND (Sender_ID = ? OR Recipient_ID = ?)
+         WHERE Tracking_Number = ? AND (Sender_Holder_ID = ? OR Recipient_Holder_ID = ?)
          LIMIT 1`,
-        [Tracking_Number, user.customer_id, user.customer_id]
+        [Tracking_Number, holderId, holderId]
       )
 
       if (!ownedPackage.length) {
@@ -2091,7 +2090,7 @@ if (method === 'GET' && pathname === '/api/packages/full') {
       return send(res, 201, { message: 'Ticket submitted successfully' })
     } catch (err) {
       console.error('POST /api/tickets error:', err)
-      return send(res, 500, { error: err.message || 'Failed to create ticket' })
+      return send(res, 500, { message: err.message || 'Failed to create ticket' })
     }
   }
 

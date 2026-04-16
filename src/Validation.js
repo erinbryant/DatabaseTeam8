@@ -140,19 +140,26 @@ export function validateState(value) {
   return null
 }
 
-export function validateZip3(value) {
-  const err = validateRequired(value, 'ZIP (first 3)')
-  if (err) return err
-  if (!/^\d{3}$/.test(String(value).trim()))
-    return 'ZIP first 3 must be exactly 3 digits'
-  return null
-}
+// export function validateZip3(value) {
+//   const err = validateRequired(value, 'ZIP (first 3)')
+//   if (err) return err
+//   if (!/^\d{3}$/.test(String(value).trim()))
+//     return 'ZIP first 3 must be exactly 3 digits'
+//   return null
+// }
 
-export function validateZip2(value) {
-  const err = validateRequired(value, 'ZIP (last 2)')
+// export function validateZip2(value) {
+//   const err = validateRequired(value, 'ZIP (last 2)')
+//   if (err) return err
+//   if (!/^\d{2}$/.test(String(value).trim()))
+//     return 'ZIP last 2 must be exactly 2 digits'
+//   return null
+// }
+export function validateZip(value) {
+  const err = validateRequired(value, 'ZIP code')
   if (err) return err
-  if (!/^\d{2}$/.test(String(value).trim()))
-    return 'ZIP last 2 must be exactly 2 digits'
+  if (!/^\d{5}$/.test(String(value).trim()))
+    return 'ZIP code must be exactly 5 digits'
   return null
 }
 
@@ -165,8 +172,8 @@ export function validateAddress({ house_number, street, city, state, zip_first3,
     [street,       validateStreet],
     [city,         validateCity],
     [state,        validateState],
-    [zip_first3,   validateZip3],
-    [zip_last2,    validateZip2],
+    [zip_code,   validateZip],
+    // [zip_last2,    validateZip2],
   ])
 }
 

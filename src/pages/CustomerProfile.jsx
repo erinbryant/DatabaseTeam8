@@ -21,8 +21,7 @@ export default function CustomerProfile() {
     Street: '',
     City: '',
     State: '',
-    Zip_First3: '',
-    Zip_Last2: '',
+    Zip_Code: '',
   })
 
   useEffect(() => {
@@ -50,8 +49,7 @@ export default function CustomerProfile() {
           Street: data.user.Street || '',
           City: data.user.City || '',
           State: data.user.State || '',
-          Zip_First3: data.user.Zip_First3 || '',
-          Zip_Last2: data.user.Zip_Last2 || '',
+          Zip_Code: data.user.Zip_Code || '',
         })
         setLoading(false)
       })
@@ -357,27 +355,17 @@ export default function CustomerProfile() {
 
                 <div className="form-row">
                   <div className="form-group">
-                    <label htmlFor="Zip_First3">ZIP (first 3)</label>
+                    <label htmlFor="Zip_Code">ZIP </label>
                     <input
                       type="text"
-                      id="Zip_First3"
-                      name="Zip_First3"
-                      value={formData.Zip_First3}
+                      id="Zip_Code"
+                      name="Zip_Code"
+                      value={formData.Zip_Code}
                       onChange={handleFormChange}
-                      maxLength={3}
+                      maxLength={5}
                     />
                   </div>
-                  <div className="form-group">
-                    <label htmlFor="Zip_Last2">ZIP (last 2)</label>
-                    <input
-                      type="text"
-                      id="Zip_Last2"
-                      name="Zip_Last2"
-                      value={formData.Zip_Last2}
-                      onChange={handleFormChange}
-                      maxLength={2}
-                    />
-                  </div>
+                  
                 </div>
 
                 <div className="customer-profile-actions">
