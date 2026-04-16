@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import './css/Employee_SubmitTicket.css'
 import { authFetch } from '../authFetch'
+import EmployeeLayout from './EmployeeLayout'
 
 const ISSUE_TYPES = [
   { value: 1, label: 'Failed transaction' },
@@ -97,6 +98,7 @@ function Employee_SubmitTicket() {
   }
 
   return (
+    <EmployeeLayout>
     <div className="form-container">
       <div className="form-header">
         <button onClick={() => navigate('/employee-support')} className="back-btn">
@@ -196,6 +198,7 @@ function Employee_SubmitTicket() {
         <button type="submit">Submit Ticket</button>
       </form>
     </div>
+    </EmployeeLayout>
   )
 }
 

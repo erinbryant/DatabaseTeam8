@@ -73,7 +73,7 @@ function App() {
         <Route path="/customers" element={<RequireEmployee><AllCustomers /></RequireEmployee>} />
         <Route path="/admin-register" element={<RequireAdmin><AdminRegister /></RequireAdmin>} />
         <Route path="/profile" element={<RequireEmployee><Profile /></RequireEmployee>} />
-        <Route path="/employees" element={<RequireEmployee><EmployeesPage /></RequireEmployee>} />
+        <Route path="/employees" element={<RequireAdmin><EmployeesPage /></RequireAdmin>} />
         <Route path ="/employees/all-shipments" element = {<RequireEmployee><AllShipments/></RequireEmployee>}/>
 
         {/* Shared / Authenticated */}

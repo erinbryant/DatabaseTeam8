@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import './css/home.css'
+import EmployeeLayout from './EmployeeLayout'
 
 const envApi = import.meta.env.VITE_API_URL
 const API_BASE =
@@ -179,21 +180,8 @@ export default function RevenueReport() {
   const pkgTypes = [{ value: 'GEN', label: 'General Shipping' }, { value: 'EXP', label: 'Express' }, { value: 'OVR', label: 'Oversize' }]
 
   return (
+    <EmployeeLayout>
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg, #eae6de)' }}>
-      <header className="site-header" style={{ position: 'sticky', top: 0, zIndex: 100 }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', width: '100%', padding: '0 24px', boxSizing: 'border-box', height: 56 }}>
-          <div>
-            <button onClick={() => navigate('/employee_home')}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#fff', fontSize: '0.88rem', fontWeight: 600 }}>
-              ← Dashboard
-            </button>
-          </div>
-          <Link className="logo" to="/" style={{ whiteSpace: 'nowrap' }}>National Postal Service</Link>
-          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-            <a href="#" onClick={handleLogout} style={{ color: '#fff', textDecoration: 'none', fontWeight: 600, fontSize: '0.88rem' }}>Logout</a>
-          </div>
-        </div>
-      </header>
 
       <div style={{ maxWidth: 1280, width: '100%', margin: '0 auto', padding: '32px 28px 64px', flex: 1, boxSizing: 'border-box' }}>
         <div style={{ marginBottom: 28 }}>
@@ -362,12 +350,8 @@ export default function RevenueReport() {
         </div>
       </div>
 
-      <footer className="site-footer">
-        <div className="footer-inner">
-          <div>© {new Date().getFullYear()} National Postal Service</div>
-          <div className="footer-links"><a href="#">Privacy</a><a href="#">Contact</a><a href="#">Locations</a></div>
-        </div>
-      </footer>
+      
     </div>
+    </EmployeeLayout>
   )
 }

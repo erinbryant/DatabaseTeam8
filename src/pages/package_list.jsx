@@ -6,6 +6,7 @@ import './css/inventory.css'
 import './css/package_list.css'
 import skyline from '../assets/houston-skyline.jpeg'
 import { authFetch } from '../authFetch'
+import EmployeeLayout from './EmployeeLayout'
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
@@ -279,20 +280,8 @@ const filtered = packages.filter(p => {
   const commonProps = { expanded, onToggle: toggleExpand, statusCodes, onStatusChange: handleStatusChange, statusUpdating }
 
   return (
+    <EmployeeLayout>
     <div className="inventory-page-flat package-list-page">
-      <header className="site-header">
-        <div className="header-inner">
-          <Link className="logo" to="/">National Postal Service</Link>
-          <nav className="top-nav">
-            <a href="#" onClick={(e) => { e.preventDefault(); navigate('/employee_home') }}>Employee Home</a>
-            <a href="#" onClick={(e) => { e.preventDefault(); navigate('/price_calculator') }}>Calculator</a>
-            <a href="#" onClick={(e) => { e.preventDefault(); navigate('/package_tracking') }}>Track a Package</a>
-            <a href="#" onClick={(e) => { e.preventDefault(); navigate('/profile') }}>Profile</a>
-            <a href="#" onClick={handleLogout}>Logout</a>
-          </nav>
-        </div>
-      </header>
-
       <main>
         <div className="inventory-hero">
           <img src={skyline} alt="" />
@@ -423,17 +412,7 @@ const filtered = packages.filter(p => {
           )}
         </div>
       </main>
-
-      <footer className="site-footer">
-        <div className="footer-inner">
-          <span>© {new Date().getFullYear()} National Postal Service</span>
-          <span className="footer-links">
-            <a href="#">Privacy</a>
-            <a href="#">Terms</a>
-            <a href="#">Support</a>
-          </span>
-        </div>
-      </footer>
     </div>
+    </EmployeeLayout>
   )
 }

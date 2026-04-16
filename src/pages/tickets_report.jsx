@@ -7,6 +7,7 @@ import ColumnChart from "../components/column_chart";
 import PieChart from "../components/pie_chart";
 import React from 'react'
 import { authFetch } from '../authFetch'
+import EmployeeLayout from "./EmployeeLayout";
 
 import { Link, useNavigate } from 'react-router-dom';
 //import { netTicketsWeek } from "../../backend/db/employees";
@@ -262,20 +263,8 @@ function handleLogout(e) {
   }
   
   return (
+    <EmployeeLayout>
     <div className={`packages-page ${userType === 'employee' ? 'employee-home' : ''}`}>
-      <header className="site-header">
-        <div className="header-inner">
-          <Link className="logo" to="/"> National Postal Service</Link>
-          <nav className="top-nav">
-            <a href="#" onClick={(e) => { e.preventDefault(); navigate('/employee_home') }}>Employee Home</a>
-            <a href="#" onClick={(e) => { e.preventDefault(); navigate('/price_calculator') }}>Calculator</a>
-            <a href="#" onClick={(e) => { e.preventDefault(); navigate('/package_tracking') }}>Track a Package</a>
-            <a href="#" onClick={(e) => { e.preventDefault(); navigate('/profile') }}>Profile</a>
-            <a href="#" onClick={handleLogout}>Logout</a>
-          </nav>
-            
-        </div>
-      </header>
 
       <main>
         {/* <div className="inventory-hero">
@@ -541,13 +530,7 @@ function handleLogout(e) {
         </div>
       </main>
 
-      <footer className="site-footer">
-        <div className="footer-inner">
-          <span>© {new Date().getFullYear()} National Postal Service</span>
-          <span className="footer-links">
-          </span>
-        </div>
-      </footer>
     </div>
+    </EmployeeLayout>
   );
 }
