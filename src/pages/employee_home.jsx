@@ -257,8 +257,8 @@ function ClerkDashboard({ navigate, token }) {
         <>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 16, marginBottom: 32 }}>
             <StatCard label="Total Packages" value={packages.length} color="#1a1f4e" onClick={() => navigate('/package_list')} />
-            <StatCard label="Pending"        value={pending}         color="#d97706" onClick={() => navigate('/package_list')} />
-            <StatCard label="In Transit"     value={inTransit}       color="#0891b2" onClick={() => navigate('/package_list')} />
+            <StatCard label="Pending"        value={pending}         color="#1a1f4e" onClick={() => navigate('/package_list')} />
+            <StatCard label="In Transit"     value={inTransit}       color="#1a1f4e" onClick={() => navigate('/package_list')} />
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 32 }}>
@@ -342,8 +342,8 @@ function DriverDashboard({ navigate, token }) {
         <>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 16, marginBottom: 32 }}>
             <StatCard label="Active Shipments" value={active.length}  color="#1a1f4e" onClick={() => navigate('/package_list')} />
-            <StatCard label="Delivered"        value={delivered}      color="#059669" onClick={() => navigate('/package_list')} />
-            <StatCard label="Total Packages"   value={packages.length} color="#0891b2" onClick={() => navigate('/package_list')} />
+            <StatCard label="Delivered"        value={delivered}      color="#1a1f4e" onClick={() => navigate('/package_list')} />
+            <StatCard label="Total Packages"   value={packages.length} color="#1a1f4e" onClick={() => navigate('/package_list')} />
           </div>
 
           {/* Active shipments list */}
