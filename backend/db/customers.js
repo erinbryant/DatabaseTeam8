@@ -68,6 +68,8 @@ function getCustomerByID(pool, customerID, callback) {
 function updateCustomerStatus(pool, customerID, isActive, callback){
   const dbStatus = isActive ? 0 : 1;
 
+  console.log(`Attempted DB Update: ID ${customerID} to Status ${dbStatus}`);
+
   pool.query(
     'UPDATE customer SET is_Active = ? WHERE Customer_ID = ?',
     [dbStatus, customerID]

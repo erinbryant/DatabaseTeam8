@@ -498,8 +498,7 @@ export default function OfficeSatisfactionReport() {
         {showCompare && selectedOffices.length >= 2 && (
           <ComparisonPanel offices={selectedOffices} onClose={() => setShowCompare(false)} />
         )}
-      </div>
-      {/* Raw data table */}
+        {/* Raw data table */}
       <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #e2e8f0', overflow: 'hidden', boxShadow: '0 2px 8px rgba(15,23,42,0.04)', marginTop: 24, maxWidth: 1280}}>
         <div style={{ padding: '16px 24px', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           
@@ -553,6 +552,7 @@ export default function OfficeSatisfactionReport() {
             </div>
           </>
         )}
+      </div>
       </div>
     </div>
     </EmployeeLayout>
