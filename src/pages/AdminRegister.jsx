@@ -96,7 +96,7 @@ const AdminRegister = () => {
         <h2>👤 Register New Employee</h2>
         <p className="subtitle">Management - Create Employee Account</p>
 
-        <button type="button" onClick={handleBack} className="back-button">
+        <button type="button" onClick={handleBack} className="back-button register-back-button">
           Back
         </button>
 

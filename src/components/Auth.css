@@ -175,6 +175,14 @@ button:disabled {
   margin-top: 15px;
 }
 
+.register-back-button {
+  width: auto;
+  padding: 8px 14px;
+  font-size: 14px;
+  margin-top: 0;
+  margin-bottom: 10px;
+}
+
 .back-button:hover {
   background: #5a6268;
 }
