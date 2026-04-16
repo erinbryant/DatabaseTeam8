@@ -351,6 +351,177 @@ async function router(req, res) {
     }
   }
 
+
+  // ── GET /api/operations/post-offices ─────────────────────────────────────
+  if (method === 'GET' && pathname === '/api/operations/post-offices') {
+    const user = authenticate(req, res)
+    if (!user) return
+    if (!requireAdmin(user, res)) return
+    operationsDB.getPostOffices(pool, query, (err, results) => {
+      if (err) return send(res, 500, { error: err.message })
+      return send(res, 200, results)
+    })
+    return
+  }
+  
+  // ── GET /api/operations/departments ──────────────────────────────────────
+  if (method === 'GET' && pathname === '/api/operations/departments') {
+    const user = authenticate(req, res)
+    if (!user) return
+    if (!requireAdmin(user, res)) return
+    operationsDB.getDepartments(pool, (err, results) => {
+      if (err) return send(res, 500, { error: err.message })
+      return send(res, 200, results)
+    })
+    return
+  }
+  
+  // ── GET /api/operations/revenue ───────────────────────────────────────────
+  if (method === 'GET' && pathname === '/api/operations/revenue') {
+    const user = authenticate(req, res)
+    if (!user) return
+    if (!requireAdmin(user, res)) return
+    operationsDB.getRevenueData(pool, query, (err, results) => {
+      if (err) return send(res, 500, { error: err.message })
+      return send(res, 200, results)
+    })
+    return
+  }
+  
+  // ── GET /api/operations/revenue/stats ────────────────────────────────────
+  if (method === 'GET' && pathname === '/api/operations/revenue/stats') {
+    const user = authenticate(req, res)
+    if (!user) return
+    if (!requireAdmin(user, res)) return
+    operationsDB.getRevenueStats(pool, query, (err, results) => {
+      if (err) return send(res, 500, { error: err.message })
+      return send(res, 200, results)
+    })
+    return
+  }
+  
+  // ── GET /api/operations/employees ─────────────────────────────────────────
+  if (method === 'GET' && pathname === '/api/operations/employees') {
+    const user = authenticate(req, res)
+    if (!user) return
+    if (!requireAdmin(user, res)) return
+    operationsDB.getEmployeePerformance(pool, query, (err, results) => {
+      if (err) return send(res, 500, { error: err.message })
+      return send(res, 200, results)
+    })
+    return
+  }
+  
+  // ── GET /api/operations/employees/stats ──────────────────────────────────
+  if (method === 'GET' && pathname === '/api/operations/employees/stats') {
+    const user = authenticate(req, res)
+    if (!user) return
+    if (!requireAdmin(user, res)) return
+    operationsDB.getEmployeeStats(pool, query, (err, results) => {
+      if (err) return send(res, 500, { error: err.message })
+      return send(res, 200, results)
+    })
+    return
+  }
+  // ── OPERATIONS HUB ROUTES ─────────────────────────────────────────────────
+  // Add near top of server.js:
+  // const operationsDB = require('./db/operations')
+
+  // ── GET /api/operations/post-offices ─────────────────────────────────────
+  if (method === 'GET' && pathname === '/api/operations/post-offices') {
+    const user = authenticate(req, res)
+    if (!user) return
+    if (!requireAdmin(user, res)) return
+    operationsDB.getPostOffices(pool, query, (err, results) => {
+      if (err) return send(res, 500, { error: err.message })
+      return send(res, 200, results)
+    })
+    return
+  }
+
+  // ── GET /api/operations/departments ──────────────────────────────────────
+  if (method === 'GET' && pathname === '/api/operations/departments') {
+    const user = authenticate(req, res)
+    if (!user) return
+    if (!requireAdmin(user, res)) return
+    operationsDB.getDepartments(pool, (err, results) => {
+      if (err) return send(res, 500, { error: err.message })
+      return send(res, 200, results)
+    })
+    return
+  }
+
+  // ── GET /api/operations/revenue ───────────────────────────────────────────
+  if (method === 'GET' && pathname === '/api/operations/revenue') {
+    const user = authenticate(req, res)
+    if (!user) return
+    if (!requireAdmin(user, res)) return
+    operationsDB.getRevenueData(pool, query, (err, results) => {
+      if (err) return send(res, 500, { error: err.message })
+      return send(res, 200, results)
+    })
+    return
+  }
+
+  // ── GET /api/operations/revenue/stats ────────────────────────────────────
+  if (method === 'GET' && pathname === '/api/operations/revenue/stats') {
+    const user = authenticate(req, res)
+    if (!user) return
+    if (!requireAdmin(user, res)) return
+    operationsDB.getRevenueStats(pool, query, (err, results) => {
+      if (err) return send(res, 500, { error: err.message })
+      return send(res, 200, results)
+    })
+    return
+  }
+
+  // ── GET /api/operations/office-satisfaction ───────────────────────────────
+  if (method === 'GET' && pathname === '/api/operations/office-satisfaction') {
+    const user = authenticate(req, res)
+    if (!user) return
+    if (!requireAdmin(user, res)) return
+    operationsDB.getOfficeSatisfaction(pool, query, (err, results) => {
+      if (err) return send(res, 500, { error: err.message })
+      return send(res, 200, results)
+    })
+    return
+  }
+
+  // ── GET /api/operations/office-trend ─────────────────────────────────────
+  if (method === 'GET' && pathname === '/api/operations/office-trend') {
+    const user = authenticate(req, res)
+    if (!user) return
+    if (!requireAdmin(user, res)) return
+    operationsDB.getOfficeTrend(pool, query, (err, results) => {
+      if (err) return send(res, 500, { error: err.message })
+      return send(res, 200, results)
+    })
+    return
+  }
+
+  // ── GET /api/operations/office-employees ─────────────────────────────────
+  if (method === 'GET' && pathname === '/api/operations/office-employees') {
+    const user = authenticate(req, res)
+    if (!user) return
+    if (!requireAdmin(user, res)) return
+    operationsDB.getOfficeEmployees(pool, query, (err, results) => {
+      if (err) return send(res, 500, { error: err.message })
+      return send(res, 200, results)
+    })
+    return
+  }
+
+  if (method === 'GET' && pathname === '/api/operations/office-raw') {
+    const user = authenticate(req, res)
+    if (!user) return
+    if (!requireAdmin(user, res)) return
+    operationsDB.getOfficeRawData(pool, query, (err, results) => {
+      if (err) return send(res, 500, { error: err.message })
+      return send(res, 200, results)
+    })
+    return
+  }
+
   // ── POST /api/auth/admin-register ────────────────────────────────────────
   if (method === 'POST' && pathname === '/api/auth/admin-register') {
     const user = authenticate(req, res)
@@ -1006,90 +1177,6 @@ async function router(req, res) {
     conn.release()
   }
 }
-  
-    // ── GET /api/reports/employee-performance ────────────────────────────────
-
-if (method === 'GET' && pathname === '/api/reports/employee-performance') {
-  const user = authenticate(req, res)
-  if (!user) return
-  if (!requireAdmin(user, res)) return
-
-  const { department_id, post_office_id, date_from, date_to } = query
-
-  try {
-    const conditions = ['e.Role_ID NOT IN (SELECT Role_ID FROM role WHERE Role_Name IN (\'Manager\', \'Admin\', \'Supervisor\'))']
-    const params = []
-
-    if (department_id)  { conditions.push('e.Department_ID = ?');               params.push(Number(department_id)) }
-    if (post_office_id) { conditions.push('e.Post_Office_ID = ?');              params.push(Number(post_office_id)) }
-    if (date_from)      { conditions.push('s.Departure_Time_Stamp >= ?');       params.push(date_from) }
-    if (date_to)        { conditions.push('s.Departure_Time_Stamp <= ?');       params.push(date_to + ' 23:59:59') }
-
-    const whereClause = `WHERE ${conditions.join(' AND ')}`
-
-    const [rows] = await pool.query(
-      `SELECT
-        e.Employee_ID,
-        CONCAT(e.First_Name, ' ', e.Last_Name) AS Employee_Name,
-        e.Email_Address,
-        r.Role_Name,
-        d.Department_Name,
-        off_addr.City AS Office_City,
-        off_addr.State AS Office_State,
-        COUNT(DISTINCT s.Shipment_ID) AS Total_Shipments,
-        COUNT(DISTINCT sp.Tracking_Number) AS Total_Packages,
-        ROUND(COUNT(DISTINCT sp.Tracking_Number) / NULLIF(COUNT(DISTINCT s.Shipment_ID), 0), 1) AS Avg_Packages_Per_Shipment,
-        (
-          SELECT COALESCE(SUM(pay2.Payment_Amount), 0)
-          FROM shipment s2
-          JOIN shipment_package sp2 ON sp2.Shipment_ID = s2.Shipment_ID
-          LEFT JOIN payment pay2 ON pay2.Tracking_Number = sp2.Tracking_Number
-          WHERE s2.Employee_ID = e.Employee_ID
-        ) AS Total_Revenue,
-        (
-          SELECT COALESCE(AVG(pay2.Payment_Amount), 0)
-          FROM shipment s2
-          JOIN shipment_package sp2 ON sp2.Shipment_ID = s2.Shipment_ID
-          LEFT JOIN payment pay2 ON pay2.Tracking_Number = sp2.Tracking_Number
-          WHERE s2.Employee_ID = e.Employee_ID
-        ) AS Avg_Revenue_Per_Shipment,
-        (
-          SELECT ROUND(
-            COUNT(CASE WHEN pkg2.Status_Code = 4 THEN 1 END) * 100.0 /
-            NULLIF(COUNT(*), 0), 1)
-          FROM shipment s2
-          JOIN shipment_package sp2 ON sp2.Shipment_ID = s2.Shipment_ID
-          JOIN package pkg2 ON pkg2.Tracking_Number = sp2.Tracking_Number
-          WHERE s2.Employee_ID = e.Employee_ID
-        ) AS Delivery_Success_Rate,
-        (
-          SELECT COUNT(*)
-          FROM shipment s2
-          JOIN shipment_package sp2 ON sp2.Shipment_ID = s2.Shipment_ID
-          JOIN package pkg2 ON pkg2.Tracking_Number = sp2.Tracking_Number
-          WHERE s2.Employee_ID = e.Employee_ID AND pkg2.Oversize = 1
-        ) AS Oversize_Packages,
-        MAX(s.Departure_Time_Stamp) AS Last_Shipment_Date
-      FROM employee e
-      JOIN role r ON e.Role_ID = r.Role_ID
-      JOIN department d ON e.Department_ID = d.Department_ID
-      JOIN post_office po ON e.Post_Office_ID = po.Post_Office_ID
-      JOIN address off_addr ON off_addr.Address_ID = po.Address_ID
-      LEFT JOIN shipment s ON s.Employee_ID = e.Employee_ID
-      LEFT JOIN shipment_package sp ON sp.Shipment_ID = s.Shipment_ID
-      LEFT JOIN package pkg ON pkg.Tracking_Number = sp.Tracking_Number
-      ${whereClause}
-      GROUP BY e.Employee_ID, e.First_Name, e.Last_Name, e.Email_Address,
-               r.Role_Name, d.Department_Name, off_addr.City, off_addr.State
-      ORDER BY Total_Packages DESC`,
-      params
-    )
-    return send(res, 200, { report: rows })
-  } catch (err) {
-    console.error(err)
-    return send(res, 500, { message: err.message || 'Server error' })
-  }
-}
 
 // /api/employee/packages/:trackingNumber/status
 {
@@ -1155,96 +1242,6 @@ if (method === 'GET' && pathname === '/api/reports/employee-performance') {
     } finally {
       conn.release()
     }
-  }
-}
-
-// ── GET /api/reports/location-stats ─────────────────────────────────────
-if (method === 'GET' && pathname === '/api/reports/location-stats') {
-  const user = authenticate(req, res)
-  if (!user) return
-  if (!requireAdmin(user, res)) return
-
-  const { date_from, date_to } = query
-  const conditions = []
-  const params = []
-
-  if (date_from) { conditions.push('s.Departure_Time_Stamp >= ?'); params.push(date_from) }
-  if (date_to)   { conditions.push('s.Departure_Time_Stamp <= ?'); params.push(date_to + ' 23:59:59') }
-
-  const whereClause = conditions.length ? `AND ${conditions.join(' AND ')}` : ''
-
-  try {
-    const [rows] = await pool.query(
-      `SELECT
-        po.Post_Office_ID,
-        addr.City,
-        addr.State,
-        CONCAT(addr.House_Number, ' ', addr.Street, ', ', addr.City, ', ', addr.State) AS Full_Address,
-        COUNT(DISTINCT s.Shipment_ID) AS Total_Shipments,
-        COUNT(DISTINCT sp.Tracking_Number) AS Total_Packages,
-        COALESCE(SUM(pay.Payment_Amount), 0) AS Total_Revenue,
-        COALESCE(AVG(pay.Payment_Amount), 0) AS Avg_Package_Price,
-        COUNT(DISTINCT e.Employee_ID) AS Total_Employees
-      FROM post_office po
-      JOIN address addr ON addr.Address_ID = po.Address_ID
-      LEFT JOIN employee e ON e.Post_Office_ID = po.Post_Office_ID
-      LEFT JOIN shipment s ON s.Employee_ID = e.Employee_ID ${whereClause}
-      LEFT JOIN shipment_package sp ON sp.Shipment_ID = s.Shipment_ID
-      LEFT JOIN package pkg ON pkg.Tracking_Number = sp.Tracking_Number
-      LEFT JOIN payment pay ON pay.Tracking_Number = sp.Tracking_Number
-      GROUP BY po.Post_Office_ID, addr.City, addr.State, addr.House_Number, addr.Street
-      ORDER BY Total_Packages DESC`,
-      params
-    )
-    return send(res, 200, { locations: rows })
-  } catch (err) {
-    console.error(err)
-    return send(res, 500, { message: err.message || 'Server error' })
-  }
-}
-
-// ── GET /api/reports/department-stats ────────────────────────────────────
-if (method === 'GET' && pathname === '/api/reports/department-stats') {
-  const user = authenticate(req, res)
-  if (!user) return
-  if (!requireAdmin(user, res)) return
-
-  const { date_from, date_to } = query
-  const conditions = []
-  const params = []
-
-  if (date_from) { conditions.push('s.Departure_Time_Stamp >= ?'); params.push(date_from) }
-  if (date_to)   { conditions.push('s.Departure_Time_Stamp <= ?'); params.push(date_to + ' 23:59:59') }
-
-  const whereClause = conditions.length ? `AND ${conditions.join(' AND ')}` : ''
-
-  try {
-    const [rows] = await pool.query(
-      `SELECT
-        d.Department_ID,
-        d.Department_Name,
-        COUNT(DISTINCT e.Employee_ID) AS Total_Employees,
-        COUNT(DISTINCT s.Shipment_ID) AS Total_Shipments,
-        COUNT(DISTINCT sp.Tracking_Number) AS Total_Packages,
-        COALESCE(SUM(pay.Payment_Amount), 0) AS Total_Revenue,
-        ROUND(
-          COUNT(CASE WHEN pkg.Status_Code = 4 THEN 1 END) * 100.0 /
-          NULLIF(COUNT(DISTINCT sp.Tracking_Number), 0), 1
-        ) AS Delivery_Success_Rate
-      FROM department d
-      LEFT JOIN employee e ON e.Department_ID = d.Department_ID
-      LEFT JOIN shipment s ON s.Employee_ID = e.Employee_ID ${whereClause}
-      LEFT JOIN shipment_package sp ON sp.Shipment_ID = s.Shipment_ID
-      LEFT JOIN package pkg ON pkg.Tracking_Number = sp.Tracking_Number
-      LEFT JOIN payment pay ON pay.Tracking_Number = sp.Tracking_Number
-      GROUP BY d.Department_ID, d.Department_Name
-      ORDER BY Total_Packages DESC`,
-      params
-    )
-    return send(res, 200, { departments: rows })
-  } catch (err) {
-    console.error(err)
-    return send(res, 500, { message: err.message || 'Server error' })
   }
 }
 
@@ -1604,73 +1601,6 @@ if (method === 'POST' && pathname === '/api/employee/package-pickup') {
   } catch (err) {
     console.error(err)
     return send(res, 500, { message: err.sqlMessage || err.message || 'Could not complete pickup' })
-  }
-}
-
-// ── GET /api/reports/zone-stats ───────────────────────────────────────────
-if (method === 'GET' && pathname === '/api/reports/zone-stats') {
-  const user = authenticate(req, res)
-  if (!user) return
-  if (!requireAdmin(user, res)) return
-
-  const { date_from, date_to } = query
-  const conditions = []
-  const params = []
-
-  if (date_from) { conditions.push('pkg.Date_Created >= ?'); params.push(date_from) }
-  if (date_to)   { conditions.push('pkg.Date_Created <= ?'); params.push(date_to + ' 23:59:59') }
-
-  const whereClause = conditions.length ? `WHERE ${conditions.join(' AND ')}` : ''
-
-  try {
-    const [rows] = await pool.query(
-      `SELECT
-        pkg.Zone,
-        COUNT(*) AS Total_Packages,
-        COALESCE(SUM(pay.Payment_Amount), 0) AS Total_Revenue,
-        COALESCE(AVG(pay.Payment_Amount), 0) AS Avg_Price,
-        COALESCE(AVG(pkg.Weight), 0) AS Avg_Weight,
-        COUNT(CASE WHEN pkg.Oversize = 1 THEN 1 END) AS Oversize_Count
-      FROM package pkg
-      LEFT JOIN payment pay ON pay.Tracking_Number = pkg.Tracking_Number
-      ${whereClause}
-      GROUP BY pkg.Zone
-      ORDER BY pkg.Zone ASC`,
-      params
-    )
-    return send(res, 200, { zones: rows })
-  } catch (err) {
-    console.error(err)
-    return send(res, 500, { message: err.message || 'Server error' })
-  }
-}
-
-// ── GET /api/reports/departments (filter dropdown) ────────────────────────
-if (method === 'GET' && pathname === '/api/reports/departments') {
-  const user = authenticate(req, res)
-  if (!user) return
-  if (!requireAdmin(user, res)) return
-  try {
-    const [rows] = await pool.query('SELECT Department_ID, Department_Name FROM department ORDER BY Department_Name ASC')
-    return send(res, 200, rows)
-  } catch (err) {
-    return send(res, 500, { message: 'Server error' })
-  }
-}
-
-// ── GET /api/reports/post-offices (filter dropdown) ───────────────────────
-if (method === 'GET' && pathname === '/api/reports/post-offices') {
-  const user = authenticate(req, res)
-  if (!user) return
-  if (!requireEmployee(user, res)) return
-  try {
-    const [rows] = await pool.query(`SELECT po.Post_Office_ID, a.City, a.State
-      FROM post_office po
-      JOIN address a ON po.Address_ID = a.Address_ID
-      ORDER BY a.State ASC, a.City ASC;`)
-    return send(res, 200, rows)
-  } catch (err) {
-    return send(res, 500, { message: 'Server error' })
   }
 }
 
@@ -2435,175 +2365,6 @@ ORDER BY pkg.Tracking_Number ASC`,
     }
   }
 
-  // ── GET /api/operations/post-offices ─────────────────────────────────────
-  if (method === 'GET' && pathname === '/api/operations/post-offices') {
-    const user = authenticate(req, res)
-    if (!user) return
-    if (!requireAdmin(user, res)) return
-    operationsDB.getPostOffices(pool, query, (err, results) => {
-      if (err) return send(res, 500, { error: err.message })
-      return send(res, 200, results)
-    })
-    return
-  }
-  
-  // ── GET /api/operations/departments ──────────────────────────────────────
-  if (method === 'GET' && pathname === '/api/operations/departments') {
-    const user = authenticate(req, res)
-    if (!user) return
-    if (!requireAdmin(user, res)) return
-    operationsDB.getDepartments(pool, (err, results) => {
-      if (err) return send(res, 500, { error: err.message })
-      return send(res, 200, results)
-    })
-    return
-  }
-  
-  // ── GET /api/operations/revenue ───────────────────────────────────────────
-  if (method === 'GET' && pathname === '/api/operations/revenue') {
-    const user = authenticate(req, res)
-    if (!user) return
-    if (!requireAdmin(user, res)) return
-    operationsDB.getRevenueData(pool, query, (err, results) => {
-      if (err) return send(res, 500, { error: err.message })
-      return send(res, 200, results)
-    })
-    return
-  }
-  
-  // ── GET /api/operations/revenue/stats ────────────────────────────────────
-  if (method === 'GET' && pathname === '/api/operations/revenue/stats') {
-    const user = authenticate(req, res)
-    if (!user) return
-    if (!requireAdmin(user, res)) return
-    operationsDB.getRevenueStats(pool, query, (err, results) => {
-      if (err) return send(res, 500, { error: err.message })
-      return send(res, 200, results)
-    })
-    return
-  }
-  
-  // ── GET /api/operations/employees ─────────────────────────────────────────
-  if (method === 'GET' && pathname === '/api/operations/employees') {
-    const user = authenticate(req, res)
-    if (!user) return
-    if (!requireAdmin(user, res)) return
-    operationsDB.getEmployeePerformance(pool, query, (err, results) => {
-      if (err) return send(res, 500, { error: err.message })
-      return send(res, 200, results)
-    })
-    return
-  }
-  
-  // ── GET /api/operations/employees/stats ──────────────────────────────────
-  if (method === 'GET' && pathname === '/api/operations/employees/stats') {
-    const user = authenticate(req, res)
-    if (!user) return
-    if (!requireAdmin(user, res)) return
-    operationsDB.getEmployeeStats(pool, query, (err, results) => {
-      if (err) return send(res, 500, { error: err.message })
-      return send(res, 200, results)
-    })
-    return
-  }
-// ── OPERATIONS HUB ROUTES ─────────────────────────────────────────────────
-// Add near top of server.js:
-// const operationsDB = require('./db/operations')
-
-// ── GET /api/operations/post-offices ─────────────────────────────────────
-if (method === 'GET' && pathname === '/api/operations/post-offices') {
-  const user = authenticate(req, res)
-  if (!user) return
-  if (!requireAdmin(user, res)) return
-  operationsDB.getPostOffices(pool, query, (err, results) => {
-    if (err) return send(res, 500, { error: err.message })
-    return send(res, 200, results)
-  })
-  return
-}
-
-// ── GET /api/operations/departments ──────────────────────────────────────
-if (method === 'GET' && pathname === '/api/operations/departments') {
-  const user = authenticate(req, res)
-  if (!user) return
-  if (!requireAdmin(user, res)) return
-  operationsDB.getDepartments(pool, (err, results) => {
-    if (err) return send(res, 500, { error: err.message })
-    return send(res, 200, results)
-  })
-  return
-}
-
-// ── GET /api/operations/revenue ───────────────────────────────────────────
-if (method === 'GET' && pathname === '/api/operations/revenue') {
-  const user = authenticate(req, res)
-  if (!user) return
-  if (!requireAdmin(user, res)) return
-  operationsDB.getRevenueData(pool, query, (err, results) => {
-    if (err) return send(res, 500, { error: err.message })
-    return send(res, 200, results)
-  })
-  return
-}
-
-// ── GET /api/operations/revenue/stats ────────────────────────────────────
-if (method === 'GET' && pathname === '/api/operations/revenue/stats') {
-  const user = authenticate(req, res)
-  if (!user) return
-  if (!requireAdmin(user, res)) return
-  operationsDB.getRevenueStats(pool, query, (err, results) => {
-    if (err) return send(res, 500, { error: err.message })
-    return send(res, 200, results)
-  })
-  return
-}
-
-// ── GET /api/operations/office-satisfaction ───────────────────────────────
-if (method === 'GET' && pathname === '/api/operations/office-satisfaction') {
-  const user = authenticate(req, res)
-  if (!user) return
-  if (!requireAdmin(user, res)) return
-  operationsDB.getOfficeSatisfaction(pool, query, (err, results) => {
-    if (err) return send(res, 500, { error: err.message })
-    return send(res, 200, results)
-  })
-  return
-}
-
-// ── GET /api/operations/office-trend ─────────────────────────────────────
-if (method === 'GET' && pathname === '/api/operations/office-trend') {
-  const user = authenticate(req, res)
-  if (!user) return
-  if (!requireAdmin(user, res)) return
-  operationsDB.getOfficeTrend(pool, query, (err, results) => {
-    if (err) return send(res, 500, { error: err.message })
-    return send(res, 200, results)
-  })
-  return
-}
-
-// ── GET /api/operations/office-employees ─────────────────────────────────
-if (method === 'GET' && pathname === '/api/operations/office-employees') {
-  const user = authenticate(req, res)
-  if (!user) return
-  if (!requireAdmin(user, res)) return
-  operationsDB.getOfficeEmployees(pool, query, (err, results) => {
-    if (err) return send(res, 500, { error: err.message })
-    return send(res, 200, results)
-  })
-  return
-}
-
-if (method === 'GET' && pathname === '/api/operations/office-raw') {
-  const user = authenticate(req, res)
-  if (!user) return
-  if (!requireAdmin(user, res)) return
-  operationsDB.getOfficeRawData(pool, query, (err, results) => {
-    if (err) return send(res, 500, { error: err.message })
-    return send(res, 200, results)
-  })
-  return
-}
 
   // Default
   return send(res, 404, { message: 'Not found' })
