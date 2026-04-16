@@ -40,8 +40,7 @@ const emptyAddr = () => ({
   street: '',
   city: '',
   state: '',
-  zip_first3: '',
-  zip_last2: '',
+  zip_code: '',
   apt_number: '',
 })
 
@@ -134,9 +133,8 @@ export default function AddPackage() {
         street: c.Street || '',
         city: c.City || '',
         state: c.State || '',
-        zip_first3: c.Zip_First3 || '',
-        zip_last2: c.Zip_Last2 || '',
-        apt_number: c.Apt_Number || '',
+        zip_code: c.Zip_Code || ''
+      
       })
 
       setSenderFound(true)
@@ -195,9 +193,7 @@ export default function AddPackage() {
         street: c.Street || '',
         city: c.City || '',
         state: c.State || '',
-        zip_first3: c.Zip_First3 || '',
-        zip_last2: c.Zip_Last2 || '',
-        apt_number: c.Apt_Number || '',
+        zip_code: c.Zip_Code || ''
       })
  
       setRecipientFound(true)
@@ -272,8 +268,8 @@ export default function AddPackage() {
     setError(null)
     setSubmitResult(null)
 
-    if (!senderEmail.trim() || !senderFirst.trim() || !senderLast.trim()) {
-      setError('Sender email and name are required.')
+    if (!senderFirst.trim() || !senderLast.trim()) {
+      setError('Sender name is required.')
       return
     }
     if (!recipientFirst.trim() || !recipientLast.trim()) {
@@ -284,12 +280,12 @@ export default function AddPackage() {
     const sa = senderAddr
     const ra = recipientAddr
 
-    if (!sa.house_number || !sa.street || !sa.city || !sa.state || !sa.zip_first3 || !sa.zip_last2) {
+    if (!sa.house_number || !sa.street || !sa.city || !sa.state || !sa.zip_code) {
       setError('Complete the sender address.')
       return
     }
 
-    if (!ra.house_number || !ra.street || !ra.city || !ra.state || !ra.zip_first3 || !ra.zip_last2) {
+    if (!ra.house_number || !ra.street || !ra.city || !ra.state || !ra.zip_code) {
       setError('Complete the recipient address.')
       return
     }
@@ -316,8 +312,7 @@ export default function AddPackage() {
         sender_street: sa.street,
         sender_city: sa.city,
         sender_state: sa.state,
-        sender_zip_first3: sa.zip_first3,
-        sender_zip_last2: sa.zip_last2,
+        sender_zip_code: sa.zip_code,
         sender_apt_number: sa.apt_number || null,
         sender_country: 'USA',
 
@@ -329,8 +324,7 @@ export default function AddPackage() {
         recipient_street: ra.street,
         recipient_city: ra.city,
         recipient_state: ra.state,
-        recipient_zip_first3: ra.zip_first3,
-        recipient_zip_last2: ra.zip_last2,
+        recipient_zip_code: ra.zip_code,
         recipient_apt_number: ra.apt_number || null,
         recipient_country: 'USA',
 
@@ -487,27 +481,17 @@ export default function AddPackage() {
                 />
               </div>
               <div className="form-field">
-                <label>ZIP first 3</label>
+                <label>ZIP code</label>
                 <input
-                  maxLength={3}
-                  value={senderAddr.zip_first3}
+                  maxLength={5}
+                  value={senderAddr.zip_code}
                   onChange={(e) =>
-                    setSenderAddr({ ...senderAddr, zip_first3: e.target.value })
+                    setSenderAddr({ ...senderAddr, zip_code: e.target.value })
                   }
                   disabled={senderFound}
                 />
               </div>
-              <div className="form-field">
-                <label>ZIP last 2</label>
-                <input
-                  maxLength={2}
-                  value={senderAddr.zip_last2}
-                  onChange={(e) =>
-                    setSenderAddr({ ...senderAddr, zip_last2: e.target.value })
-                  }
-                  disabled={senderFound}
-                />
-              </div>
+              
               <div className="form-field">
                 <label>Apt (optional)</label>
                 <input
@@ -637,23 +621,12 @@ export default function AddPackage() {
                 />
               </div>
               <div className="form-field">
-                <label>ZIP first 3</label>
+                <label>ZIP code</label>
                 <input
-                  maxLength={3}
-                  value={recipientAddr.zip_first3}
+                  maxLength={5}
+                  value={recipientAddr.zip_code}
                   onChange={(e) =>
-                    setRecipientAddr({ ...recipientAddr, zip_first3: e.target.value })
-                  }
-                  disabled={recipientFound}
-                />
-              </div>
-              <div className="form-field">
-                <label>ZIP last 2</label>
-                <input
-                  maxLength={2}
-                  value={recipientAddr.zip_last2}
-                  onChange={(e) =>
-                    setRecipientAddr({ ...recipientAddr, zip_last2: e.target.value })
+                    setRecipientAddr({ ...recipientAddr, zip_code: e.target.value })
                   }
                   disabled={recipientFound}
                 />
