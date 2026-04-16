@@ -149,24 +149,6 @@ const [addrRows] = await conn.query(
 
   return addressId
 }
-async function resolveHolder(conn, { first_name, last_name, addressId}) {
-      const [holderRows] = await conn.query(
-        `SELECT Holder_ID FROM holder
-         WHERE First_Name = ? AND Last_Name = ? AND Address_ID = ?
-         LIMIT 1`,
-        [first_name, last_name, addressId]
-      )
-      if (!holderRows.length){
-        const [holderRes] = await conn.query(
-        `INSERT INTO holder (First_Name, Last_Name, Address_ID)
-        VALUES (?,?,?)`,
-        [first_name, last_name, addressId]
-      )
-      return holderRes.insertId
-        
-      } return holderRows[0].Holder_ID
-    
-}
 
 async function registerCustomer(pool, rawBody) {
   const body = { ...rawBody }
@@ -229,19 +211,12 @@ async function registerCustomer(pool, rawBody) {
     house_number, street, city, state, zip_code, apt_number, country
   })
 
-  // 2. Resolve holder using that addressId
-  const holderId = await resolveHolder(pool, {
-    first_name,
-    last_name,
-    addressId
-  })
-
   // 3. Insert customer
   const [result] = await pool.query(
     `INSERT INTO customer (
       First_Name, Middle_Name, Last_Name,
       Password_Hash, Email_Address, Phone_Number,
-      Sex, Address_ID, Holder_ID, is_Active
+      Sex, Address_ID, is_Active
     ) VALUES (?,?,?,?,?,?,?,?,?,0)`,
     [
       first_name.trim().slice(0, 30),
@@ -251,15 +226,14 @@ async function registerCustomer(pool, rawBody) {
       email.trim().toLowerCase().slice(0, 255),
       phone_number || null,
       safeSex,
-      addressId,
-      holderId
+      addressId
+      
     ]
   )
 
   const customerId = result.insertId
   const user = {
     Customer_ID: customerId,
-    Holder_ID: holderId,
     First_Name: first_name.trim().slice(0, 30),
     Middle_Name: middle_name || null,
     Last_Name: last_name.trim().slice(0, 30),
