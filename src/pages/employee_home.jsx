@@ -48,10 +48,10 @@ const NAV_ITEMS = [
   { label: 'Package Pickup',    path: '/employee/package-pickup',      section: 'main'  },
   { label: 'Track a Package',   path: '/package_tracking',             section: 'main'  },
   // { label: 'Inventory',         path: '/inventory',                    section: 'main'  },
-  { label: 'Support Tickets',   path: '/employee-support',             section: 'main'  },
   { label: 'Customers',         path: '/customers',                    section: 'main'  },
   { label: 'Profile',           path: '/profile',                      section: 'main'  },
   { label: 'Calculator',        path: '/price_calculator',             section: 'main'  },
+  { label: 'Support Tickets',   path: '/employee-support',             section: 'admin' },
   { label: 'Employees',         path: '/employees',                    section: 'admin' },
   { label: 'Register Employee', path: '/admin-register',               section: 'admin' },
   { label: 'Satisfaction Report',   path: '/office-satisfaction', section: 'admin' },
@@ -280,9 +280,6 @@ function ClerkDashboard({ navigate, token }) {
               <p style={{ margin: '0 0 16px', fontSize: '0.82rem', color: '#64748b', lineHeight: 1.5 }}>
                 Review and respond to open customer support requests assigned to you.
               </p>
-              <button type="button" className="btn primary" onClick={() => navigate('/employee-support')}>
-                Open tickets
-              </button>
             </div>
           </div>
         </>

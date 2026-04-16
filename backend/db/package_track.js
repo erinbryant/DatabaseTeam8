@@ -34,9 +34,9 @@ const getPackageTracking = (pool, tracking_number, callback) => {
         NULL AS Shipment_ID,
         d.Delivery_ID,
         'Delivery' AS Instance_Type,
-        d.Delivery_Status_Code AS Status_Code,
-        sc.Status_Name,
-        sc.Is_Final_Status,
+        CASE WHEN d.Delivered_Date IS NOT NULL THEN 4 ELSE 3 END AS Status_Code,
+        CASE WHEN d.Delivered_Date IS NOT NULL THEN 'Delivered' ELSE 'Out for Delivery' END AS Status_Name,
+        CASE WHEN d.Delivered_Date IS NOT NULL THEN 1 ELSE 0 END AS Is_Final_Status,
         NULL AS From_Full_Address,
         NULL AS To_Full_Address,
         NULL AS Departure_Time_Stamp,
@@ -44,7 +44,6 @@ const getPackageTracking = (pool, tracking_number, callback) => {
         d.Delivered_Date,
         d.Signature_Received
     FROM delivery d
-    JOIN status_code sc ON sc.Status_Code = d.Delivery_Status_Code
     WHERE d.Tracking_Number = ?
 
     ORDER BY
