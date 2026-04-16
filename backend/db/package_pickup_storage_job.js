@@ -4,7 +4,7 @@
  * server even if the procedure/event were never applied.
  */
 
-// const DEFAULT_INTERVAL_MS = 24 * 60 * 60 * 1000
+const DEFAULT_INTERVAL_MS = 24 * 60 * 60 * 1000
 
 async function runNodeDisposalSweep(pool) {
   const [disRows] = await pool.query(

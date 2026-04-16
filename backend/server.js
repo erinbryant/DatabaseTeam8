@@ -609,7 +609,7 @@ async function router(req, res) {
       Street,
       City,
       State,
-      Zip_Code,
+      Zip_Code
     } = await getBody(req)
 
     try {
@@ -641,7 +641,7 @@ async function router(req, res) {
           Street,
           City,
           State,
-          fullZip || null,
+          Zip_Code || null,
           addressId,
         ]
       )
@@ -650,8 +650,6 @@ async function router(req, res) {
       const [rows] = await pool.query(
         `SELECT c.Customer_ID, c.First_Name, c.Last_Name, c.Email_Address,
                 c.Phone_Number, a.House_Number, a.Street, a.City, a.State,
-                SUBSTRING(a.Zip_Code, 1, 3) AS Zip_First3,
-                SUBSTRING(a.Zip_Code, 4, 2) AS Zip_Last2,
                 a.Zip_Code, a.Address_ID
          FROM customer c
          JOIN address a ON c.Address_ID = a.Address_ID
@@ -679,39 +677,7 @@ async function router(req, res) {
     return
   }
 
-  // ── GET /api/packages/track/:trackingNumber (PUBLIC tracking) ────────────
-  // {
-  //   const m = matchPath('/api/packages/track/:trackingNumber', pathname)
-  //   const user = authenticate(req, res)
-  //   if (!user) return
-  //   if (method === 'GET' && m.matched) {
-  //     const trackingNumber = m.params.trackingNumber.trim()
-  //     if (!trackingNumber) return send(res, 400, { error: 'trackingNumber is required' })
-
-  //     packagesDB.getPackageByTracking(pool, trackingNumber, (err, result) => {
-  //       if (err) return send(res, 500, { error: 'Database error' })
-  //       if (!result) return send(res, 404, { error: 'Package not found' })
-  //       return send(res, 200, result)
-  //     })
-  //     return
-  //   }
-  // }
-
-  // ── GET /qry_track_package (PUBLIC tracking) ─────────────────────────────
-  // if (method === 'GET' && pathname === '/qry_track_package') {
-  //   const user = authenticate(req, res)
-  //   if (!user) return
-
-  //   const trackingNumber = (query.tracking_number || query.trackingNumber || '').trim()
-  //   if (!trackingNumber) return send(res, 400, { error: 'tracking_number query parameter is required' })
-
-  //   packagesDB.getPackageByTracking(pool, trackingNumber, (err, result) => {
-  //     if (err) return send(res, 500, { error: 'Database error' })
-  //     if (!result) return send(res, 404, { error: 'Package not found' })
-  //     return send(res, 200, result)
-  //   })
-  //   return
-  // }
+  
 
   // ── GET /api/price (PUBLIC) ──────────────────────────────────────────────
   if (method === 'GET' && pathname === '/api/price') {
@@ -774,217 +740,6 @@ async function router(req, res) {
     return
   }
 
-  // ── POST /api/employee/packages ──────────────────────────────────────────
-  // if (method === 'POST' && pathname === '/api/employee/packages') {
-  //   const user = authenticate(req, res)
-  //   if (!user) return
-  //   if (!requireEmployee(user, res)) return
-
-  //   const b = await getBody(req)
-  //   const {
-  //     sender_email, 
-  //     sender_first_name, sender_last_name,
-  //     sender_house_number, sender_street, sender_city, 
-  //     sender_state, sender_zip_code, sender_apt_number,sender_country,
-      
-  //     recipient_email, recipient_first_name, recipient_last_name,
-  //     recipient_house_number, recipient_street, recipient_city,
-  //     recipient_state, recipient_zip_code, recipient_apt_number, recipient_country,
-  //     package_type,
-  //     weight,
-  //     zone,
-  //     excess_fee,
-  //     dim_x, dim_y,dim_z,
-  //   } = b
-
-  //   const pt = normalizePackageTypeName(package_type)
-  //   const typeCode = TYPE_NAME_TO_CODE[pt]
-  //   if (!typeCode) return send(res, 400, { message: 'Invalid package_type' })
-
-  //   const w = Number(weight)
-  //   const z = Number(zone)
-  //   if (Number.isNaN(w) || Number.isNaN(z)) return send(res, 400, { message: 'weight and zone must be numbers' })
-
-  //   const dx = dim_x != null && dim_x !== '' ? Number(dim_x) : 12
-  //   const dy = dim_y != null && dim_y !== '' ? Number(dim_y) : 10
-  //   const dz = dim_z != null && dim_z !== '' ? Number(dim_z) : 8
-  //   if (!(dx > 0 && dy > 0 && dz > 0)) return send(res, 400, { message: 'Dimensions must be positive numbers' })
-
-  //   const excessName = excess_fee && String(excess_fee).trim() ? String(excess_fee).trim() : null
-  //   const sigRequired = excessName === 'Signature Required'
-
-  //   let priceAmount
-  //   try {
-  //     priceAmount = await getPricePromise(pool, excessName, pt, w, z)
-  //   } catch (err) {
-  //     return send(res, err.status === 400 ? 400 : 500, { message: err.message || 'Pricing failed' })
-  //   }
-
-  //   const senderEmail = (sender_email || '').trim().toLowerCase()
-  //   if ( !sender_first_name?.trim() || !sender_last_name?.trim()) {
-  //     return send(res, 400, { message: 'Sender first name, and last name are required' })
-  //   }
-  //   if (!sender_house_number || !sender_street || !sender_city || !sender_state || !sender_zip_first3 || !sender_zip_last2) {
-  //     return send(res, 400, { message: 'Sender address fields are required' })
-  //   }
-
-  //   let recipientEmail = (recipient_email || '').trim().toLowerCase()
-  //   if (!recipient_first_name?.trim() || !recipient_last_name?.trim()) {
-  //     return send(res, 400, { message: 'Recipient first and last name are required' })
-  //   }
-  //   if (!recipient_house_number || !recipient_street || !recipient_city || !recipient_state || !recipient_zip_first3 || !recipient_zip_last2) {
-  //     return send(res, 400, { message: 'Recipient address fields are required' })
-  //   }
-  //   // if (!recipientEmail) {
-  //   //   recipientEmail = `recipient.${Date.now()}.${Math.random().toString(36).slice(2, 8)}@pkg.internal`
-  //   // }
-  //   if (recipientEmail === senderEmail) {
-  //     return send(res, 400, { message: 'Sender and recipient must be different people (different emails)' })
-  //   }
-
-  //   const conn = await pool.getConnection()
-  //   try {
-  //     await conn.beginTransaction()
-
-  //     let senderId = (await customerDB.getCustomerByEmail(conn, senderEmail))?.Customer_ID
-  //     // if (!senderId) {
-  //     //   const created = await customerDB.createCustomerMinimal(conn, {
-  //     //     first_name: sender_first_name,
-  //     //     last_name: sender_last_name,
-  //     //     email: senderEmail,
-  //     //     house_number: sender_house_number,
-  //     //     street: sender_street,
-  //     //     city: sender_city,
-  //     //     state: sender_state,
-  //     //     zip_first3: sender_zip_first3,
-  //     //     zip_last2: sender_zip_last2,
-  //     //     apt_number: sender_apt_number,
-  //     //     zip_plus4: b.sender_zip_plus4,
-  //     //     country: sender_country,
-  //     //     phone_number: sender_phone,
-  //     //   })
-  //     //   senderId = created.customerId
-  //     //   // created.initialPassword exists but unused in this server
-  //     // }
-
-  //     let recipientId = (await customerDB.getCustomerByEmail(conn, recipientEmail))?.Customer_ID
-  //     if (!recipientId) {
-  //       const created = await customerDB.createCustomerMinimal(conn, {
-  //         first_name: recipient_first_name,
-  //         last_name: recipient_last_name,
-  //         email: recipientEmail,
-  //         house_number: recipient_house_number,
-  //         street: recipient_street,
-  //         city: recipient_city,
-  //         state: recipient_state,
-  //         zip_first3: recipient_zip_first3,
-  //         zip_last2: recipient_zip_last2,
-  //         apt_number: recipient_apt_number,
-  //         zip_plus4: b.recipient_zip_plus4,
-  //         country: recipient_country,
-  //         phone_number: recipient_phone,
-  //       })
-  //       recipientId = created.customerId
-  //     }
-
-  //     const tracking = await nextTrackingNumber(conn)
-  //     const oversize = typeCode === 'OVR' ? 1 : 0
-
-  //     const actingEmployeeId = Number(user.employee_id)
-  //     if (!Number.isFinite(actingEmployeeId)) {
-  //       await conn.rollback()
-  //       return send(res, 401, { message: 'Invalid employee session' })
-  //     }
-
-  //     const [empRows] = await conn.query(
-  //       `SELECT s.Store_ID FROM employee e
-  //        JOIN post_office p ON e.Post_Office_ID = p.Post_Office_ID
-  //        JOIN store s ON s.Post_Office_ID = p.Post_Office_ID
-  //        WHERE e.Employee_ID = ?`,
-  //       [actingEmployeeId]
-  //     )
-  //     if (!empRows.length) {
-  //       await conn.rollback()
-  //       return send(res, 404, { error: 'Employee or store not found' })
-  //     }
-  //     const sid = empRows[0].Store_ID
-
-  //     await conn.query(
-  //       `INSERT INTO package (Tracking_Number, Sender_ID, Recipient_ID, Dim_X, Dim_Y, Dim_Z,
-  //         Package_Type_Code, Weight, Zone, Oversize, Requires_Signature, Status_Code, To_Address_ID, Recipient_Name, Recipient_Email_Address)
-  //        VALUES (?,?,'NULL',?,?,?,?,?,?,?,?,?,1,?,?,?)`,
-  //       [tracking, senderId,, dx, dy, dz, typeCode, w, z, oversize, sigRequired ? 1 : 0, priceAmount, payId]
-  //     )
-      
-  //     await conn.query(
-  //       `INSERT INTO payment (Customer_ID, Store_ID, Payment_Amount, Employee_ID,Tracking_Number)
-  //        VALUES (?,?,?,?,?)`,
-  //       [senderId, sid, priceAmount, actingEmployeeId, tracking]
-  //     )
-      
-
-
-  //     const [[pending]] = await conn.query(`SELECT Status_Code FROM status_code WHERE Status_Name = 'Pending' LIMIT 1`)
-  //     if (!pending) throw new Error('Missing Pending status in status_code')
-  //     const pendingCode = pending.Status_Code
-
-  //     await conn.query(
-  //       `INSERT INTO delivery (Tracking_Number, Delivered_Date, Signature_Required, Signature_Received, Delivery_Status_Code, Delivered_By)
-  //        VALUES (?,NULL,?,NULL,?,NULL)`,
-  //       [tracking, sigRequired ? 1 : 0, pendingCode]
-  //     )
-
-  //     const [shipRes] = await conn.query(
-  //       `INSERT INTO shipment (Status_Code, Employee_ID,
-  //         From_Apt_Number, From_House_Number, From_Street, From_City, From_State, From_Zip_First3, From_Zip_Last2, From_Zip_Plus4, From_Country,
-  //         To_Apt_Number, To_House_Number, To_Street, To_City, To_State, To_Zip_First3, To_Zip_Last2, To_Zip_Plus4, To_Country,
-  //         Departure_Time_Stamp, Arrival_Time_Stamp)
-  //        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NULL,NULL)`,
-  //       [
-  //         pendingCode,
-  //         actingEmployeeId,
-  //         sender_apt_number || null,
-  //         String(sender_house_number).slice(0, 10),
-  //         String(sender_street).slice(0, 100),
-  //         String(sender_city).slice(0, 100),
-  //         String(sender_state).slice(0, 50),
-  //         String(sender_zip_first3).replace(/\D/g, '').slice(0, 3),
-  //         String(sender_zip_last2).replace(/\D/g, '').slice(0, 2),
-  //         b.sender_zip_plus4 ? String(b.sender_zip_plus4).replace(/\D/g, '').slice(0, 4) : null,
-  //         (sender_country || 'USA').toString().slice(0, 50),
-  //         recipient_apt_number || null,
-  //         String(recipient_house_number).slice(0, 10),
-  //         String(recipient_street).slice(0, 100),
-  //         String(recipient_city).slice(0, 100),
-  //         String(recipient_state).slice(0, 50),
-  //         String(recipient_zip_first3).replace(/\D/g, '').slice(0, 3),
-  //         String(recipient_zip_last2).replace(/\D/g, '').slice(0, 2),
-  //         b.recipient_zip_plus4 ? String(b.recipient_zip_plus4).replace(/\D/g, '').slice(0, 4) : null,
-  //         (recipient_country || 'USA').toString().slice(0, 50),
-  //       ]
-  //     )
-
-  //     const shipmentId = shipRes.insertId
-  //     await conn.query(`INSERT INTO shipment_package (Shipment_ID, Tracking_Number) VALUES (?,?)`, [shipmentId, tracking])
-
-  //     await conn.commit()
-  //     return send(res, 201, {
-  //       tracking_number: tracking,
-  //       price: priceAmount,
-  //       sender_id: senderId,
-  //       recipient_id: recipientId,
-  //     })
-  //   } catch (err) {
-  //     await conn.rollback()
-  //     console.error(err)
-  //     if (err.code === 'ER_DUP_ENTRY') {
-  //       return send(res, 400, { message: 'Duplicate email or tracking conflict; try again' })
-  //     }
-  //     return send(res, 500, { message: err.message || 'Could not create package' })
-  //   } finally {
-  //     conn.release()
-  //   }
-  // }
 
   if (method === 'POST' && pathname === '/api/employee/packages') {
   const user = authenticate(req, res)
@@ -1042,10 +797,19 @@ async function router(req, res) {
   }
 
   const senderEmail = (sender_email || '').trim().toLowerCase()
+  if (!sender_first_name?.trim() || !sender_last_name?.trim()) {
+    return send(res, 400, { message: 'Sender first name and last name are required' })
+  }
+  if (!sender_house_number || !sender_street || !sender_city || !sender_state || !sender_zip_code) {
+    return send(res, 400, { message: 'Sender address fields are required' })
+  }
   const recipientEmail = (recipient_email || '').trim().toLowerCase()
 
   if (!sender_first_name?.trim() || !sender_last_name?.trim()) {
     return send(res, 400, { message: 'Sender name required' })
+  }
+  if (!recipient_house_number || !recipient_street || !recipient_city || !recipient_state ||  !recipient_zip_code) {
+    return send(res, 400, { message: 'Recipient address fields are required' })
   }
   if (!recipient_first_name?.trim() || !recipient_last_name?.trim()) {
     return send(res, 400, { message: 'Recipient name required' })
@@ -1057,80 +821,78 @@ async function router(req, res) {
     })
   }
 
-  async function resolveAddress(conn, addr) {
-    const normalizedApt =
-      addr.apt_number && addr.apt_number.trim() !== ''
-        ? addr.apt_number.trim()
-        : null
-
-    const [rows] = await conn.query(
-      `SELECT Address_ID FROM address
-       WHERE House_Number = ? AND Street = ? AND City = ? AND State = ?
-         AND Zip_Code = ? AND (Apt_Number <=> ?)`,
-      [
-        addr.house_number,
-        addr.street,
-        addr.city,
-        addr.state,
-        addr.zip_code,
-        normalizedApt,
-      ]
-    )
-
-    if (rows.length) return rows[0].Address_ID
-
-    const [res] = await conn.query(
-      `INSERT INTO address
-       (House_Number, Street, City, State, Zip_Code, Apt_Number, Country)
-       VALUES (?,?,?,?,?,?,?)`,
-      [
-        String(addr.house_number).slice(0, 10),
-        String(addr.street).slice(0, 100),
-        String(addr.city).slice(0, 100),
-        String(addr.state).slice(0, 50),
-        String(addr.zip_code).replace(/\D/g, '').slice(0, 5),
-        normalizedApt,
-        (addr.country || 'USA').slice(0, 50),
-      ]
-    )
-
-    return res.insertId
-  }
 
   const conn = await pool.getConnection()
 
   try {
     await conn.beginTransaction()
 
-    const senderId =
-      (await customerDB.getCustomerByEmail(conn, senderEmail))
-        ?.Customer_ID || null
+    // ── Sender ──
+    let senderId = (await customerDB.getCustomerByEmail(conn, senderEmail))?.Customer_ID
+    
+    let senderAddId
+    
+    if (!senderId) {
+      senderAddId = await customerDB.resolveAddress(conn,{
+        house_number: sender_house_number,
+        street:       sender_street,
+        city:         sender_city,
+        state:        sender_state,
+        zip_code:   sender_zip_code,
+        apt_number:   sender_apt_number,
+        country:      sender_country
+      })
+      const created = await customerDB.createCustomerMinimal(conn, {
+        first_name:   sender_first_name,
+        last_name:    sender_last_name,
+        email:        senderEmail,
+        address_Id:   senderAddId,
+        phone_number: sender_phone,
+      })
+      recipientId = created.customerId
+      
+    }
+  else{
+     const [custRows] = await conn.query(
+    `SELECT Address_ID FROM customer WHERE Customer_ID = ?`,
+    [senderId]
+  )
 
-    const recipientId =
-      (await customerDB.getCustomerByEmail(conn, recipientEmail))
-        ?.Customer_ID || null
+  senderAddId = custRows[0]?.Address_ID || null
+  }
 
-    // ── ADDRESSES ──
-    const senderAddrId = await resolveAddress(conn, {
-      house_number: sender_house_number,
-      street: sender_street,
-      city: sender_city,
-      state: sender_state,
-      zip_code: sender_zip_code,
-      apt_number: sender_apt_number,
-      country: sender_country,
-    })
+    // ── Recipient ──
+    let recipientId = (await customerDB.getCustomerByEmail(conn, recipientEmail))?.Customer_ID
+    let recipientAddId
+    if (!recipientId) {
+      recipientAddId = await customerDB.resolveAddress(conn,{
+        house_number: recipient_house_number,
+        street:       recipient_street,
+        city:         recipient_city,
+        state:        recipient_state,
+        zip_code:     recipient_zip_code,
+        apt_number:   recipient_apt_number,
+        country:      recipient_country
+      })
 
-    const recipientAddrId = await resolveAddress(conn, {
-      house_number: recipient_house_number,
-      street: recipient_street,
-      city: recipient_city,
-      state: recipient_state,
-      zip_code: recipient_zip_code,
-      apt_number: recipient_apt_number,
-      country: recipient_country,
-    })
+      const created = await customerDB.createCustomerMinimal(conn, {
+        first_name:   recipient_first_name,
+        last_name:    recipient_last_name,
+        email:        recipientEmail,
+        address_Id:   recipientAddId,
+        phone_number: recipient_phone,
+      })
+      recipientId = created.customerId
+    }
+    else{
+     const [custRows] = await conn.query(
+    `SELECT Address_ID FROM customer WHERE Customer_ID = ?`,
+    [recipientIdId]
+  )
 
+  recipientAddId = custRows[0]?.Address_ID || null
+  }
+    
     const tracking = await nextTrackingNumber(conn)
     const oversize = typeCode === 'OVR' ? 1 : 0
 
@@ -1150,24 +912,30 @@ async function router(req, res) {
       return send(res, 401, { message: 'Invalid employee session' })
     }
 
-    if (!postOfficeId) {
-      throw new Error('Invalid Post_Office_ID')
-    }
+    
 
-    const recipientName =
-      `${recipient_first_name} ${recipient_last_name}`.trim()
 
-    const [[pending]] = await conn.query(
-      `SELECT Status_Code
-       FROM status_code
-       WHERE Status_Name = 'Pending'
-       LIMIT 1`
+
+     const [[pending]] = await conn.query(`SELECT Status_Code FROM status_code WHERE Status_Name = 'Pending' LIMIT 1`)
+    if (!pending) throw new Error('Missing Pending status in status_code')
+    const pendingCode = pending.Status_Code
+
+    await conn.query(
+      `INSERT INTO package (Tracking_Number, Sender_ID, Recipient_ID, Dim_X, Dim_Y, Dim_Z,
+        Package_Type_Code, Weight, Zone, Oversize, Requires_Signature, Status_Code)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
+      [tracking, senderId, recipientId, dx, dy, dz, typeCode, w, z, oversize, sigRequired ? 1 : 0,
+       pendingCode]
     )
 
-    const pendingCode = pending?.Status_Code
-    if (!pendingCode) throw new Error('Missing Pending status')
+    await conn.query(
+      `INSERT INTO payment (Customer_ID, Payment_Amount, Employee_ID, Tracking_Number)
+       VALUES (?,?,?,?)`,
+      [senderId, priceAmount, actingEmployeeId, tracking]
+    )
 
-    // ── PACKAGE INSERT ──
+   
+
     await conn.query(
       `INSERT INTO package (
         Tracking_Number, Sender_ID, Recipient_ID,
@@ -1194,6 +962,14 @@ async function router(req, res) {
         recipientName,
       ]
     )
+
+    // const [shipRes] = await conn.query(
+    //   `INSERT INTO shipment (Status_Code, Employee_ID, From_Address_ID, To_Address_ID)
+    //    VALUES (?,?,?,?)`,
+    //   [
+    //     pendingCode, actingEmployeeId, postOfficeId, recipientAddId
+    //   ]
+    // )
 
     // ── PAYMENT ──
     await conn.query(
@@ -1252,7 +1028,8 @@ async function router(req, res) {
     conn.release()
   }
 }
-  // ── GET /api/reports/employee-performance ────────────────────────────────
+  
+    // ── GET /api/reports/employee-performance ────────────────────────────────
 
 if (method === 'GET' && pathname === '/api/reports/employee-performance') {
   const user = authenticate(req, res)
@@ -1370,10 +1147,10 @@ if (method === 'GET' && pathname === '/api/reports/employee-performance') {
         return send(res, 404, { message: 'Delivery record not found for this package' })
       }
 
-      await conn.query(
-        `UPDATE delivery SET Delivery_Status_Code = ? WHERE Tracking_Number = ?`,
-        [code, trackingNumber]
-      )
+      // await conn.query(
+      //   `UPDATE delivery SET Delivery_Status_Code = ? WHERE Tracking_Number = ?`,
+      //   [code, trackingNumber]
+      // )
 
       await conn.query(
         `UPDATE package SET Status_Code = ? WHERE Tracking_Number = ?`,
@@ -1791,18 +1568,24 @@ if (method === 'POST' && pathname === '/api/employee/package-pickup') {
 
     let status_updated = false
     if (pickedUpCode != null) {
-      await pool.query(`UPDATE delivery SET Delivery_Status_Code = ? WHERE Tracking_Number = ?`, [
-        pickedUpCode,
-        tracking_number,
-      ])
+      await pool.query(
+        `UPDATE package
+        SET Status_Code = ?
+        WHERE Tracking_Number = ?`,
+        [pickedUpCode, tracking_number]
+      )
+
       if (sh?.Shipment_ID != null) {
-        await pool.query(`UPDATE shipment SET Status_Code = ? WHERE Shipment_ID = ?`, [
-          pickedUpCode,
-          sh.Shipment_ID,
-        ])
+        await pool.query(
+          `UPDATE shipment
+          SET Status_Code = ?
+          WHERE Shipment_ID = ?`,
+          [pickedUpCode, sh.Shipment_ID]
+        )
       }
-      status_updated = true
-    }
+
+  status_updated = true
+}
 
     const [[partiesPickup]] = await pool.query(
       `SELECT
@@ -2162,8 +1945,7 @@ if (method === 'GET' && pathname === '/api/packages/full') {
         `SELECT c.Customer_ID, c.First_Name, c.Last_Name, c.Email_Address,
                 c.Phone_Number, a.House_Number, a.Street, a.Apt_Number,
                 a.City, a.State, a.Zip_Code,
-                SUBSTRING(a.Zip_Code, 1, 3) AS Zip_First3,
-                SUBSTRING(a.Zip_Code, 4, 2) AS Zip_Last2
+                a.Zip_Code
          FROM customer c
          JOIN address a ON c.Address_ID = a.Address_ID
          WHERE c.Email_Address = ? LIMIT 1`,
@@ -2644,7 +2426,7 @@ if (method === 'GET' && pathname === '/api/packages/full') {
       if (delivered?.Status_Code != null) {
         const deliveredCode = Number(delivered.Status_Code)
         await conn.query(`UPDATE package SET Status_Code = ? WHERE Tracking_Number = ?`, [deliveredCode, trackingNumber])
-        await conn.query(`UPDATE delivery SET Delivery_Status_Code = ? WHERE Tracking_Number = ?`, [deliveredCode, trackingNumber])
+        // await conn.query(`UPDATE delivery SET Delivery_Status_Code = ? WHERE Tracking_Number = ?`, [deliveredCode, trackingNumber])
         await conn.query(
           `UPDATE shipment s
            JOIN shipment_package sp ON sp.Shipment_ID = s.Shipment_ID

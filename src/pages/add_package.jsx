@@ -133,8 +133,8 @@ export default function AddPackage() {
         street: c.Street || '',
         city: c.City || '',
         state: c.State || '',
-        zip_code: c.Zip_Code || ''
-      
+        zip_code: c.Zip_Code || '',
+        apt_number: c.Apt_Number || '',
       })
 
       setSenderFound(true)
@@ -193,7 +193,8 @@ export default function AddPackage() {
         street: c.Street || '',
         city: c.City || '',
         state: c.State || '',
-        zip_code: c.Zip_Code || ''
+        zip_code: c.Zip_Code || '',
+        apt_number: c.Apt_Number || '',
       })
  
       setRecipientFound(true)
@@ -481,7 +482,7 @@ export default function AddPackage() {
                 />
               </div>
               <div className="form-field">
-                <label>ZIP code</label>
+                <label>ZIP</label>
                 <input
                   maxLength={5}
                   value={senderAddr.zip_code}
@@ -621,7 +622,7 @@ export default function AddPackage() {
                 />
               </div>
               <div className="form-field">
-                <label>ZIP code</label>
+                <label>ZIP</label>
                 <input
                   maxLength={5}
                   value={recipientAddr.zip_code}
@@ -631,6 +632,7 @@ export default function AddPackage() {
                   disabled={recipientFound}
                 />
               </div>
+              
               <div className="form-field">
                 <label>Apt (optional)</label>
                 <input
