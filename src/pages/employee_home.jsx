@@ -113,7 +113,7 @@ function AdminDashboard({ navigate, token }) {
 
 useEffect(() => {
   Promise.all([
-    fetch(`${API_BASE}/api/packages`,        { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()).catch(() => []),
+    fetch(`${API_BASE}/api/packages/full`,        { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()).catch(() => []),
     fetch(`${API_BASE}/api/support-tickets`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()).catch(() => []),
   ]).then(([pkgs, tix]) => {
     setPackages(Array.isArray(pkgs) ? pkgs : [])
