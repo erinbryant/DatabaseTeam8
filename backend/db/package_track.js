@@ -46,11 +46,10 @@ const getPackageTracking = (pool, tracking_number, callback) => {
 
       d.Delivered_Date,
       d.Signature_Received
-    FROM delivery d
-    JOIN package p ON d.Tracking_Number = p.Tracking_Number
-    JOIN status_code sc ON p.Status_Code = sc.Status_Code
-    
-    WHERE d.Tracking_Number = ?
+    FROM package p
+    LEFT JOIN delivery d ON d.Tracking_Number = p.Tracking_Number
+    JOIN status_code sc ON sc.Status_Code = p.Status_Code
+    WHERE p.Tracking_Number = ?
 
     ORDER BY
       CASE WHEN Instance_Type = 'Shipment' THEN 0 ELSE 1 END,

@@ -502,7 +502,7 @@ export default function EmployeeHome() {
                   Welcome back, {name ?? 'Employee'}
                 </h1>
                 <p style={{ margin: '6px 0 0', color: 'rgba(255,255,255,0.6)', fontSize: '0.85rem' }}>
-                  Tools for post office staff — packages, inventory, and customer records.
+                  Tools for post office staff — packages and customer records.
                 </p>
               </div>
             </div>
