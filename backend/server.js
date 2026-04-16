@@ -1131,9 +1131,9 @@ async function router(req, res) {
     // ── DELIVERY ──
     await conn.query(
       `INSERT INTO delivery
-       (Tracking_Number, Delivered_Date, Signature_Required, Signature_Received, Delivered_By)
-       VALUES (?,NULL,?,NULL,NULL)`,
-      [tracking, sigRequired ? 1 : 0]
+       (Tracking_Number, Delivery_Status_Code, Delivered_Date, Signature_Required, Signature_Received, Delivered_By)
+       VALUES (?,?,NULL,?,NULL,NULL)`,
+      [tracking, pendingCode, sigRequired ? 1 : 0]
     )
 
     // ── SHIPMENT ──
@@ -1643,7 +1643,7 @@ if (method === 'GET' && pathname === '/api/packages/full') {
     r.Email_Address AS Recipient_Email,
 
     -- Delivery info
-    d.Delivery_Status_Code,
+    COALESCE(d.Delivery_Status_Code, pkg.Status_Code) AS Delivery_Status_Code,
     d.Delivered_Date,
     d.Signature_Required,
     sc.Status_Name,
@@ -1666,7 +1666,7 @@ LEFT JOIN payment pay ON pay.Tracking_Number = pkg.Tracking_Number
 LEFT JOIN customer s  ON s.Customer_ID  = pkg.Sender_ID
 LEFT JOIN customer r  ON r.Customer_ID  = pkg.Recipient_ID
 LEFT JOIN delivery d  ON d.Tracking_Number = pkg.Tracking_Number
-LEFT JOIN status_code sc ON sc.Status_Code = d.Delivery_Status_Code
+LEFT JOIN status_code sc ON sc.Status_Code = COALESCE(d.Delivery_Status_Code, pkg.Status_Code)
 LEFT JOIN shipment_package sp ON sp.Tracking_Number = pkg.Tracking_Number
 LEFT JOIN shipment sh ON sh.Shipment_ID = sp.Shipment_ID
 LEFT JOIN address addr_f ON sh.From_Address_ID = addr_f.Address_ID
