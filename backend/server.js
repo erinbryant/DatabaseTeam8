@@ -583,8 +583,6 @@ async function router(req, res) {
       const [rows] = await pool.query(
         `SELECT c.Customer_ID, c.First_Name, c.Last_Name, c.Email_Address,
                 c.Phone_Number, a.House_Number, a.Street, a.City, a.State,
-                SUBSTRING(a.Zip_Code, 1, 3) AS Zip_First3,
-                SUBSTRING(a.Zip_Code, 4, 2) AS Zip_Last2,
                 a.Zip_Code, a.Address_ID
          FROM customer c
          JOIN address a ON c.Address_ID = a.Address_ID
@@ -611,8 +609,7 @@ async function router(req, res) {
       Street,
       City,
       State,
-      Zip_First3,
-      Zip_Last2,
+      Zip_Code,
     } = await getBody(req)
 
     try {
@@ -634,7 +631,7 @@ async function router(req, res) {
       if (!customerRows.length) return send(res, 404, { message: 'Customer not found' })
       
       const addressId = customerRows[0].Address_ID
-      const fullZip = (Zip_First3 || '') + (Zip_Last2 || '')
+      // const fullZip = (Zip_First3 || '') + (Zip_Last2 || '')
 
       // Update address info
       await pool.query(
@@ -1004,6 +1001,7 @@ async function router(req, res) {
     recipient_email, recipient_first_name, recipient_last_name,
     recipient_house_number, recipient_street, recipient_city,
     recipient_state, recipient_zip_code, recipient_apt_number, recipient_country,
+
     package_type,
     weight,
     zone,
@@ -1017,260 +1015,226 @@ async function router(req, res) {
 
   const w = Number(weight)
   const z = Number(zone)
-  if (Number.isNaN(w) || Number.isNaN(z)) return send(res, 400, { message: 'weight and zone must be numbers' })
+  if (Number.isNaN(w) || Number.isNaN(z)) {
+    return send(res, 400, { message: 'weight and zone must be numbers' })
+  }
 
-  const dx = dim_x != null && dim_x !== '' ? Number(dim_x) : 12
-  const dy = dim_y != null && dim_y !== '' ? Number(dim_y) : 10
-  const dz = dim_z != null && dim_z !== '' ? Number(dim_z) : 8
-  if (!(dx > 0 && dy > 0 && dz > 0)) return send(res, 400, { message: 'Dimensions must be positive numbers' })
+  const dx = dim_x ? Number(dim_x) : 12
+  const dy = dim_y ? Number(dim_y) : 10
+  const dz = dim_z ? Number(dim_z) : 8
 
-  const excessName = excess_fee && String(excess_fee).trim() ? String(excess_fee).trim() : null
+  if (!(dx > 0 && dy > 0 && dz > 0)) {
+    return send(res, 400, { message: 'Dimensions must be positive numbers' })
+  }
+
+  const excessName =
+    excess_fee && String(excess_fee).trim() ? String(excess_fee).trim() : null
+
   const sigRequired = excessName === 'Signature Required'
 
   let priceAmount
   try {
     priceAmount = await getPricePromise(pool, excessName, pt, w, z)
   } catch (err) {
-    return send(res, err.status === 400 ? 400 : 500, { message: err.message || 'Pricing failed' })
+    return send(res, err.status === 400 ? 400 : 500, {
+      message: err.message || 'Pricing failed'
+    })
   }
 
   const senderEmail = (sender_email || '').trim().toLowerCase()
-  if (!sender_first_name?.trim() || !sender_last_name?.trim()) {
-    return send(res, 400, { message: 'Sender first name and last name are required' })
-  }
-  if (!sender_house_number || !sender_street || !sender_city || !sender_state || !sender_zip_first3 || !sender_zip_last2) {
-    return send(res, 400, { message: 'Sender address fields are required' })
-  }
+  const recipientEmail = (recipient_email || '').trim().toLowerCase()
 
-  let recipientEmail = (recipient_email || '').trim().toLowerCase()
-  if (!recipient_first_name?.trim() || !recipient_last_name?.trim()) {
-    return send(res, 400, { message: 'Recipient first and last name are required' })
+  if (!sender_first_name?.trim() || !sender_last_name?.trim()) {
+    return send(res, 400, { message: 'Sender name required' })
   }
-  if (!recipient_house_number || !recipient_street || !recipient_city || !recipient_state || !recipient_zip_first3 || !recipient_zip_last2) {
-    return send(res, 400, { message: 'Recipient address fields are required' })
+  if (!recipient_first_name?.trim() || !recipient_last_name?.trim()) {
+    return send(res, 400, { message: 'Recipient name required' })
   }
 
   if (recipientEmail && senderEmail && recipientEmail === senderEmail) {
-    return send(res, 400, { message: 'Sender and recipient must be different people (different emails)' })
+    return send(res, 400, {
+      message: 'Sender and recipient must be different people'
+    })
   }
 
-  // ── Helper: resolve or create an address, then resolve or create a holder ──
-  async function resolveAddress(conn, {house_number, street, city, state, zip_code, apt_number, country }) {
-    const [addrRows] = await conn.query(
+  async function resolveAddress(conn, addr) {
+    const normalizedApt =
+      addr.apt_number && addr.apt_number.trim() !== ''
+        ? addr.apt_number.trim()
+        : null
+
+    const [rows] = await conn.query(
       `SELECT Address_ID FROM address
-      WHERE House_Number = ? AND Street = ? AND City = ? AND State = ?
-        AND Zip_First3 = ? AND Zip_Last2 = ?
-        AND (Apt_Number <=> ?)
-      LIMIT 1`,
+       WHERE House_Number = ? AND Street = ? AND City = ? AND State = ?
+         AND Zip_Code = ? AND (Apt_Number <=> ?)`,
       [
-        house_number,
-        street,
-        city,
-        state,
-        zip_first3,
-        zip_last2,
-        apt_number || null
+        addr.house_number,
+        addr.street,
+        addr.city,
+        addr.state,
+        addr.zip_code,
+        normalizedApt,
       ]
     )
 
-    let addressId
+    if (rows.length) return rows[0].Address_ID
 
-  if (!addrRows.length) {
-    const [addrRes] = await conn.query(
-      `INSERT INTO address 
-      (House_Number, Street, City, State, Zip_First3, Zip_Last2, Apt_Number, Country)
-      VALUES (?,?,?,?,?,?,?,?)`,
+    const [res] = await conn.query(
+      `INSERT INTO address
+       (House_Number, Street, City, State, Zip_Code, Apt_Number, Country)
+       VALUES (?,?,?,?,?,?,?)`,
       [
-        String(house_number).slice(0, 10),
-        String(street).slice(0, 100),
-        String(city).slice(0, 100),
-        String(state).slice(0, 50),
-        String(zip_code).replace(/\D/g, '').slice(0, 3),
-        apt_number || null,
-        (country || 'USA').toString().slice(0, 50),
+        String(addr.house_number).slice(0, 10),
+        String(addr.street).slice(0, 100),
+        String(addr.city).slice(0, 100),
+        String(addr.state).slice(0, 50),
+        String(addr.zip_code).replace(/\D/g, '').slice(0, 5),
+        normalizedApt,
+        (addr.country || 'USA').slice(0, 50),
       ]
     )
 
-    addressId = addrRes.insertId
-  } else {
-    addressId = addrRows[0].Address_ID
+    return res.insertId
   }
-  return addressId;
-}
-async function resolveHolder(conn, { first_name, last_name, addressId}) {
-      const [holderRows] = await conn.query(
-        `SELECT Holder_ID FROM holder
-         WHERE First_Name = ? AND Last_Name = ? AND Address_ID = ?
-         LIMIT 1`,
-        [first_name, last_name, addressId]
-      )
-      if (!holderRows.length){
-        const [holderRes] = await conn.query(
-        `INSERT INTO holder (First_Name, Last_Name, Address_ID)
-        VALUES (?,?,?)`,
-        [first_name, last_name, addressId]
-      )
-      return holderRes.insertId
-        
-      } return holderRows[0].Holder_ID
-    
-    }
 
   const conn = await pool.getConnection()
+
   try {
     await conn.beginTransaction()
 
-    // ── Sender ──
-    let senderId = (await customerDB.getCustomerByEmail(conn, senderEmail))?.Customer_ID
-    let senderHolderId
-    //Let senderAddId
-    
-    if (senderId) {
-      const [[senderRow]] = await conn.query(`SELECT Holder_ID FROM customer WHERE Customer_ID = ?`, [senderId])
-      senderHolderId = senderRow?.Holder_ID
-    }
-    if (!senderHolderId) {
-      senderAddId = await resolveAddress(conn,{
-        house_number: sender_house_number,
-        street:       sender_street,
-        city:         sender_city,
-        state:        sender_state,
-        zip_code:   sender_zip_code,
-        apt_number:   sender_apt_number,
-        country:      sender_country
-      })
-      senderHolderId = await resolveHolder(conn, {
-        first_name:   sender_first_name,
-        last_name:    sender_last_name,
-        addressId:    senderAddId
+    const senderId =
+      (await customerDB.getCustomerByEmail(conn, senderEmail))
+        ?.Customer_ID || null
 
-        
-      })
-    }
+    const recipientId =
+      (await customerDB.getCustomerByEmail(conn, recipientEmail))
+        ?.Customer_ID || null
 
-    // ── Recipient ──
-    let recipientId = (await customerDB.getCustomerByEmail(conn, recipientEmail))?.Customer_ID
-    let receiverHolderId
-    if (recipientId) {
-      const [[recipientRow]] = await conn.query(`SELECT Holder_ID FROM customer WHERE Customer_ID = ?`, [recipientId])
-      receiverHolderId = recipientRow?.Holder_ID
-    }
-    if (!recipientId) {
-      const created = await customerDB.createCustomerMinimal(conn, {
-        first_name:   recipient_first_name,
-        last_name:    recipient_last_name,
-        email:        recipientEmail,
-        house_number: recipient_house_number,
-        street:       recipient_street,
-        city:         recipient_city,
-        state:        recipient_state,
-        zip_first3:   recipient_zip_first3,
-        zip_last2:    recipient_zip_last2,
-        apt_number:   recipient_apt_number,
-        zip_plus4:    b.recipient_zip_plus4,
-        country:      recipient_country,
-        phone_number: recipient_phone,
-      })
-      recipientId = created.customerId
-    }
-    if (!receiverHolderId) {
-      receiverHolderId = await resolveHolder(conn, {
-        first_name:   recipient_first_name,
-        last_name:    recipient_last_name,
-        house_number: recipient_house_number,
-        street:       recipient_street,
-        city:         recipient_city,
-        state:        recipient_state,
-        zip_first3:   recipient_zip_first3,
-        zip_last2:    recipient_zip_last2,
-        zip_plus4:    b.recipient_zip_plus4,
-        apt_number:   recipient_apt_number,
-        country:      recipient_country,
-      })
-    }
+    // ── ADDRESSES ──
+    const senderAddrId = await resolveAddress(conn, {
+      house_number: sender_house_number,
+      street: sender_street,
+      city: sender_city,
+      state: sender_state,
+      zip_code: sender_zip_code,
+      apt_number: sender_apt_number,
+      country: sender_country,
+    })
 
-    // ── Rest of the logic (unchanged) ──
+    const recipientAddrId = await resolveAddress(conn, {
+      house_number: recipient_house_number,
+      street: recipient_street,
+      city: recipient_city,
+      state: recipient_state,
+      zip_code: recipient_zip_code,
+      apt_number: recipient_apt_number,
+      country: recipient_country,
+    })
+
     const tracking = await nextTrackingNumber(conn)
     const oversize = typeCode === 'OVR' ? 1 : 0
 
     const actingEmployeeId = Number(user.employee_id)
+
+    const [[empRow]] = await conn.query(
+      `SELECT Post_Office_ID
+       FROM employee
+       WHERE Employee_ID = ?`,
+      [actingEmployeeId]
+    )
+
+    const postOfficeId = empRow?.Post_Office_ID
+
     if (!Number.isFinite(actingEmployeeId)) {
       await conn.rollback()
       return send(res, 401, { message: 'Invalid employee session' })
     }
 
-    const [empRows] = await conn.query(
-      `SELECT s.Store_ID FROM employee e
-       JOIN post_office p ON e.Post_Office_ID = p.Post_Office_ID
-       JOIN store s ON s.Post_Office_ID = p.Post_Office_ID
-       WHERE e.Employee_ID = ?`,
-      [actingEmployeeId]
-    )
-    if (!empRows.length) {
-      await conn.rollback()
-      return send(res, 404, { error: 'Employee or store not found' })
+    if (!postOfficeId) {
+      throw new Error('Invalid Post_Office_ID')
     }
-    const sid = empRows[0].Store_ID
 
-    await conn.query(
-      `INSERT INTO package (Tracking_Number, Sender_ID, Recipient_ID, Dim_X, Dim_Y, Dim_Z,
-        Package_Type_Code, Weight, Zone, Oversize, Requires_Signature, Status_Code, To_Address_ID,
-        Recipient_Name, Recipient_Email_Address, Sender_Holder_ID, Receiver_Holder_ID)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,1,?,?,?,?,?)`,
-      [tracking, senderId, recipientId, dx, dy, dz, typeCode, w, z, oversize, sigRequired ? 1 : 0,
-       null, `${recipient_first_name} ${recipient_last_name}`, recipientEmail || null,
-       senderHolderId, receiverHolderId]
+    const recipientName =
+      `${recipient_first_name} ${recipient_last_name}`.trim()
+
+    const [[pending]] = await conn.query(
+      `SELECT Status_Code
+       FROM status_code
+       WHERE Status_Name = 'Pending'
+       LIMIT 1`
     )
 
+    const pendingCode = pending?.Status_Code
+    if (!pendingCode) throw new Error('Missing Pending status')
+
+    // ── PACKAGE INSERT ──
     await conn.query(
-      `INSERT INTO payment (Customer_ID, Store_ID, Payment_Amount, Employee_ID, Tracking_Number)
-       VALUES (?,?,?,?,?)`,
-      [senderId, sid, priceAmount, actingEmployeeId, tracking]
-    )
-
-    const [[pending]] = await conn.query(`SELECT Status_Code FROM status_code WHERE Status_Name = 'Pending' LIMIT 1`)
-    if (!pending) throw new Error('Missing Pending status in status_code')
-    const pendingCode = pending.Status_Code
-
-    await conn.query(
-      `INSERT INTO delivery (Tracking_Number, Delivered_Date, Signature_Required, Signature_Received, Delivery_Status_Code, Delivered_By)
-       VALUES (?,NULL,?,NULL,?,NULL)`,
-      [tracking, sigRequired ? 1 : 0, pendingCode]
-    )
-
-    const [shipRes] = await conn.query(
-      `INSERT INTO shipment (Status_Code, Employee_ID,
-        From_Apt_Number, From_House_Number, From_Street, From_City, From_State, From_Zip_First3, From_Zip_Last2, From_Zip_Plus4, From_Country,
-        To_Apt_Number, To_House_Number, To_Street, To_City, To_State, To_Zip_Code,  To_Country,
-        Departure_Time_Stamp, Arrival_Time_Stamp)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NULL,NULL)`,
+      `INSERT INTO package (
+        Tracking_Number, Sender_ID, Recipient_ID,
+        Dim_X, Dim_Y, Dim_Z,
+        Package_Type_Code, Weight, Zone,
+        Oversize, Requires_Signature,
+        Status_Code, To_Address_ID, Recipient_Name
+      )
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       [
-        pendingCode, actingEmployeeId,
-        sender_apt_number || null,
-        String(sender_house_number).slice(0, 10),
-        String(sender_street).slice(0, 100),
-        String(sender_city).slice(0, 100),
-        String(sender_state).slice(0, 50),
-        String(sender_zip_first3).replace(/\D/g, '').slice(0, 3),
-        String(sender_zip_last2).replace(/\D/g, '').slice(0, 2),
-        b.sender_zip_plus4 ? String(b.sender_zip_plus4).replace(/\D/g, '').slice(0, 4) : null,
-        (sender_country || 'USA').toString().slice(0, 50),
-        recipient_apt_number || null,
-        String(recipient_house_number).slice(0, 10),
-        String(recipient_street).slice(0, 100),
-        String(recipient_city).slice(0, 100),
-        String(recipient_state).slice(0, 50),
-        String(recipient_zip_first3).replace(/\D/g, '').slice(0, 3),
-        String(recipient_zip_last2).replace(/\D/g, '').slice(0, 2),
-        b.recipient_zip_plus4 ? String(b.recipient_zip_plus4).replace(/\D/g, '').slice(0, 4) : null,
-        (recipient_country || 'USA').toString().slice(0, 50),
+        tracking,
+        senderId,
+        recipientId,
+        dx,
+        dy,
+        dz,
+        typeCode,
+        w,
+        z,
+        oversize,
+        sigRequired ? 1 : 0,
+        pendingCode,
+        recipientAddrId,
+        recipientName,
       ]
     )
 
+    // ── PAYMENT ──
+    await conn.query(
+      `INSERT INTO payment
+       (Customer_ID, Payment_Amount, Employee_ID, Tracking_Number)
+       VALUES (?,?,?,?)`,
+      [senderId, priceAmount, actingEmployeeId, tracking]
+    )
+
+    // ── DELIVERY ──
+    await conn.query(
+      `INSERT INTO delivery
+       (Tracking_Number, Delivered_Date, Signature_Required, Signature_Received, Delivered_By)
+       VALUES (?,NULL,?,NULL,NULL)`,
+      [tracking, sigRequired ? 1 : 0]
+    )
+
+    // ── SHIPMENT ──
+    const [shipRes] = await conn.query(
+      `INSERT INTO shipment (
+        Status_Code,
+        Employee_ID,
+        From_Address_ID,
+        To_Address_ID,
+        Departure_Time_Stamp,
+        Arrival_Time_Stamp
+      )
+      VALUES (?,?,?,?,NULL,NULL)`,
+      [pendingCode, actingEmployeeId, senderAddrId, recipientAddrId]
+    )
+
     const shipmentId = shipRes.insertId
-    await conn.query(`INSERT INTO shipment_package (Shipment_ID, Tracking_Number) VALUES (?,?)`, [shipmentId, tracking])
+
+    await conn.query(
+      `INSERT INTO shipment_package (Shipment_ID, Tracking_Number)
+       VALUES (?,?)`,
+      [shipmentId, tracking]
+    )
 
     await conn.commit()
+
     return send(res, 201, {
       tracking_number: tracking,
       price: priceAmount,
@@ -1280,15 +1244,14 @@ async function resolveHolder(conn, { first_name, last_name, addressId}) {
   } catch (err) {
     await conn.rollback()
     console.error(err)
-    if (err.code === 'ER_DUP_ENTRY') {
-      return send(res, 400, { message: 'Duplicate email or tracking conflict; try again' })
-    }
-    return send(res, 500, { message: err.message || 'Could not create package' })
+
+    return send(res, 500, {
+      message: err.message || 'Could not create package',
+    })
   } finally {
     conn.release()
   }
 }
-
   // ── GET /api/reports/employee-performance ────────────────────────────────
 
 if (method === 'GET' && pathname === '/api/reports/employee-performance') {
@@ -2708,20 +2671,10 @@ if (method === 'GET' && pathname === '/api/packages/full') {
 
 
 // ── Start ─────────────────────────────────────────────────────────────────
-console.log('Connecting to Database:', process.env.MYSQL_DATABASE)
-
-pool
-  .getConnection()
-  .then(async (c) => {
-    console.log('✅ MySQL connected')
-    const [results] = await c.query('SELECT CURRENT_USER() AS user')
-    console.log('Connected as:', results[0].user)
-    c.release()
-  })
-  .catch((e) => console.error('❌ MySQL connection failed:', e))
-
-console.log('[api] admin routes: GET /api/admin/employees, PATCH /api/admin/employees/:employeeId/deactivate')
 const PORT = process.env.PORT || 5000
-http.createServer(router).listen(PORT, '0.0.0.0', () => 
-  console.log(`🚀 Server running on http://localhost:${PORT}`)
-)
+console.log('Connecting to Database:', process.env.MYSQL_DATABASE)
+console.log("POOL CONFIG HOST =", process.env.MYSQLHOST)
+http.createServer(router).listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`))
+// console.log('[api] admin routes: GET /api/admin/employees, PATCH /api/admin/employees/:employeeId/deactivate')
+// http.createServer(router).listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`))
+// console.log('Connecting to Database:', process.env.MYSQL_DATABASE)
