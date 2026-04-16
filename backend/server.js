@@ -1234,10 +1234,15 @@ async function router(req, res) {
         [trackingNumber]
       )
       if (sp.length) {
-        await conn.query(
-          `UPDATE shipment SET Status_Code = ? WHERE Shipment_ID = ?`,
-          [code, sp[0].Shipment_ID]
-        )
+        try {
+          await conn.query(
+            `UPDATE shipment SET Status_Code = ? WHERE Shipment_ID = ?`,
+            [code, sp[0].Shipment_ID]
+          )
+        } catch (shipErr) {
+          // Keep delivery status update even if legacy shipment row cannot accept this status.
+          console.warn('Shipment status sync warning:', shipErr.message)
+        }
       }
 
       await conn.commit()
