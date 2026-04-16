@@ -35,6 +35,7 @@ import EmployeeSupport from './pages/Employeesupport.jsx'
 import Employee_SubmitTicket from './pages/Employee_SubmitTicket.jsx'
 
 import TicketsReport from './pages/tickets_report.jsx'
+import TicketReport from './pages/Ticket_Report.jsx'
 import RevenueReport from './pages/Revenue_Report.jsx'
 import EmployeesPage from './pages/employees.jsx'
 import OfficeSatisfactionReport from './pages/office_satisfaction_report.jsx'
@@ -56,6 +57,7 @@ function App() {
         <Route path="/revenue-report" element={<RequireEmployee><RevenueReport /></RequireEmployee>} />
         <Route path="/office-satisfaction" element={<RequireEmployee><OfficeSatisfactionReport /></RequireEmployee>} />
         <Route path="/tickets_employees" element={<RequireEmployee><TicketsReport /></RequireEmployee>} />
+        <Route path="/ticket-report" element={<RequireEmployee><TicketReport /></RequireEmployee>} />
         <Route path="/revenue-report" element={<RequireEmployee><RevenueReport /></RequireEmployee>} />
 
         {/* Customer Routes */}
@@ -68,8 +70,8 @@ function App() {
         <Route path="/employee_home" element={<RequireEmployee><EmployeeHome /></RequireEmployee>} />
         <Route path="/employee/add-package" element={<RequireEmployee><AddPackage /></RequireEmployee>} />
         <Route path="/employee/package-pickup" element={<RequireEmployee><PackageForPickup /></RequireEmployee>} />
-        <Route path="/employee-support" element={<RequireEmployee><EmployeeSupport /></RequireEmployee>} />
-        <Route path="/employee/submit-ticket" element={<RequireEmployee><Employee_SubmitTicket/></RequireEmployee>} />
+        <Route path="/employee-support" element={<RequireAdmin><EmployeeSupport /></RequireAdmin>} />
+        <Route path="/employee/submit-ticket" element={<RequireAdmin><Employee_SubmitTicket/></RequireAdmin>} />
         <Route path="/customers" element={<RequireEmployee><AllCustomers /></RequireEmployee>} />
         <Route path="/admin-register" element={<RequireAdmin><AdminRegister /></RequireAdmin>} />
         <Route path="/profile" element={<RequireEmployee><Profile /></RequireEmployee>} />

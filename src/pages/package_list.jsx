@@ -96,9 +96,13 @@ function PackageTable({ title, packages, expanded, onToggle, statusCodes, onStat
                       <td style={{ padding: '10px 14px', color: '#374151' }}>Zone {p.Zone}</td>
                       <td style={{ padding: '10px 14px', fontWeight: 700, color: '#1e40af' }}>${parseFloat(p.Price || 0).toFixed(2)}</td>
                       <td style={{ padding: '10px 14px' }}>
-                        {statusCodes.length > 0 && p.Delivery_Status_Code != null && !p.Is_Final_Status  ? (
+                        {statusCodes.length > 0 ? (
                           <select
-                            value={String(p.Delivery_Status_Code)}
+                            value={String(
+                              p.Delivery_Status_Code != null
+                                ? p.Delivery_Status_Code
+                                : statusCodes[0]?.Status_Code
+                            )}
                             onChange={e => onStatusChange(p.Tracking_Number, e.target.value)}
                             disabled={statusUpdating === p.Tracking_Number}
                             style={{ padding: '4px 8px', border: '1px solid #dbe4ef', borderRadius: 6, fontSize: '0.82rem' }}
@@ -190,7 +194,7 @@ export default function AllPackages() {
   const [sigFilter,      setSigFilter]      = useState('')
 
   useEffect(() => {
-    if (userType !== 'employee') { navigate('/login'); return }
+    if (userType !== 'employee' && userType !== 'admin') { navigate('/login'); return }
 
     // Load packages, status codes, post offices in parallel
     Promise.all([
@@ -207,7 +211,7 @@ export default function AllPackages() {
       setLoading(false)
     })
     .catch(err => { setError(err.message); setLoading(false) })
-  }, [])
+  }, [navigate, token, userType])
 
   async function handleStatusChange(trackingNumber, statusCodeStr) {
     setStatusUpdating(trackingNumber); setError(null)

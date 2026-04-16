@@ -174,7 +174,7 @@ export default function EmployeeSupport() {
                 : ''}
             </span>
             <div className="es-filters">
-              <Link to="/employee/submit-ticket" className="es-add-btn">
+              {/* <Link to="/employee/submit-ticket" className="es-add-btn">
                 <svg
                   width="13"
                   height="13"
@@ -189,7 +189,7 @@ export default function EmployeeSupport() {
                   <line x1="5" y1="12" x2="19" y2="12" />
                 </svg>
                 Add Ticket
-              </Link>
+              </Link> */}
 
               <button
                 className={`es-filter-btn ${

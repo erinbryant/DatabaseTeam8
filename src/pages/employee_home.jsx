@@ -48,15 +48,15 @@ const NAV_ITEMS = [
   { label: 'Package Pickup',    path: '/employee/package-pickup',      section: 'main'  },
   { label: 'Track a Package',   path: '/package_tracking',             section: 'main'  },
   // { label: 'Inventory',         path: '/inventory',                    section: 'main'  },
-  { label: 'Support Tickets',   path: '/employee-support',             section: 'main'  },
   { label: 'Customers',         path: '/customers',                    section: 'main'  },
   { label: 'Profile',           path: '/profile',                      section: 'main'  },
   { label: 'Calculator',        path: '/price_calculator',             section: 'main'  },
+  { label: 'Support Tickets',   path: '/employee-support',             section: 'admin' },
   { label: 'Employees',         path: '/employees',                    section: 'admin' },
   { label: 'Register Employee', path: '/admin-register',               section: 'admin' },
   { label: 'Satisfaction Report',   path: '/office-satisfaction', section: 'admin' },
   { label: 'Revenue Report',    path: '/revenue-report',               section: 'admin' },
-  { label: 'Ticket Report',     path: '/tickets_employees',            section: 'admin' },
+  { label: 'Ticket Report',     path: '/ticket-report',            section: 'admin' },
 ]
 const DASHBOARD_CARDS = [
   { title: 'Packages',          desc: 'Browse and manage all package records.',                          path: '/package_list',                 btnLabel: 'View packages',      section: 'main'  },
@@ -69,7 +69,7 @@ const DASHBOARD_CARDS = [
   { title: 'Register Employee', desc: 'Create a new employee account.',                                 path: '/admin-register',               btnLabel: 'Add employee',       section: 'admin' },
   { title: 'Satisfaction Report',   desc: 'View performance rankings and employee metrics.',                path: '/reports/employee-performance', btnLabel: 'View report',        section: 'admin' },
   { title: 'Revenue Report',    desc: 'Sort by pricing type and view revenue reports.',                 path: '/revenue-report',               btnLabel: 'View report',        section: 'admin' },
-  { title: 'Ticket Report',     desc: 'View ticket records and support analytics.',                     path: '/tickets_employees',            btnLabel: 'View report',        section: 'admin' },
+  { title: 'Ticket Report',     desc: 'View ticket records and support analytics.',                     path: '/ticket-report',            btnLabel: 'View report',        section: 'admin' },
 ]
 
 // Shared stat card 
@@ -280,9 +280,6 @@ function ClerkDashboard({ navigate, token }) {
               <p style={{ margin: '0 0 16px', fontSize: '0.82rem', color: '#64748b', lineHeight: 1.5 }}>
                 Review and respond to open customer support requests assigned to you.
               </p>
-              <button type="button" className="btn primary" onClick={() => navigate('/employee-support')}>
-                Open tickets
-              </button>
             </div>
           </div>
         </>

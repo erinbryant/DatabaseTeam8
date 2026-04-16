@@ -1131,9 +1131,9 @@ async function router(req, res) {
     // ── DELIVERY ──
     await conn.query(
       `INSERT INTO delivery
-       (Tracking_Number, Delivered_Date, Signature_Required, Signature_Received, Delivered_By)
-       VALUES (?,NULL,?,NULL,NULL)`,
-      [tracking, sigRequired ? 1 : 0]
+       (Tracking_Number, Delivery_Status_Code, Delivered_Date, Signature_Required, Signature_Received, Delivered_By)
+       VALUES (?,?,NULL,?,NULL,NULL)`,
+      [tracking, pendingCode, sigRequired ? 1 : 0]
     )
 
     // ── SHIPMENT ──
@@ -1182,9 +1182,9 @@ async function router(req, res) {
 {
   const m = matchPath('/api/employee/packages/:trackingNumber/status', pathname)
   if (method === 'PATCH' && m.matched) {
-    // const user = authenticate(req, res)
-    // if (!user) return
-    // if (!requireEmployee(user, res)) return
+    const user = authenticate(req, res)
+    if (!user) return
+    if (!requireEmployee(user, res)) return
 
     const trackingNumber = (m.params.trackingNumber || '').trim()
     const body = await getBody(req)
@@ -1203,13 +1203,34 @@ async function router(req, res) {
     try {
       await conn.beginTransaction()
 
+      const [[validStatus]] = await conn.query(
+        `SELECT Status_Code FROM status_code WHERE Status_Code = ? LIMIT 1`,
+        [code]
+      )
+      if (!validStatus) {
+        await conn.rollback()
+        return send(res, 400, { message: 'Invalid status_code' })
+      }
+
       const [[d]] = await conn.query(
         `SELECT Delivery_ID FROM delivery WHERE Tracking_Number = ?`,
         [trackingNumber]
       )
       if (!d) {
-        await conn.rollback()
-        return send(res, 404, { message: 'Delivery record not found for this package' })
+        const [[pkg]] = await conn.query(
+          `SELECT Requires_Signature FROM package WHERE Tracking_Number = ? LIMIT 1`,
+          [trackingNumber]
+        )
+        if (!pkg) {
+          await conn.rollback()
+          return send(res, 404, { message: 'Package not found' })
+        }
+
+        await conn.query(
+          `INSERT INTO delivery (Tracking_Number, Delivery_Status_Code, Delivered_Date, Signature_Required, Signature_Received, Delivered_By)
+           VALUES (?, ?, NULL, ?, NULL, NULL)`,
+          [trackingNumber, code, Number(pkg.Requires_Signature) ? 1 : 0]
+        )
       }
 
       await conn.query(
@@ -1217,20 +1238,42 @@ async function router(req, res) {
         [code, trackingNumber]
       )
 
-      // await conn.query(
-      //   `UPDATE package SET Status_Code = ? WHERE Tracking_Number = ?`,
-      //   [code, trackingNumber]
-      // )
+      await conn.query(
+        `UPDATE package SET Status_Code = ? WHERE Tracking_Number = ?`,
+        [code, trackingNumber]
+      )
+
+      // Keep package-level lost lifecycle in sync when this column exists.
+      try {
+        if (code === 7) {
+          await conn.query(
+            `UPDATE package SET Lost_Status = 'lost' WHERE Tracking_Number = ?`,
+            [trackingNumber]
+          )
+        } else {
+          await conn.query(
+            `UPDATE package SET Lost_Status = 'active' WHERE Tracking_Number = ? AND Lost_Status = 'lost'`,
+            [trackingNumber]
+          )
+        }
+      } catch (lostErr) {
+        console.warn('Lost status sync warning:', lostErr.message)
+      }
 
       const [sp] = await conn.query(
         `SELECT Shipment_ID FROM shipment_package WHERE Tracking_Number = ? LIMIT 1`,
         [trackingNumber]
       )
       if (sp.length) {
-        await conn.query(
-          `UPDATE shipment SET Status_Code = ? WHERE Shipment_ID = ?`,
-          [code, sp[0].Shipment_ID]
-        )
+        try {
+          await conn.query(
+            `UPDATE shipment SET Status_Code = ? WHERE Shipment_ID = ?`,
+            [code, sp[0].Shipment_ID]
+          )
+        } catch (shipErr) {
+          // Keep delivery/package status update even if legacy shipment row cannot accept this status.
+          console.warn('Shipment status sync warning:', shipErr.message)
+        }
       }
 
       await conn.commit()
@@ -1648,7 +1691,7 @@ if (method === 'GET' && pathname === '/api/packages/full') {
     r.Email_Address AS Recipient_Email,
 
     -- Delivery info
-    d.Delivery_Status_Code,
+    COALESCE(d.Delivery_Status_Code, pkg.Status_Code) AS Delivery_Status_Code,
     d.Delivered_Date,
     d.Signature_Required,
     sc.Status_Name,
@@ -1671,7 +1714,7 @@ LEFT JOIN payment pay ON pay.Tracking_Number = pkg.Tracking_Number
 LEFT JOIN customer s  ON s.Customer_ID  = pkg.Sender_ID
 LEFT JOIN customer r  ON r.Customer_ID  = pkg.Recipient_ID
 LEFT JOIN delivery d  ON d.Tracking_Number = pkg.Tracking_Number
-LEFT JOIN status_code sc ON sc.Status_Code = d.Delivery_Status_Code
+LEFT JOIN status_code sc ON sc.Status_Code = COALESCE(d.Delivery_Status_Code, pkg.Status_Code)
 LEFT JOIN shipment_package sp ON sp.Tracking_Number = pkg.Tracking_Number
 LEFT JOIN shipment sh ON sh.Shipment_ID = sp.Shipment_ID
 LEFT JOIN address addr_f ON sh.From_Address_ID = addr_f.Address_ID
@@ -1960,6 +2003,49 @@ ORDER BY pkg.Tracking_Number ASC`,
     if (!requireEmployee(user, res)) return
     try {
       const results = await employeeDB.ticketByIssue(pool)
+      return send(res, 200, results)
+    } catch (err) {
+      return send(res, 500, { error: err.message })
+    }
+  }
+
+  // ── GET /api/tickets/report ──────────────────────────────────────────────
+  if (method === 'GET' && pathname === '/api/tickets/report') {
+    const user = authenticate(req, res)
+    if (!user) return
+    if (!requireEmployee(user, res)) return
+    try {
+      const page  = parseInt(query.page  || '1')
+      const limit = parseInt(query.limit || '20')
+      const filters = {
+        search:    query.search     || '',
+        dateFrom:  query.date_from  || '',
+        dateTo:    query.date_to    || '',
+        status:    query.status     ?? '',
+        issueType: query.issue_type || '',
+        page, limit
+      }
+      const results = await employeeDB.getTicketsReportTable(pool, filters)
+      return send(res, 200, results)
+    } catch (err) {
+      return send(res, 500, { error: err.message })
+    }
+  }
+
+  // ── GET /api/tickets/report/stats ────────────────────────────────────────
+  if (method === 'GET' && pathname === '/api/tickets/report/stats') {
+    const user = authenticate(req, res)
+    if (!user) return
+    if (!requireEmployee(user, res)) return
+    try {
+      const filters = {
+        search:    query.search     || '',
+        dateFrom:  query.date_from  || '',
+        dateTo:    query.date_to    || '',
+        status:    query.status     ?? '',
+        issueType: query.issue_type || '',
+      }
+      const results = await employeeDB.getTicketsReportStats(pool, filters)
       return send(res, 200, results)
     } catch (err) {
       return send(res, 500, { error: err.message })

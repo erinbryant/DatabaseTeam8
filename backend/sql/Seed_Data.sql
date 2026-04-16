@@ -73,7 +73,7 @@ INSERT INTO Department (Department_Name) VALUES
 -- ── 7. EMPLOYEES ─────────────────────────────────────────────────────────
 -- Password = 'employee123'
 INSERT INTO Employee (Post_Office_ID, Supervisor_ID, Role_ID, Department_ID, First_Name, Middle_Name, Last_Name, Birth_Day, Birth_Month, Birth_Year, Password_Hash, Email_Address, Phone_Number, Sex, Salary) VALUES
-(1, NULL, 5, 4, 'Richard', 'A', 'Moore',    15, 3,  1975, '$2a$10$kdMky0yh3FVqVBzXATNM/uYAd6L9WtXKnSrrV66P1ucpb/zyDvM0q', 'richard.moore@postoffice8.com',   '713-500-2001', 'M', 72000.00),
+(1, 1, 1, 1, 'Richard', 'A', 'Moore',    15, 3,  1975, '$2a$10$kdMky0yh3FVqVBzXATNM/uYAd6L9WtXKnSrrV66P1ucpb/zyDvM0q', 'richard.moore@postoffice8.com',   '713-500-2001', 'M', 72000.00),
 (2, NULL, 4, 4, 'Nancy',   'B', 'White',     8, 7,  1980, '$2a$10$kdMky0yh3FVqVBzXATNM/uYAd6L9WtXKnSrrV66P1ucpb/zyDvM0q', 'nancy.white@postoffice8.com',     '214-500-2002', 'F', 70000.00),
 (3, NULL, 4, 4, 'Thomas',  'C', 'Harris',   22, 11, 1978, '$2a$10$kdMky0yh3FVqVBzXATNM/uYAd6L9WtXKnSrrV66P1ucpb/zyDvM0q', 'thomas.harris@postoffice8.com',   '512-500-2003', 'M', 71000.00),
 (1, 1,    3, 1, 'Jessica', 'D', 'Clark',    30, 5,  1988, '$2a$10$kdMky0yh3FVqVBzXATNM/uYAd6L9WtXKnSrrV66P1ucpb/zyDvM0q', 'jessica.clark@postoffice8.com',   '713-500-2004', 'F', 52000.00),
