@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom'
 import './css/home.css'
 import './css/packages.css'
 import { authFetch } from '../authFetch'
+import EmployeeLayout from './EmployeeLayout'
 
 // In dev, prefer same-origin `/api` so Vite's proxy can reach the backend without CORS surprises.
 const envApi = import.meta.env.VITE_API_URL
@@ -165,21 +166,8 @@ export default function EmployeesPage() {
   }
 
   return (
+    <EmployeeLayout>
     <div>
-      <header className="site-header">
-        <div className="header-inner">
-          <Link className="logo" to="/"> National Postal Service</Link>
-          <nav className="top-nav">
-            <a href="#" onClick={(e) => { e.preventDefault(); navigate('/employee_home') }}>Employee Home</a>
-            <a href="#" onClick={(e) => { e.preventDefault(); navigate('/price_calculator') }}>Calculator</a>
-            <a href="#" onClick={(e) => { e.preventDefault(); navigate('/package_tracking') }}>Track a Package</a>
-            <a href="#" onClick={(e) => { e.preventDefault(); navigate('/profile') }}>Profile</a>
-            <a href="#" onClick={handleLogout}>Logout</a>
-          </nav>
-            
-        </div>
-      </header>
-
       <main style={{ paddingTop: 24 }}>
         <section className="services" style={{ paddingTop: 0 }}>
           <h2 style={{ marginBottom: 12 }}>Employees</h2>
@@ -267,6 +255,7 @@ export default function EmployeesPage() {
         </section>
       </main>
     </div>
+    </EmployeeLayout>
   )
 }
 

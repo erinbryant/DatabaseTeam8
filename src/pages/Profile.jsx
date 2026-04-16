@@ -5,6 +5,7 @@ import './css/employee_home.css'
 import './css/employee_profile.css'
 import skyline from '../assets/houston-skyline.jpeg'
 import { authFetch } from '../authFetch'
+import EmployeeLayout from './EmployeeLayout'
 
 async function parseJsonResponse(response) {
   const raw = await response.text()
@@ -243,8 +244,8 @@ export default function Profile() {
   }
 
   return (
+    <EmployeeLayout>
     <div className="employee-home employee-profile-page">
-      {navHeader}
 
       <main>
         <div className="employee-hero">
@@ -437,8 +438,7 @@ export default function Profile() {
           </div>
         </div>
       </main>
-
-      {pageFooter}
     </div>
+    </EmployeeLayout>
   )
 }

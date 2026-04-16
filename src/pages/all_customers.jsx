@@ -6,6 +6,7 @@ import skyline from '../assets/houston-skyline.jpeg'
 import React from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { authFetch } from '../authFetch'
+import EmployeeLayout from './EmployeeLayout'
 
 export default function AllCustomers() {
   const [customers, setCustomers] = useState([])
@@ -110,20 +111,8 @@ export default function AllCustomers() {
   }
 
   return (
+    <EmployeeLayout>
     <div className={`packages-page ${userType === 'employee' ? 'employee-home' : ''}`}>
-      <header className="site-header">
-        <div className="header-inner">
-          <Link className="logo" to="/"> National Postal Service</Link>
-          <nav className="top-nav">
-            <a href="#" onClick={(e) => { e.preventDefault(); navigate('/employee_home') }}>Employee Home</a>
-            <a href="#" onClick={(e) => { e.preventDefault(); navigate('/price_calculator') }}>Calculator</a>
-            <a href="#" onClick={(e) => { e.preventDefault(); navigate('/package_tracking') }}>Track a Package</a>
-            <a href="#" onClick={(e) => { e.preventDefault(); navigate('/profile') }}>Profile</a>
-            <a href="#" onClick={handleLogout}>Logout</a>
-          </nav>
-        </div>
-      </header>
-
       <main>
         <div className="inventory-hero">
           <img src={skyline} alt="" />
@@ -314,13 +303,7 @@ export default function AllCustomers() {
           )}
         </div>
       </main>
-
-      <footer className="site-footer">
-        <div className="footer-inner">
-          <span>© {new Date().getFullYear()} National Postal Service</span>
-          <span className="footer-links" />
-        </div>
-      </footer>
     </div>
+    </EmployeeLayout>
   )
 }

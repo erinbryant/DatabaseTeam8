@@ -1,4 +1,4 @@
-const path = require('path')
+﻿const path = require('path')
 const http = require('http')
 const mysql = require('mysql2/promise')
 const bcrypt = require('bcryptjs')
@@ -16,7 +16,7 @@ const lostNotifsDB = require('./db/lost_package_notifs')
 const { report } = require('process')
 const shipmentDB = require('./db/shipments')
 
-// ── DB pool ───────────────────────────────────────────────────────────────
+// ΓöÇΓöÇ DB pool ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 const pool = mysql.createPool({
   host: process.env.MYSQLHOST,
   port: process.env.MYSQLPORT,
@@ -35,14 +35,14 @@ if (process.env.DEBUG_MYSQL === '1' || process.env.DEBUG_MYSQL === 'true') {
 pool
   .getConnection()
   .then((c) => {
-    console.log('✅ MySQL connected')
+    console.log('Γ£à MySQL connected')
     c.release()
     // Initialize lost packages tracking column
     lostNotifsDB.ensureLostStatusColumn(pool).catch(err => {
-      console.error('⚠️ Failed to initialize lost packages column:', err.message)
+      console.error('ΓÜá∩╕Å Failed to initialize lost packages column:', err.message)
     })
   })
-  .catch((e) => console.error('❌ MySQL connection failed:', e))
+  .catch((e) => console.error('Γ¥î MySQL connection failed:', e))
 
 if (
   process.env.DISABLE_PACKAGE_PICKUP_JOB !== '1' &&
@@ -57,7 +57,7 @@ if (
   // })
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────
+// ΓöÇΓöÇ Helpers ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
 function getBody(req) {
   return new Promise((resolve, reject) => {
@@ -120,7 +120,7 @@ function getQueryParams(urlString) {
   return params
 }
 
-// ── Auth helpers ──────────────────────────────────────────────────────────
+// ΓöÇΓöÇ Auth helpers ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
 function authenticate(req, res) {
   const token = (req.headers['authorization'] || '').split(' ')[1]
@@ -152,7 +152,7 @@ function requireAdmin(user, res) {
   return true
 }
 
-// ── Business logic helpers ────────────────────────────────────────────────
+// ΓöÇΓöÇ Business logic helpers ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
 function normalizePackageTypeName(raw) {
   const t = String(raw || '').toLowerCase().trim()
@@ -176,7 +176,7 @@ function toMysqlDateTime(value) {
   return s
 }
 
-/** mysql2 Date or string → 'YYYY-MM-DD HH:MM:SS' for SQL parameters. */
+/** mysql2 Date or string ΓåÆ 'YYYY-MM-DD HH:MM:SS' for SQL parameters. */
 function dateToMysqlDateTime(value) {
   if (value == null) return null
   if (value instanceof Date && !Number.isNaN(value.getTime())) {
@@ -190,7 +190,7 @@ function dateToMysqlDateTime(value) {
   return toMysqlDateTime(value)
 }
 
-/** Form value wins if present; otherwise use shipment.Arrival_Time_Stamp (set when status → At Office). */
+/** Form value wins if present; otherwise use shipment.Arrival_Time_Stamp (set when status ΓåÆ At Office). */
 function resolveArrivalForPickup(shipmentArrivalStamp, bodyArrivalTime) {
   return (
     toMysqlDateTime(bodyArrivalTime) ||
@@ -245,7 +245,7 @@ async function nextTrackingNumber(conn) {
   return `TRK${String(n).padStart(7, '0')}`.slice(0, 10)
 }
 
-// ── Router ────────────────────────────────────────────────────────────────
+// ΓöÇΓöÇ Router ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
 async function router(req, res) {
   setCORSHeaders(req, res)
@@ -262,12 +262,12 @@ async function router(req, res) {
   const method = req.method
   const query = getQueryParams(req.url)
 
-  // // ── GET /api/health ──────────────────────────────────────────────────────
+  // // ΓöÇΓöÇ GET /api/health ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
   // if (method === 'GET' && pathname === '/api/health') {
   //   return send(res, 200, { ok: true, service: 'postoffice-api', has_price: true })
   // }
 
-  // ── POST /api/auth/login ─────────────────────────────────────────────────
+  // ΓöÇΓöÇ POST /api/auth/login ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
   if (method === 'POST' && pathname === '/api/auth/login') {
     const { email, password } = await getBody(req)
     if (!email || !password) return send(res, 400, { message: 'Email and password required' })
@@ -303,7 +303,7 @@ async function router(req, res) {
     }
   }
 
-  // ── POST /api/auth/customer-login
+  // ΓöÇΓöÇ POST /api/auth/customer-login
   if (method === 'POST' && pathname === '/api/auth/customer-login') {
     const { email, password } = await getBody(req)
     if (!email || !password) return send(res, 400, { message: 'Email and password required' })
@@ -328,7 +328,7 @@ async function router(req, res) {
     }
   }
 
-  // ── POST /api/customer/register ──────────────────────────────────────────
+  // ΓöÇΓöÇ POST /api/customer/register ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
   if (method === 'POST' && pathname === '/api/customer/register') {
     const body = await getBody(req)
     try {
@@ -349,7 +349,7 @@ async function router(req, res) {
     }
   }
 
-  // ── POST /api/auth/admin-register ────────────────────────────────────────
+  // ΓöÇΓöÇ POST /api/auth/admin-register ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
   if (method === 'POST' && pathname === '/api/auth/admin-register') {
     const user = authenticate(req, res)
     if (!user) return
@@ -367,7 +367,7 @@ async function router(req, res) {
       const tempPassword = Math.random().toString(36).slice(-10) + 'Temp1!'
       const hash = await bcrypt.hash(tempPassword, 10)
 
-      // Look up Department_ID by name (don’t assume IDs)
+      // Look up Department_ID by name (donΓÇÖt assume IDs)
       const [[deptRow]] = await pool.query(
         `SELECT Department_ID FROM department WHERE Department_Name = ? LIMIT 1`,
         [department]
@@ -375,7 +375,7 @@ async function router(req, res) {
       if (!deptRow) return send(res, 400, { message: `Invalid department: ${department}` })
       const department_id = Number(deptRow.Department_ID)
 
-      // Look up Role_ID by name (don’t assume IDs)
+      // Look up Role_ID by name (donΓÇÖt assume IDs)
       const [[roleRow]] = await pool.query(
         `SELECT Role_ID FROM role WHERE Role_Name = ? LIMIT 1`,
         [position]
@@ -416,7 +416,7 @@ async function router(req, res) {
     }
   }
 
-  // ── GET /api/admin/employees
+  // ΓöÇΓöÇ GET /api/admin/employees
   if (method === 'GET' && pathname === '/api/admin/employees') {
     const user = authenticate(req, res)
     if (!user) return
@@ -450,7 +450,7 @@ async function router(req, res) {
     }
   }
 
-  // ── PATCH /api/admin/employees/:employeeId/deactivate ────────────────────
+  // ΓöÇΓöÇ PATCH /api/admin/employees/:employeeId/deactivate ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
   {
     const m = matchPath('/api/admin/employees/:employeeId/deactivate', pathname)
     if (method === 'PATCH' && m.matched) {
@@ -475,7 +475,7 @@ async function router(req, res) {
     }
   }
 
-  // ── GET /api/auth/profile ────────────────────────────────────────────────
+  // ΓöÇΓöÇ GET /api/auth/profile ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
   if (method === 'GET' && pathname === '/api/auth/profile') {
     const user = authenticate(req, res)
     if (!user) return
@@ -504,7 +504,7 @@ async function router(req, res) {
     }
   }
 
-  // ── PUT /api/auth/profile ────────────────────────────────────────────────
+  // ΓöÇΓöÇ PUT /api/auth/profile ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
   if (method === 'PUT' && pathname === '/api/auth/profile') {
     const user = authenticate(req, res)
     if (!user) return
@@ -539,7 +539,7 @@ async function router(req, res) {
     }
   }
 
-  // ── POST /api/auth/change-password ───────────────────────────────────────
+  // ΓöÇΓöÇ POST /api/auth/change-password ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
   if (method === 'POST' && pathname === '/api/auth/change-password') {
     const user = authenticate(req, res)
     if (!user) return
@@ -571,7 +571,7 @@ async function router(req, res) {
     }
   }
 
-  // ── GET /api/customer/profile ────────────────────────────────────────────
+  // ΓöÇΓöÇ GET /api/customer/profile ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
   if (method === 'GET' && pathname === '/api/customer/profile') {
     const user = authenticate(req, res)
     if (!user) return
@@ -596,7 +596,7 @@ async function router(req, res) {
     }
   }
 
-  // ── PUT /api/customer/profile ────────────────────────────────────────────
+  // ΓöÇΓöÇ PUT /api/customer/profile ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
   if (method === 'PUT' && pathname === '/api/customer/profile') {
     const user = authenticate(req, res)
     if (!user) return
@@ -666,7 +666,7 @@ async function router(req, res) {
     }
   }
 
-  // ── GET /api/packages (PROTECTED: employee+admin) ────────────────────────
+  // ΓöÇΓöÇ GET /api/packages (PROTECTED: employee+admin) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
   if (method === 'GET' && pathname === '/api/packages') {
     const user = authenticate(req, res)
     if (!user) return
@@ -679,7 +679,7 @@ async function router(req, res) {
     return
   }
 
-  // ── GET /api/packages/track/:trackingNumber (PUBLIC tracking) ────────────
+  // ΓöÇΓöÇ GET /api/packages/track/:trackingNumber (PUBLIC tracking) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
   // {
   //   const m = matchPath('/api/packages/track/:trackingNumber', pathname)
   //   const user = authenticate(req, res)
@@ -697,7 +697,7 @@ async function router(req, res) {
   //   }
   // }
 
-  // ── GET /qry_track_package (PUBLIC tracking) ─────────────────────────────
+  // ΓöÇΓöÇ GET /qry_track_package (PUBLIC tracking) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
   // if (method === 'GET' && pathname === '/qry_track_package') {
   //   const user = authenticate(req, res)
   //   if (!user) return
@@ -713,7 +713,7 @@ async function router(req, res) {
   //   return
   // }
 
-  // ── GET /api/price (PUBLIC) ──────────────────────────────────────────────
+  // ΓöÇΓöÇ GET /api/price (PUBLIC) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
   if (method === 'GET' && pathname === '/api/price') {
     const { package_type, weight, zone, excess_fee, dim_x, dim_y, dim_z } = query
     const pt = normalizePackageTypeName(package_type)
@@ -750,7 +750,7 @@ async function router(req, res) {
     }
   }
 
-  // ── GET /api/customer/my-packages (customer-only) ────────────────────────
+  // ΓöÇΓöÇ GET /api/customer/my-packages (customer-only) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
   if (method === 'GET' && pathname === '/api/customer/my-packages') {
     const user = authenticate(req, res)
     if (!user) return
@@ -774,7 +774,7 @@ async function router(req, res) {
     return
   }
 
-  // ── POST /api/employee/packages ──────────────────────────────────────────
+  // ΓöÇΓöÇ POST /api/employee/packages ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
   if (method === 'POST' && pathname === '/api/employee/packages') {
     const user = authenticate(req, res)
     if (!user) return
@@ -990,7 +990,7 @@ async function router(req, res) {
     }
   }
 
-  // ── GET /api/reports/employee-performance ────────────────────────────────
+  // ΓöÇΓöÇ GET /api/reports/employee-performance ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 
 if (method === 'GET' && pathname === '/api/reports/employee-performance') {
   const user = authenticate(req, res)
@@ -1140,7 +1140,7 @@ if (method === 'GET' && pathname === '/api/reports/employee-performance') {
   }
 }
 
-// ── GET /api/reports/location-stats ─────────────────────────────────────
+// ΓöÇΓöÇ GET /api/reports/location-stats ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 if (method === 'GET' && pathname === '/api/reports/location-stats') {
   const user = authenticate(req, res)
   if (!user) return
@@ -1184,7 +1184,7 @@ if (method === 'GET' && pathname === '/api/reports/location-stats') {
   }
 }
 
-// ── GET /api/reports/department-stats ────────────────────────────────────
+// ΓöÇΓöÇ GET /api/reports/department-stats ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 if (method === 'GET' && pathname === '/api/reports/department-stats') {
   const user = authenticate(req, res)
   if (!user) return
@@ -1230,7 +1230,7 @@ if (method === 'GET' && pathname === '/api/reports/department-stats') {
   }
 }
 
-// ── GET /api/employee/shipments-for-package/:trackingNumber ────────────────
+// ΓöÇΓöÇ GET /api/employee/shipments-for-package/:trackingNumber ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 {
   const m = matchPath('/api/employee/shipments-for-package/:trackingNumber', pathname)
   if (method === 'GET' && m.matched) {
@@ -1262,7 +1262,7 @@ if (method === 'GET' && pathname === '/api/reports/department-stats') {
   }
 }
 
-// ── GET /api/employee/shipment/:shipmentId/routing-events ─────────────────
+// ΓöÇΓöÇ GET /api/employee/shipment/:shipmentId/routing-events ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 {
   const m = matchPath('/api/employee/shipment/:shipmentId/routing-events', pathname)
   if (method === 'GET' && m.matched) {
@@ -1286,7 +1286,7 @@ if (method === 'GET' && pathname === '/api/reports/department-stats') {
   }
 }
 
-// ── POST /api/employee/shipment/routing-event ─────────────────────────────
+// ΓöÇΓöÇ POST /api/employee/shipment/routing-event ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 if (method === 'POST' && pathname === '/api/employee/shipment/routing-event') {
   const user = authenticate(req, res); if (!user) return
   if (!requireEmployee(user, res)) return
@@ -1327,7 +1327,7 @@ if (method === 'POST' && pathname === '/api/employee/shipment/routing-event') {
   }
 }
 
-// ── POST /api/employee/package-pickup-arrival (arrival only; not picked up yet) ─
+// ΓöÇΓöÇ POST /api/employee/package-pickup-arrival (arrival only; not picked up yet) ΓöÇ
 if (method === 'POST' && pathname === '/api/employee/package-pickup-arrival') {
   const user = authenticate(req, res); if (!user) return
   if (!requireEmployee(user, res)) return
@@ -1394,7 +1394,7 @@ if (method === 'POST' && pathname === '/api/employee/package-pickup-arrival') {
   }
 }
 
-// ── GET /api/employee/post-offices (dropdown) ───────────────────────────────
+// ΓöÇΓöÇ GET /api/employee/post-offices (dropdown) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 if (method === 'GET' && pathname === '/api/employee/post-offices') {
   const user = authenticate(req, res); if (!user) return
   if (!requireEmployee(user, res)) return
@@ -1416,7 +1416,7 @@ if (method === 'GET' && pathname === '/api/employee/post-offices') {
   }
 }
 
-// ── GET /api/employee/packages-at-office (pickup dashboard) ─────────────────
+// ΓöÇΓöÇ GET /api/employee/packages-at-office (pickup dashboard) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 if (method === 'GET' && pathname === '/api/employee/packages-at-office') {
   const user = authenticate(req, res); if (!user) return
   if (!requireEmployee(user, res)) return
@@ -1460,7 +1460,7 @@ if (method === 'GET' && pathname === '/api/employee/packages-at-office') {
   }
 }
 
-// ── POST /api/employee/package-pickup (complete pickup) ─────────────────────
+// ΓöÇΓöÇ POST /api/employee/package-pickup (complete pickup) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 if (method === 'POST' && pathname === '/api/employee/package-pickup') {
   const user = authenticate(req, res); if (!user) return
   if (!requireEmployee(user, res)) return
@@ -1568,7 +1568,7 @@ if (method === 'POST' && pathname === '/api/employee/package-pickup') {
   }
 }
 
-// ── GET /api/reports/zone-stats ───────────────────────────────────────────
+// ΓöÇΓöÇ GET /api/reports/zone-stats ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 if (method === 'GET' && pathname === '/api/reports/zone-stats') {
   const user = authenticate(req, res)
   if (!user) return
@@ -1606,7 +1606,7 @@ if (method === 'GET' && pathname === '/api/reports/zone-stats') {
   }
 }
 
-// ── GET /api/reports/departments (filter dropdown) ────────────────────────
+// ΓöÇΓöÇ GET /api/reports/departments (filter dropdown) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 if (method === 'GET' && pathname === '/api/reports/departments') {
   const user = authenticate(req, res)
   if (!user) return
@@ -1619,7 +1619,7 @@ if (method === 'GET' && pathname === '/api/reports/departments') {
   }
 }
 
-// ── GET /api/reports/post-offices (filter dropdown) ───────────────────────
+// ΓöÇΓöÇ GET /api/reports/post-offices (filter dropdown) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 if (method === 'GET' && pathname === '/api/reports/post-offices') {
   const user = authenticate(req, res)
   if (!user) return
@@ -1632,7 +1632,7 @@ if (method === 'GET' && pathname === '/api/reports/post-offices') {
   }
 }
 
-// ── GET /api/packages/full
+// ΓöÇΓöÇ GET /api/packages/full
 
 if (method === 'GET' && pathname === '/api/packages/full') {
   const user = authenticate(req, res)
@@ -1721,7 +1721,7 @@ if (method === 'GET' && pathname === '/api/packages/full') {
 }
 
 
-  // ── GET /api/status-codes ────────────────────────────────────────────────
+  // ΓöÇΓöÇ GET /api/status-codes ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
   if (method === 'GET' && pathname === '/api/status-codes') {
     const user = authenticate(req, res)
     if (!user) return
@@ -1737,7 +1737,7 @@ if (method === 'GET' && pathname === '/api/packages/full') {
     }
   }
 
-  // ── POST /api/tickets (PUBLIC submit) ────────────────────────────────────
+  // ΓöÇΓöÇ POST /api/tickets (PUBLIC submit) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
   if (method === 'POST' && pathname === '/api/tickets') {
     const user = authenticate(req, res)
     if (!user) return
@@ -1786,7 +1786,7 @@ if (method === 'GET' && pathname === '/api/packages/full') {
   }
 
   
-  // ── GET /api/customers (employee+admin) ──────────────────────────────────
+  // ΓöÇΓöÇ GET /api/customers (employee+admin) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
   if (method === 'GET' && pathname === '/api/customers') {
     const user = authenticate(req, res)
     if (!user) return
@@ -1799,7 +1799,7 @@ if (method === 'GET' && pathname === '/api/packages/full') {
     return
   }
 
-  // ── GET /api/customers/:id/packages (employee+admin) ─────────────────────
+  // ΓöÇΓöÇ GET /api/customers/:id/packages (employee+admin) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
   {
     const m = matchPath('/api/customers/:id/packages', pathname)
     // console.log("at customer/packages")
@@ -1816,7 +1816,7 @@ if (method === 'GET' && pathname === '/api/packages/full') {
     }
   }
 
-  // ── GET /api/shipments (employee+admin) ──────────────────────────────────
+  // ΓöÇΓöÇ GET /api/shipments (employee+admin) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
   if (method === 'GET' && pathname === '/api/shipments') {
     const user = authenticate(req, res)
     if (!user) return
@@ -1831,7 +1831,7 @@ if (method === 'GET' && pathname === '/api/packages/full') {
     return
   }
 
-  // ── GET /api/shipment/:id/packages (employee+admin) ─────────────────────
+  // ΓöÇΓöÇ GET /api/shipment/:id/packages (employee+admin) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
   {
     const m = matchPath('/api/shipment/:id/packages', pathname)
     // console.log("at customer/packages")
@@ -1850,7 +1850,7 @@ if (method === 'GET' && pathname === '/api/packages/full') {
     }
   }
 
-  // ── GET /api/packages/:tracking_number/tracking (employee+admin) ─────────
+  // ΓöÇΓöÇ GET /api/packages/:tracking_number/tracking (employee+admin) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
   {
     const m = matchPath('/api/packages/:tracking_number/tracking', pathname)
     if (method === 'GET' && m.matched) {
@@ -1866,7 +1866,7 @@ if (method === 'GET' && pathname === '/api/packages/full') {
     }
   }
 
-  // ── GET /api/customer/lookup (employee+admin) ────────────────────────────
+  // ΓöÇΓöÇ GET /api/customer/lookup (employee+admin) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
   if (method === 'GET' && pathname === '/api/customer/lookup') {
     const user = authenticate(req, res)
     if (!user) return
@@ -1900,7 +1900,7 @@ if (method === 'GET' && pathname === '/api/packages/full') {
   // ========================================
   
 
-  // ── GET /api/employee/tickets_comp (employee+admin) ──────────────────────
+  // ΓöÇΓöÇ GET /api/employee/tickets_comp (employee+admin) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
   if (method === 'GET' && pathname === '/api/employee/tickets_comp') {
     const user = authenticate(req, res)
     if (!user) return
@@ -1913,7 +1913,7 @@ if (method === 'GET' && pathname === '/api/packages/full') {
     }
   }
 
-  // ── GET /api/employee/:employee_id/tickets (employee+admin) ──────────────
+  // ΓöÇΓöÇ GET /api/employee/:employee_id/tickets (employee+admin) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
   // {
     const m = matchPath('/api/employee/:employee_id/tickets', pathname)
     if (method === 'GET' && m.matched) {
@@ -1930,7 +1930,7 @@ if (method === 'GET' && pathname === '/api/packages/full') {
   // }
 
 
-  // ── GET /api/employee/weeklyTickets ─────────────────────────────────────
+  // ΓöÇΓöÇ GET /api/employee/weeklyTickets ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
   if (method === 'GET' && pathname === '/api/employee/weeklyTickets') {
     const user = authenticate(req, res)
     if (!user) return
@@ -1944,7 +1944,7 @@ if (method === 'GET' && pathname === '/api/packages/full') {
     
   }
  
-  // ── GET /api/employee/net-tickets ────────────────────────────────────────
+  // ΓöÇΓöÇ GET /api/employee/net-tickets ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
   if (method === 'GET' && pathname === '/api/employee/net-tickets') {
     const user = authenticate(req, res)
     if (!user) return
@@ -1957,7 +1957,7 @@ if (method === 'GET' && pathname === '/api/packages/full') {
     }
   }
  
-  // ── GET /api/employee/week-net-tickets ───────────────────────────────────
+  // ΓöÇΓöÇ GET /api/employee/week-net-tickets ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
   if (method === 'GET' && pathname === '/api/employee/week-net-tickets') {
     const user = authenticate(req, res)
     if (!user) return
@@ -1970,7 +1970,7 @@ if (method === 'GET' && pathname === '/api/packages/full') {
     }
   }
  
-  // ── GET /api/employee/tickets-by-issue ───────────────────────────────────
+  // ΓöÇΓöÇ GET /api/employee/tickets-by-issue ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
   if (method === 'GET' && pathname === '/api/employee/tickets-by-issue') {
     const user = authenticate(req, res)
     if (!user) return
@@ -1983,7 +1983,7 @@ if (method === 'GET' && pathname === '/api/packages/full') {
     }
   }
 
-  // ── GET /api/support-tickets (employee+admin) ────────────────────────────
+  // ΓöÇΓöÇ GET /api/support-tickets (employee+admin) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
   if (method === 'GET' && pathname === '/api/support-tickets') {
     const user = authenticate(req, res)
     if (!user) return
@@ -2009,7 +2009,7 @@ if (method === 'GET' && pathname === '/api/packages/full') {
     }
   }
 
-  // ── PUT /api/support-tickets/:id (employee+admin) ────────────────────────
+  // ΓöÇΓöÇ PUT /api/support-tickets/:id (employee+admin) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
   {
     const m = matchPath('/api/support-tickets/:id', pathname)
     if (method === 'PUT' && m.matched) {
@@ -2036,7 +2036,7 @@ if (method === 'GET' && pathname === '/api/packages/full') {
     }
   }
 
-    // ── POST /api/support-tickets ────────────────────────────────────────────
+    // ΓöÇΓöÇ POST /api/support-tickets ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
   if (method === 'POST' && pathname === '/api/support-tickets') {
     const { User_ID, Package_ID, Assigned_Employee_ID, Issue_Type, Description } = await getBody(req)
     if (!User_ID || !Package_ID || !Assigned_Employee_ID || Issue_Type === undefined || !Description) {
@@ -2413,21 +2413,21 @@ if (method === 'GET' && pathname === '/api/packages/full') {
 }
 
 
-// ── Start ─────────────────────────────────────────────────────────────────
+// ΓöÇΓöÇ Start ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 console.log('Connecting to Database:', process.env.MYSQL_DATABASE)
 
 pool
   .getConnection()
   .then(async (c) => {
-    console.log('✅ MySQL connected')
+    console.log('Γ£à MySQL connected')
     const [results] = await c.query('SELECT CURRENT_USER() AS user')
     console.log('Connected as:', results[0].user)
     c.release()
   })
-  .catch((e) => console.error('❌ MySQL connection failed:', e))
+  .catch((e) => console.error('Γ¥î MySQL connection failed:', e))
 
 console.log('[api] admin routes: GET /api/admin/employees, PATCH /api/admin/employees/:employeeId/deactivate')
 const PORT = process.env.PORT || 5000
 http.createServer(router).listen(PORT, '0.0.0.0', () => 
-  console.log(`🚀 Server running on http://localhost:${PORT}`)
+  console.log(`≡ƒÜÇ Server running on http://localhost:${PORT}`)
 )

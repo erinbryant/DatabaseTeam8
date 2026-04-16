@@ -8,23 +8,19 @@ async function ensureLostStatusColumn(pool) {
     await pool.query(
       `ALTER TABLE package 
        ADD COLUMN Lost_Status ENUM('active', 'lost', 'notified') DEFAULT 'active' AFTER Status_Code`
-    );
-    console.log('✅ Lost_Status column added to package table');
+    )
+    console.log('✅ Lost_Status column added to package table')
   } catch (err) {
-    // Column likely already exists
     if (!err.message.includes('Duplicate column')) {
-      console.warn('⚠️ Lost_Status column check/create failed:', err.message);
+      console.warn('⚠️ Lost_Status column check/create failed:', err.message)
     }
   }
-  
+
   try {
-    await pool.query(
-      `CREATE INDEX idx_lost_status ON package (Lost_Status, Recipient_ID)`
-    );
+    await pool.query(`CREATE INDEX idx_lost_status ON package (Lost_Status, Recipient_ID)`)
   } catch (err) {
-    // Index might already exist
     if (!err.message.includes('Duplicate key')) {
-      console.warn('⚠️ Index creation warning:', err.message);
+      console.warn('⚠️ Index creation warning:', err.message)
     }
   }
 }
@@ -37,15 +33,15 @@ async function getLostPackagesByCustomer(pool, customerId) {
           p.Status_Code,
           p.Date_Updated,
           p.Date_Created
-       FROM package p
-       WHERE p.Recipient_ID = ?
+        FROM package p 
+        WHERE p.Recipient_ID = ?
          AND p.Status_Code = 7`,
       [customerId]
-    );
-    return rows;
+    )
+    return rows
   } catch (err) {
-    console.error('Error fetching lost packages:', err.message);
-    return [];
+    console.error('Error fetching lost packages:', err.message)
+    return []
   }
 }
 
@@ -57,11 +53,11 @@ async function dismissLostPackage(pool, trackingNumber) {
        WHERE Tracking_Number = ?
          AND Lost_Status = 'lost'`,
       [trackingNumber]
-    );
-    return result;
+    )
+    return result
   } catch (err) {
-    console.error('Error dismissing lost package:', err.message);
-    return { affectedRows: 0 };
+    console.error('Error dismissing lost package:', err.message)
+    return { affectedRows: 0 }
   }
 }
 
@@ -69,4 +65,4 @@ module.exports = {
   ensureLostStatusColumn,
   getLostPackagesByCustomer,
   dismissLostPackage,
-};
+}

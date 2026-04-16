@@ -4,6 +4,7 @@ import './css/home.css'
 import './css/packages.css'
 import './css/package_for_pickup.css'
 import { authFetch } from '../authFetch'
+import EmployeeLayout from './EmployeeLayout'
 
 const API_BASE =
   import.meta.env.VITE_API_URL != null && String(import.meta.env.VITE_API_URL).trim() !== ''
@@ -242,6 +243,7 @@ export default function PackageForPickup() {
   }
 
   return (
+    <EmployeeLayout>
     <div className="pickup-page inventory-page">
       <header className="site-header">
         <div className="header-inner">
@@ -461,5 +463,6 @@ export default function PackageForPickup() {
         )}
       </main>
     </div>
+    </EmployeeLayout>
   )
 }

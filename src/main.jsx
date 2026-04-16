@@ -37,8 +37,8 @@ import Employee_SubmitTicket from './pages/Employee_SubmitTicket.jsx'
 import TicketsReport from './pages/tickets_report.jsx'
 import RevenueReport from './pages/Revenue_Report.jsx'
 import EmployeesPage from './pages/employees.jsx'
+import OfficeSatisfactionReport from './pages/office_satisfaction_report.jsx'
 
-import EmployeePerformanceReport from './pages/EmployeePerformanceReport'
 
 // global styles
 import './pages/css/index.css'
@@ -53,8 +53,8 @@ function App() {
         <Route path="/register" element={<Register />} />
 
         {/* Data report testing*/}
-
-
+        <Route path="/revenue-report" element={<RequireEmployee><RevenueReport /></RequireEmployee>} />
+        <Route path="/office-satisfaction" element={<RequireEmployee><OfficeSatisfactionReport /></RequireEmployee>} />
         <Route path="/tickets_employees" element={<RequireEmployee><TicketsReport /></RequireEmployee>} />
         <Route path="/revenue-report" element={<RequireEmployee><RevenueReport /></RequireEmployee>} />
 
@@ -73,8 +73,7 @@ function App() {
         <Route path="/customers" element={<RequireEmployee><AllCustomers /></RequireEmployee>} />
         <Route path="/admin-register" element={<RequireAdmin><AdminRegister /></RequireAdmin>} />
         <Route path="/profile" element={<RequireEmployee><Profile /></RequireEmployee>} />
-        <Route path="/employees" element={<RequireEmployee><EmployeesPage /></RequireEmployee>} />
-        <Route path="/reports/employee-performance" element={<RequireEmployee><EmployeePerformanceReport /></RequireEmployee>} />
+        <Route path="/employees" element={<RequireAdmin><EmployeesPage /></RequireAdmin>} />
         <Route path ="/employees/all-shipments" element = {<RequireEmployee><AllShipments/></RequireEmployee>}/>
 
         {/* Shared / Authenticated */}

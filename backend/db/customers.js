@@ -150,6 +150,56 @@ const [addrRows] = await conn.query(
   return addressId
 }
 
+async function resolveCustomer(conn, body, hash, addressId, initialPassword) {
+  // 1. Check if customer already exists
+  const [existing] = await conn.query(
+    `SELECT Customer_ID
+     FROM customer
+     WHERE First_Name = ?
+       AND Last_Name = ?
+       AND Address_ID = ?
+     LIMIT 1`,
+    [
+      String(body.first_name).trim(),
+      String(body.last_name).trim(),
+      addressId
+    ]
+  );
+
+  if (existing.length > 0) {
+    return {
+      customerId: existing[0].Customer_ID,
+      initialPassword: null, // already exists, so no new password
+      existed: true
+    };
+  }
+
+  // 2. Otherwise insert new customer
+  const [result] = await conn.query(
+    `INSERT INTO customer (
+      First_Name, Middle_Name, Last_Name,
+      Password_Hash, Email_Address, Phone_Number,
+      Address_ID
+    ) VALUES (?,?,?,?,?,?,?)`,
+    [
+      String(body.first_name).trim(),
+      null,
+      String(body.last_name).trim(),
+      hash,
+      String(body.email).trim().toLowerCase(),
+      body.phone_number || null,
+      addressId
+    ]
+  );
+
+  return {
+    customerId: result.insertId,
+    initialPassword,
+    existed: false
+  };
+}
+
+
 async function registerCustomer(pool, rawBody) {
   const body = { ...rawBody }
   delete body.customer_id
@@ -262,119 +312,98 @@ async function getCustomerByEmail(pool, email) {
 
 const EMPLOYEE_CREATED_CUSTOMER_PASSWORD = 'customer123'
 
-async function resolveAddress(conn, { house_number, street, city, state, zip_code, apt_number, country }) {
-  const [addrRows] = await conn.query(
-    `SELECT Address_ID FROM address
-     WHERE House_Number = ? AND Street = ? AND City = ? AND State = ?
-       AND Zip_Code = ?
-       AND (Apt_Number <=> ?)
+async function resolveParty(conn, {
+  first_name, last_name, email, phone_number,
+  house_number, street, city, state, zip_code, apt_number, country
+}) {
+  // 1. Try to find by email
+  if (email && email.trim()) {
+    const [byEmail] = await conn.query(
+      `SELECT Customer_ID, Address_ID FROM customer WHERE LOWER(Email_Address) = ? AND is_Active = 0 LIMIT 1`,
+      [email.trim().toLowerCase()]
+    )
+    if (byEmail.length) {
+      return { customerId: byEmail[0].Customer_ID, addressId: byEmail[0].Address_ID }
+    }
+  }
+
+  // 2. Try to find by name among customers created without a real email
+  const [byName] = await conn.query(
+    `SELECT Customer_ID, Address_ID FROM customer
+     WHERE LOWER(First_Name) = ? AND LOWER(Last_Name) = ?
+       AND Email_Address LIKE 'noemail\\_%@placeholder.invalid'
      LIMIT 1`,
-    [
-      house_number,
-      street,
-      city,
-      state,
-      String(zip_code).replace(/\D/g, '').slice(0, 5),
-      apt_number || null
-    ]
+    [first_name.trim().toLowerCase(), last_name.trim().toLowerCase()]
   )
-
-  if (addrRows.length) {
-    return addrRows[0].Address_ID  // ← already exists, return early
+  if (byName.length) {
+    return { customerId: byName[0].Customer_ID, addressId: byName[0].Address_ID }
   }
 
-  const [addrRes] = await conn.query(
-    `INSERT INTO address 
-     (House_Number, Street, City, State, Zip_Code, Apt_Number, Country)
-     VALUES (?,?,?,?,?,?,?)`,
-    [
-      String(house_number).slice(0, 10),
-      String(street).slice(0, 100),
-      String(city).slice(0, 100),
-      String(state).slice(0, 50),
-      String(zip_code).replace(/\D/g, '').slice(0, 5),
-      apt_number || null,
-      (country || 'USA').toString().slice(0, 50),
-    ]
-  )
+  // 3. Neither found — resolve/create address then create customer
+  const addressId = await resolveAddress(conn, { house_number, street, city, state, zip_code, apt_number, country })
 
-  if (!addrRes.insertId) {
-    throw new Error("Address insert failed — no insertId returned")
-  }
-
-  return addrRes.insertId
-}
-
-async function resolveCustomer(conn, body, hash, addressId, initialPassword) {
-  // 1. Check if customer already exists
-  const [existing] = await conn.query(
-    `SELECT Customer_ID
-     FROM customer
-     WHERE First_Name = ?
-       AND Last_Name = ?
-       AND Address_ID = ?
-     LIMIT 1`,
-    [
-      String(body.first_name).trim(),
-      String(body.last_name).trim(),
-      addressId
-    ]
-  );
-
-  if (existing.length > 0) {
-    return {
-      customerId: existing[0].Customer_ID,
-      initialPassword: null, // already exists, so no new password
-      existed: true
-    };
-  }
-
-  // 2. Otherwise insert new customer
+  const hash = await bcrypt.hash(EMPLOYEE_CREATED_CUSTOMER_PASSWORD, 10)
+  const hasEmail = email && email.trim()
+  const normalizedEmail = hasEmail
+    ? email.trim().toLowerCase()
+    : `noemail_${Date.now()}_${Math.random().toString(36).slice(2)}@placeholder.invalid`
   const [result] = await conn.query(
-    `INSERT INTO customer (
-      First_Name, Middle_Name, Last_Name,
-      Password_Hash, Email_Address, Phone_Number,
-      Address_ID
-    ) VALUES (?,?,?,?,?,?,?)`,
+    `INSERT INTO customer (First_Name, Last_Name, Password_Hash, Email_Address, Phone_Number, Address_ID)
+     VALUES (?, ?, ?, ?, ?, ?)`,
     [
-      String(body.first_name).trim(),
-      null,
-      String(body.last_name).trim(),
+      String(first_name).trim().slice(0, 30),
+      String(last_name).trim().slice(0, 30),
       hash,
-      String(body.email).trim().toLowerCase(),
-      body.phone_number || null,
+      normalizedEmail,
+      phone_number || null,
       addressId
     ]
-  );
+  )
 
-  return {
-    customerId: result.insertId,
-    initialPassword,
-    existed: false
-  };
+  return { customerId: result.insertId, addressId }
 }
 
-
-async function createCustomerMinimal(pool, body) {
+async function createCustomerMinimal(conn, body) {
   const initialPassword = EMPLOYEE_CREATED_CUSTOMER_PASSWORD
   const hash = await bcrypt.hash(initialPassword, 10)
 
-  const addressId = await resolveAddress(conn, body);
-  
-  // const addressId = addrResult.insertId
+  const zip5 =
+    String(body.zip_first3 || '')
+      .replace(/\D/g, '')
+      .slice(0, 3) +
+    String(body.zip_last2 || '')
+      .replace(/\D/g, '')
+      .slice(0, 2)
+
+  const addressId = await resolveAddress(conn, {
+    house_number: body.house_number,
+    street: body.street,
+    city: body.city,
+    state: body.state,
+    zip_code: zip5,
+    apt_number: body.apt_number,
+    country: body.country,
+  })
+
+  const rcBody = {
+    first_name: body.first_name,
+    last_name: body.last_name,
+    email: body.email,
+    phone_number: body.phone_number,
+  }
 
   const { customerId, existed } = await resolveCustomer(
     conn,
-    body,
+    rcBody,
     hash,
     addressId,
     initialPassword
-  );
+  )
 
   return {
     customerId,
-    initialPassword: existed ? null : initialPassword
-};
+    initialPassword: existed ? null : initialPassword,
+  }
 }
 
 module.exports = {
@@ -383,7 +412,9 @@ module.exports = {
   getCustomerPackages,
   registerCustomer,
   getCustomerByEmail,
-  // createCustomerMinimal,
+  createCustomerMinimal,
+  resolveAddress,
+  resolveCustomer,
+  resolveParty,
   updateCustomerStatus,
-   resolveAddress,
 }

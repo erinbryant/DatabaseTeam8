@@ -6,6 +6,7 @@ import './css/inventory.css'
 import './css/package_list.css'
 import skyline from '../assets/houston-skyline.jpeg'
 import { authFetch } from '../authFetch'
+import EmployeeLayout from './EmployeeLayout'
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
@@ -21,35 +22,21 @@ const ZONES = [
   { value: '9', label: 'Zone 9 — Territories' },
 ]
 
-// function getStatusBadgeClass(status) {
-//   const s = (status || '').toLowerCase()
-//   if (s.includes('deliver')) return 'status-delivered'
-//   if (s.includes('picked up')) return 'status-delivered'
-//   if (s.includes('disposed')) return 'status-delivered'
-//   if (s.includes('at office')) return 'status-pending'
-//   if (s.includes('transit') || s.includes('shipping')) return 'status-transit'
-//   if (s.includes('pending') || s.includes('processing')) return 'status-pending'
-//   if (s.includes('delay') || s.includes('exception')) return 'status-delayed'
-//   if (s.includes('lost')) return 'status-lost'
-//   if (s.includes('return')) return 'status-return'
-//    return 'status-default'
-//}
-
 function statusBadgeStyle(status) {
   const s = (status || '').toLowerCase()
   if (s.includes('deliver') || s.includes('picked up'))
-    return { background: '#dcfce7', color: '#15803d', borderRadius: 20, padding: '3px 10px', fontWeight: 700, fontSize: '0.8rem' }
+    return { background: '#dcfce7', color: '#1a1f4e', borderRadius: 20, padding: '3px 10px', fontWeight: 700, fontSize: '0.8rem' }
   if (s.includes('transit') || s.includes('out for'))
-    return { background: '#dbeafe', color: '#1d4ed8', borderRadius: 20, padding: '3px 10px', fontWeight: 700, fontSize: '0.8rem' }
+    return { background: '#dbeafe', color: '#1a1f4e', borderRadius: 20, padding: '3px 10px', fontWeight: 700, fontSize: '0.8rem' }
   if (s.includes('pending'))
-    return { background: '#fef9c3', color: '#854d0e', borderRadius: 20, padding: '3px 10px', fontWeight: 700, fontSize: '0.8rem' }
+    return { background: '#fef9c3', color: '#1a1f4e', borderRadius: 20, padding: '3px 10px', fontWeight: 700, fontSize: '0.8rem' }
   if (s.includes('delay'))
-    return { background: '#ffedd5', color: '#c2410c', borderRadius: 20, padding: '3px 10px', fontWeight: 700, fontSize: '0.8rem' }
+    return { background: '#ffedd5', color: '#1a1f4e', borderRadius: 20, padding: '3px 10px', fontWeight: 700, fontSize: '0.8rem' }
   if (s.includes('lost'))
-    return { background: '#fee2e2', color: '#991b1b', borderRadius: 20, padding: '3px 10px', fontWeight: 700, fontSize: '0.8rem' }
+    return { background: '#fee2e2', color: '#1a1f4e', borderRadius: 20, padding: '3px 10px', fontWeight: 700, fontSize: '0.8rem' }
   if (s.includes('return'))
-    return { background: '#f3e8ff', color: '#7e22ce', borderRadius: 20, padding: '3px 10px', fontWeight: 700, fontSize: '0.8rem' }
-  return { background: '#f1f5f9', color: '#475569', borderRadius: 20, padding: '3px 10px', fontWeight: 700, fontSize: '0.8rem' }
+    return { background: '#f3e8ff', color: '#1a1f4e', borderRadius: 20, padding: '3px 10px', fontWeight: 700, fontSize: '0.8rem' }
+  return { background: '#f1f5f9', color: '#1a1f4e', borderRadius: 20, padding: '3px 10px', fontWeight: 700, fontSize: '0.8rem' }
 }
 
 function PackageTable({ title, packages, expanded, onToggle, statusCodes, onStatusChange, statusUpdating, color = '#1d4ed8', collapsible = false }) {
@@ -88,6 +75,7 @@ function PackageTable({ title, packages, expanded, onToggle, statusCodes, onStat
               </thead>
               <tbody>
                 {packages.map((p, i) => (
+                  
                   <Fragment key={p.Tracking_Number}>
                     <tr style={{ background: i % 2 === 0 ? '#fff' : '#fafbfc', borderBottom: '1px solid #f1f5f9' }}>
                       <td style={{ padding: '10px 14px' }}>
@@ -108,7 +96,7 @@ function PackageTable({ title, packages, expanded, onToggle, statusCodes, onStat
                       <td style={{ padding: '10px 14px', color: '#374151' }}>Zone {p.Zone}</td>
                       <td style={{ padding: '10px 14px', fontWeight: 700, color: '#1e40af' }}>${parseFloat(p.Price || 0).toFixed(2)}</td>
                       <td style={{ padding: '10px 14px' }}>
-                        {statusCodes.length > 0 && p.Delivery_Status_Code != null && !p.Is_Final_Status ? (
+                        {statusCodes.length > 0 && p.Delivery_Status_Code != null && !p.Is_Final_Status  ? (
                           <select
                             value={String(p.Delivery_Status_Code)}
                             onChange={e => onStatusChange(p.Tracking_Number, e.target.value)}
@@ -211,6 +199,8 @@ export default function AllPackages() {
       authFetch(`${API_BASE}/api/reports/post-offices`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()).catch(() => []),
     ])
     .then(([pkgs, codes, offices]) => {
+      console.log('PACKAGES:', pkgs)
+  console.log('STATUS CODES:', codes)
       setPackages(Array.isArray(pkgs) ? pkgs : [])
       setStatusCodes(Array.isArray(codes) ? codes : [])
       setPostOffices(Array.isArray(offices) ? offices : [])
@@ -290,20 +280,8 @@ const filtered = packages.filter(p => {
   const commonProps = { expanded, onToggle: toggleExpand, statusCodes, onStatusChange: handleStatusChange, statusUpdating }
 
   return (
+    <EmployeeLayout>
     <div className="inventory-page-flat package-list-page">
-      <header className="site-header">
-        <div className="header-inner">
-          <Link className="logo" to="/">National Postal Service</Link>
-          <nav className="top-nav">
-            <a href="#" onClick={(e) => { e.preventDefault(); navigate('/employee_home') }}>Employee Home</a>
-            <a href="#" onClick={(e) => { e.preventDefault(); navigate('/price_calculator') }}>Calculator</a>
-            <a href="#" onClick={(e) => { e.preventDefault(); navigate('/package_tracking') }}>Track a Package</a>
-            <a href="#" onClick={(e) => { e.preventDefault(); navigate('/profile') }}>Profile</a>
-            <a href="#" onClick={handleLogout}>Logout</a>
-          </nav>
-        </div>
-      </header>
-
       <main>
         <div className="inventory-hero">
           <img src={skyline} alt="" />
@@ -324,12 +302,12 @@ const filtered = packages.filter(p => {
           {!loading && (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 12, marginBottom: 24 }}>
               {[
-                { label: 'Total',       value: packages.length,      color: '#374151' },
-                { label: 'Active',      value: active.length,        color: '#1d4ed8' },
-                { label: 'Completed',   value: completed.length,     color: '#059669' },
-                { label: 'Lost/Return', value: lostReturned.length,  color: '#dc2626' },
-                { label: 'In Transit',  value: packages.filter(p => (p.Status_Name||'').toLowerCase().includes('transit')).length, color: '#0891b2' },
-                { label: 'Pending',     value: packages.filter(p => (p.Status_Name||'').toLowerCase().includes('pending')).length, color: '#d97706' },
+                { label: 'Total',       value: packages.length,      color: '#1a1f4e' },
+                { label: 'Active',      value: active.length,        color: '#1a1f4e' },
+                { label: 'Completed',   value: completed.length,     color: '#1a1f4e' },
+                { label: 'Lost/Return', value: lostReturned.length,  color: '#1a1f4e' },
+                { label: 'In Transit',  value: packages.filter(p => (p.Status_Name||'').toLowerCase().includes('transit')).length, color: '#1a1f4e' },
+                { label: 'Pending',     value: packages.filter(p => (p.Status_Name||'').toLowerCase().includes('pending')).length, color: '#1a1f4e' },
               ].map(s => (
                 <div key={s.label} style={{ background: '#fff', border: '1px solid #dbe4ef', borderRadius: 12, padding: '14px 16px', boxShadow: '0 2px 6px rgba(15,23,42,0.04)' }}>
                   <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{s.label}</div>
@@ -427,24 +405,14 @@ const filtered = packages.filter(p => {
             <div style={{ textAlign: 'center', padding: 48, color: '#64748b' }}>Loading packages…</div>
           ) : (
             <>
-              <PackageTable title="🚚 Active Packages"    packages={active}       color="#1d4ed8" {...commonProps} />
-              <PackageTable title="✅ Completed"          packages={completed}    color="#059669" collapsible {...commonProps} />
-              <PackageTable title="⚠️ Lost & Returned"   packages={lostReturned} color="#dc2626" collapsible {...commonProps} />
+              <PackageTable title="Active Packages"    packages={active}       color="#1d4ed8" {...commonProps} />
+              <PackageTable title="Completed"          packages={completed}    color="#059669" collapsible {...commonProps} />
+              <PackageTable title="Lost & Returned"   packages={lostReturned} color="#dc2626" collapsible {...commonProps} />
             </>
           )}
         </div>
       </main>
-
-      <footer className="site-footer">
-        <div className="footer-inner">
-          <span>© {new Date().getFullYear()} National Postal Service</span>
-          <span className="footer-links">
-            <a href="#">Privacy</a>
-            <a href="#">Terms</a>
-            <a href="#">Support</a>
-          </span>
-        </div>
-      </footer>
     </div>
+    </EmployeeLayout>
   )
 }

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import './css/EmployeeSupport.css'
 // import './css/home.css'
 import { authFetch } from '../authFetch'
+import EmployeeLayout from './EmployeeLayout'
 
 const STATUS_MAP = {
   0: { label: 'Open', color: '#dc2626', bg: '#fef2f2' },
@@ -118,14 +119,8 @@ export default function EmployeeSupport() {
 
   return (
     <>
+    <EmployeeLayout>
       <div className="es-root">
-        <nav className="es-nav">
-          
-          <span className="es-nav-brand">National Postal Service</span>
-          <Link to="/employee_home" className="es-nav-link">
-            Employee Home
-          </Link>
-        </nav>
 
 
         {/* Header */}
@@ -391,7 +386,9 @@ export default function EmployeeSupport() {
             </div>
           </div>
         </div>
+        
       )}
+      </EmployeeLayout>
     </>
   )
 }

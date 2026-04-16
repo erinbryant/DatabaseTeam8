@@ -13,7 +13,6 @@ async function runNodeDisposalSweep(pool) {
         OR REPLACE(LOWER(TRIM(Status_Name)), ' ', '') LIKE '%disposed%'
      LIMIT 1`
   )
-
   const disposed = disRows[0]?.c
   if (disposed == null) return
 
@@ -22,15 +21,10 @@ async function runNodeDisposalSweep(pool) {
     OR REPLACE(LOWER(TRIM(IFNULL(scn.Status_Name, ''))), ' ', '') LIKE '%atoffice%'
   )`
 
-  /* ─────────────────────────────────────────────
-     DISPOSE PACKAGE ONLY (NOT DELIVERY)
-  ───────────────────────────────────────────── */
   await pool.query(
     `UPDATE package p
-     INNER JOIN package_pickup pp 
-       ON pp.Tracking_Number = p.Tracking_Number
-     INNER JOIN status_code scn 
-       ON scn.Status_Code = p.Status_Code
+     INNER JOIN package_pickup pp ON pp.Tracking_Number = p.Tracking_Number
+     INNER JOIN status_code scn ON scn.Status_Code = p.Status_Code
      SET p.Status_Code = ?
      WHERE (TRIM(IFNULL(pp.Is_picked_Up, '')) = '0' OR pp.Is_picked_Up IS NULL)
        AND pp.Arrival_Time IS NOT NULL
@@ -39,17 +33,11 @@ async function runNodeDisposalSweep(pool) {
     [disposed]
   )
 
-  /* ─────────────────────────────────────────────
-     SHIPMENT DISPOSAL (UNCHANGED LOGIC)
-  ───────────────────────────────────────────── */
   await pool.query(
     `UPDATE shipment sh
-     INNER JOIN shipment_package sp 
-       ON sp.Shipment_ID = sh.Shipment_ID
-     INNER JOIN package_pickup pp 
-       ON pp.Tracking_Number = sp.Tracking_Number
-     INNER JOIN status_code scn 
-       ON scn.Status_Code = sh.Status_Code
+     INNER JOIN shipment_package sp ON sp.Shipment_ID = sh.Shipment_ID
+     INNER JOIN package_pickup pp ON pp.Tracking_Number = sp.Tracking_Number
+     INNER JOIN status_code scn ON scn.Status_Code = sh.Status_Code
      SET sh.Status_Code = ?
      WHERE (TRIM(IFNULL(pp.Is_picked_Up, '')) = '0' OR pp.Is_picked_Up IS NULL)
        AND pp.Arrival_Time IS NOT NULL
@@ -63,26 +51,18 @@ async function runDailyPackagePickupStorage(pool) {
   try {
     await pool.query('CALL sp_daily_package_pickup_storage()')
   } catch (e) {
-    if (
-      e.errno !== 1305 &&
-      !String(e.message || '').includes('does not exist')
-    ) {
+    if (e.errno !== 1305 && !String(e.message || '').includes('does not exist')) {
       throw e
     }
   }
-
   await runNodeDisposalSweep(pool)
 }
+
 function startPackagePickupStorageJob(pool, options = {}) {
   const intervalMs =
-    Number(options.intervalMs) > 0
-      ? Number(options.intervalMs)
-      : DEFAULT_INTERVAL_MS
-
+    Number(options.intervalMs) > 0 ? Number(options.intervalMs) : DEFAULT_INTERVAL_MS
   const runOnStart = options.runOnStart !== false
-
   let timer = null
-
   async function tick() {
     try {
       await runDailyPackagePickupStorage(pool)
@@ -90,15 +70,12 @@ function startPackagePickupStorageJob(pool, options = {}) {
       console.error('[package_pickup_storage_job]', err.message || err)
     }
   }
-
   if (runOnStart) {
     setImmediate(() => {
       tick()
     })
   }
-
   timer = setInterval(tick, intervalMs)
-
   return () => {
     if (timer) clearInterval(timer)
     timer = null

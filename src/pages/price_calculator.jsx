@@ -4,10 +4,12 @@ import PriceCalculatorForm from '../components/PriceCalculatorForm'
 import './css/home.css'
 import './css/price_calculator.css'
 import skyline from '../assets/houston-skyline.jpeg'
-import { authFetch } from '../authFetch'
+import EmployeeLayout from './EmployeeLayout'
 
 export default function PriceCalculator() {
-  const navigate = useNavigate()
+  const navigate  = useNavigate()
+  const userType  = localStorage.getItem('userType')
+  const isEmployee = userType === 'employee'
   const [loggedIn, setLoggedIn] = useState(!!localStorage.getItem('token'))
 
   useEffect(() => {
@@ -25,6 +27,26 @@ export default function PriceCalculator() {
     navigate('/')
   }
 
+  // ── Page content (shared between both layouts) ──────────────────────────
+  const content = (
+    <main>
+      <div className="price-calculator-hero">
+        <img src={skyline} alt="" />
+      </div>
+      <PriceCalculatorForm idPrefix="pc" />
+    </main>
+  )
+
+  // ── Employee: use shared layout with sidebar ────────────────────────────
+  if (isEmployee) {
+    return (
+      <EmployeeLayout>
+        {content}
+      </EmployeeLayout>
+    )
+  }
+
+  // ── Customer / logged out: use original header ──────────────────────────
   return (
     <div className="price-calculator-page">
       <header className="site-header">
@@ -33,37 +55,19 @@ export default function PriceCalculator() {
           <nav className="top-nav">
             {loggedIn ? (
               <>
-                {localStorage.getItem('userType') === 'customer' && (
-                  <>
-                  <a href="#" onClick={(e) => { e.preventDefault(); navigate('/customer_home') }}>Customer Home</a>
-                  <span className="nav-current" aria-current="page">Calculator</span>
-                  <a href="#" onClick={(e) => { e.preventDefault(); navigate('/customer_profile') }}>Profile</a>
-                  </>
-                )}
-                {localStorage.getItem('userType') === 'employee' && (
-                  <>
-                  <a href="#" onClick={(e) => { e.preventDefault(); navigate('/employee_home') }}>Employee Home</a>
-                  <span className="nav-current" aria-current="page">Calculator</span>
-                  <a href="#" onClick={(e) => { e.preventDefault(); navigate('/package_tracking') }}>Track a Package</a>
-                  <a href="#" onClick={(e) => { e.preventDefault(); navigate('/profile') }}>Profile</a>
-                  </>
-                )}
+                <a href="#" onClick={e => { e.preventDefault(); navigate('/customer_home') }}>Customer Home</a>
+                <span className="nav-current" aria-current="page">Calculator</span>
+                <a href="#" onClick={e => { e.preventDefault(); navigate('/customer_profile') }}>Profile</a>
                 <a href="#" onClick={handleLogout}>Logout</a>
               </>
             ) : (
-              <a href="#" onClick={(e) => { e.preventDefault(); navigate('/login') }}>Login</a>
+              <a href="#" onClick={e => { e.preventDefault(); navigate('/login') }}>Login</a>
             )}
           </nav>
         </div>
       </header>
 
-      <main>
-        <div className="price-calculator-hero">
-          <img src={skyline} alt="" />
-        </div>
-
-        <PriceCalculatorForm idPrefix="pc" />
-      </main>
+      {content}
 
       <footer className="site-footer">
         <div className="footer-inner">

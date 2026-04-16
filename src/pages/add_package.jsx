@@ -4,6 +4,8 @@ import './css/home.css'
 import './css/add_package.css'
 import skyline from '../assets/houston-skyline.jpeg'
 import { authFetch } from '../authFetch'
+import EmployeeLayout from './EmployeeLayout'
+
 
 const ZONES = [
   { value: '1', label: 'Zone 1 — 1 to 50 miles' },
@@ -363,20 +365,8 @@ export default function AddPackage() {
   }
 
   return (
+    <EmployeeLayout>
     <div className="add-package-page">
-      <header className="site-header">
-              <div className="header-inner">
-                <Link className="logo" to="/"> National Postal Service</Link>
-                <nav className="top-nav">
-                  <a href="#" onClick={(e) => { e.preventDefault(); navigate('/employee_home') }}>Employee Home</a>
-                  <a href="#" onClick={(e) => { e.preventDefault(); navigate('/price_calculator') }}>Calculator</a>
-                  <a href="#" onClick={(e) => { e.preventDefault(); navigate('/package_tracking') }}>Track a Package</a>
-                  <a href="#" onClick={(e) => { e.preventDefault(); navigate('/profile') }}>Profile</a>
-                  <a href="#" onClick={handleLogout}>Logout</a>
-                </nav>
-                  
-              </div>
-            </header>
 
       <main>
         <div className="price-calculator-hero">
@@ -788,14 +778,8 @@ export default function AddPackage() {
           {/* You can keep the remainder of your original component below this point if you'd like. */}
         </div>
       </main>
-
-      <footer className="site-footer">
-        <div className="footer-inner">
-          <div>© {new Date().getFullYear()} National Postal Service</div>
-        </div>
-      </footer>
     </div>
-
+    </EmployeeLayout>
 
   )
 }
