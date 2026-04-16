@@ -312,47 +312,110 @@ async function getCustomerByEmail(pool, email) {
 
 const EMPLOYEE_CREATED_CUSTOMER_PASSWORD = 'customer123'
 
-async function resolveAddress(conn, { house_number, street, city, state, zip_code, apt_number, country }) {
+async function resolveRecipient(conn, body) {
+  const {
+    first_name,
+    last_name,
+    email,
+    phone_number,
+
+    house_number,
+    street,
+    city,
+    state,
+    zip_code,
+    apt_number,
+    country
+  } = body
+
+  // --------------------------------------------------
+  // 1. FIND OR CREATE ADDRESS
+  // --------------------------------------------------
+  let addressId
+
   const [addrRows] = await conn.query(
-    `SELECT Address_ID FROM address
-     WHERE House_Number = ? AND Street = ? AND City = ? AND State = ?
-       AND Zip_Code = ?
-       AND (Apt_Number <=> ?)
+    `SELECT Address_ID
+     FROM address
+     WHERE house_number = ?
+       AND street = ?
+       AND city = ?
+       AND state = ?
+       AND zip_code = ?
+       AND country = ?
+       AND (apt_number = ? OR (apt_number IS NULL AND ? IS NULL))
      LIMIT 1`,
     [
       house_number,
       street,
       city,
       state,
-      String(zip_code).replace(/\D/g, '').slice(0, 5),
-      apt_number || null
+      zip_code,
+      country,
+      apt_number,
+      apt_number
     ]
   )
 
   if (addrRows.length) {
-    return addrRows[0].Address_ID  // ← already exists, return early
+    addressId = addrRows[0].Address_ID
+  } else {
+    const [insertAddr] = await conn.query(
+      `INSERT INTO address
+       (house_number, street, city, state, zip_code, apt_number, country)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [
+        house_number,
+        street,
+        city,
+        state,
+        zip_code,
+        apt_number,
+        country
+      ]
+    )
+
+    addressId = insertAddr.insertId
   }
 
-  const [addrRes] = await conn.query(
-    `INSERT INTO address 
-     (House_Number, Street, City, State, Zip_Code, Apt_Number, Country)
-     VALUES (?,?,?,?,?,?,?)`,
-    [
-      String(house_number).slice(0, 10),
-      String(street).slice(0, 100),
-      String(city).slice(0, 100),
-      String(state).slice(0, 50),
-      String(zip_code).replace(/\D/g, '').slice(0, 5),
-      apt_number || null,
-      (country || 'USA').toString().slice(0, 50),
-    ]
+  // --------------------------------------------------
+  // 2. FIND CUSTOMER
+  // --------------------------------------------------
+  let customerId
+
+  const [custRows] = await conn.query(
+    `SELECT Customer_ID
+     FROM customer
+     WHERE email = ?
+     LIMIT 1`,
+    [email]
   )
 
-  if (!addrRes.insertId) {
-    throw new Error("Address insert failed — no insertId returned")
+  if (custRows.length) {
+    customerId = custRows[0].Customer_ID
+  } else {
+    const [insertCust] = await conn.query(
+      `INSERT INTO customer
+       (first_name, last_name, email, phone_number, Address_ID)
+       VALUES (?, ?, ?, ?, ?)`,
+      [
+        first_name,
+        last_name,
+        email,
+        phone_number,
+        addressId
+      ]
+    )
+
+    customerId = insertCust.insertId
   }
 
-  return addrRes.insertId
+  // --------------------------------------------------
+  // 3. RETURN GUARANTEED RESULT
+  // --------------------------------------------------
+  return {
+    customerId,
+    addressId
+  }
 }
 
 async function resolveCustomer(conn, body, hash, addressId, initialPassword) {
@@ -405,26 +468,85 @@ async function resolveCustomer(conn, body, hash, addressId, initialPassword) {
 }
 
 
+async function resolveParty(conn, {
+  first_name, last_name, email, phone_number,
+  house_number, street, city, state, zip_code, apt_number, country
+}) {
+  // 1. Try to find by email
+  if (email && email.trim()) {
+    const [byEmail] = await conn.query(
+      `SELECT Customer_ID, Address_ID FROM customer WHERE LOWER(Email_Address) = ? AND is_Active = 0 LIMIT 1`,
+      [email.trim().toLowerCase()]
+    )
+    if (byEmail.length) {
+      return { customerId: byEmail[0].Customer_ID, addressId: byEmail[0].Address_ID }
+    }
+  }
+
+  // 2. Try to find by name among customers created without a real email
+  const [byName] = await conn.query(
+    `SELECT Customer_ID, Address_ID FROM customer
+     WHERE LOWER(First_Name) = ? AND LOWER(Last_Name) = ?
+       AND Email_Address LIKE 'noemail\\_%@placeholder.invalid'
+     LIMIT 1`,
+    [first_name.trim().toLowerCase(), last_name.trim().toLowerCase()]
+  )
+  if (byName.length) {
+    return { customerId: byName[0].Customer_ID, addressId: byName[0].Address_ID }
+  }
+
+  // 3. Neither found — resolve/create address then create customer
+  const addressId = await resolveAddress(conn, { house_number, street, city, state, zip_code, apt_number, country })
+
+  const hash = await bcrypt.hash(EMPLOYEE_CREATED_CUSTOMER_PASSWORD, 10)
+  const hasEmail = email && email.trim()
+  const normalizedEmail = hasEmail
+    ? email.trim().toLowerCase()
+    : `noemail_${Date.now()}_${Math.random().toString(36).slice(2)}@placeholder.invalid`
+  const [result] = await conn.query(
+    `INSERT INTO customer (First_Name, Last_Name, Password_Hash, Email_Address, Phone_Number, Address_ID)
+     VALUES (?, ?, ?, ?, ?, ?)`,
+    [
+      String(first_name).trim().slice(0, 30),
+      String(last_name).trim().slice(0, 30),
+      hash,
+      normalizedEmail,
+      phone_number || null,
+      addressId
+    ]
+  )
+
+  return { customerId: result.insertId, addressId }
+}
+
 async function createCustomerMinimal(pool, body) {
   const initialPassword = EMPLOYEE_CREATED_CUSTOMER_PASSWORD
   const hash = await bcrypt.hash(initialPassword, 10)
 
-  const addressId = await resolveAddress(conn, body);
-  
-  // const addressId = addrResult.insertId
+  // 1. Resolve address inside here
+  const addressId = await resolveAddress(pool, {
+    house_number: body.house_number,
+    street: body.street,
+    city: body.city,
+    state: body.state,
+    zip_code: body.zip_code,
+    apt_number: body.apt_number,
+    country: body.country
+  })
 
+  // 2. Resolve or create customer using that address
   const { customerId, existed } = await resolveCustomer(
-    conn,
+    pool,
     body,
     hash,
     addressId,
     initialPassword
-  );
+  )
 
   return {
     customerId,
     initialPassword: existed ? null : initialPassword
-};
+  }
 }
 
 module.exports = {
@@ -436,6 +558,6 @@ module.exports = {
   createCustomerMinimal,
   resolveAddress,
   resolveCustomer,
+  resolveParty,
   updateCustomerStatus,
-   resolveAddress,
 }

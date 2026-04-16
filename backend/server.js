@@ -934,6 +934,7 @@ async function router(req, res) {
     zone,
     excess_fee,
     dim_x, dim_y, dim_z,
+    sender_phone, recipient_phone,
   } = b
 
   const pt = normalizePackageTypeName(package_type)
@@ -1000,75 +1001,44 @@ async function router(req, res) {
     await conn.beginTransaction()
 
     // ── Sender ──
-    let senderId = (await customerDB.getCustomerByEmail(conn, senderEmail))?.Customer_ID
-    
-    let senderAddId
-    
-    if (!senderId) {
-      senderAddId = await customerDB.resolveAddress(conn,{
-        house_number: sender_house_number,
-        street:       sender_street,
-        city:         sender_city,
-        state:        sender_state,
-        zip_code:   sender_zip_code,
-        apt_number:   sender_apt_number,
-        country:      sender_country
-      })
-      const created = await customerDB.createCustomerMinimal(conn, {
-        first_name:   sender_first_name,
-        last_name:    sender_last_name,
-        email:        senderEmail,
-        address_Id:   senderAddId,
-        phone_number: sender_phone,
-      })
-      recipientId = created.customerId
-      
-    }
-  else{
-     const [custRows] = await conn.query(
-    `SELECT Address_ID FROM customer WHERE Customer_ID = ?`,
-    [senderId]
-  )
-
-  senderAddId = custRows[0]?.Address_ID || null
-  }
+    const { customerId: senderId, addressId: senderAddrId } = await customerDB.resolveParty(conn, {
+      first_name: sender_first_name,
+      last_name: sender_last_name,
+      email: senderEmail,
+      phone_number: sender_phone,
+      house_number: sender_house_number,
+      street: sender_street,
+      city: sender_city,
+      state: sender_state,
+      zip_code: sender_zip_code,
+      apt_number: sender_apt_number,
+      country: sender_country,
+    })
 
     // ── Recipient ──
-    let recipientId = (await customerDB.getCustomerByEmail(conn, recipientEmail))?.Customer_ID
-    let recipientAddId
-    if (!recipientId) {
-      recipientAddId = await customerDB.resolveAddress(conn,{
-        house_number: recipient_house_number,
-        street:       recipient_street,
-        city:         recipient_city,
-        state:        recipient_state,
-        zip_code:     recipient_zip_code,
-        apt_number:   recipient_apt_number,
-        country:      recipient_country
-      })
-
-      const created = await customerDB.createCustomerMinimal(conn, {
-        first_name:   recipient_first_name,
-        last_name:    recipient_last_name,
-        email:        recipientEmail,
-        address_Id:   recipientAddId,
-        phone_number: recipient_phone,
-      })
-      recipientId = created.customerId
-    }
-    else{
-     const [custRows] = await conn.query(
-    `SELECT Address_ID FROM customer WHERE Customer_ID = ?`,
-    [recipientId]
-  )
-
-  recipientAddId = custRows[0]?.Address_ID || null
-  }
+    const { customerId: recipientId, addressId: recipientAddId } = await customerDB.resolveParty(conn, {
+      first_name: recipient_first_name,
+      last_name: recipient_last_name,
+      email: recipientEmail,
+      phone_number: recipient_phone,
+      house_number: recipient_house_number,
+      street: recipient_street,
+      city: recipient_city,
+      state: recipient_state,
+      zip_code: recipient_zip_code,
+      apt_number: recipient_apt_number,
+      country: recipient_country,
+    })
     
     const tracking = await nextTrackingNumber(conn)
     const oversize = typeCode === 'OVR' ? 1 : 0
 
     const actingEmployeeId = Number(user.employee_id)
+
+    if (!Number.isFinite(actingEmployeeId)) {
+      await conn.rollback()
+      return send(res, 401, { message: 'Invalid employee session' })
+    }
 
     const [[empRow]] = await conn.query(
       `SELECT Post_Office_ID
@@ -1079,11 +1049,6 @@ async function router(req, res) {
 
     const postOfficeId = empRow?.Post_Office_ID
 
-    if (!Number.isFinite(actingEmployeeId)) {
-      await conn.rollback()
-      return send(res, 401, { message: 'Invalid employee session' })
-    }
-
     
 
 
@@ -1093,43 +1058,59 @@ async function router(req, res) {
     const pendingCode = pending.Status_Code
 
     await conn.query(
-      `INSERT INTO package (Tracking_Number, Sender_ID, Recipient_ID, Dim_X, Dim_Y, Dim_Z,
-        Package_Type_Code, Weight, Zone, Oversize, Requires_Signature)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
-      [tracking, senderId, recipientId, dx, dy, dz, typeCode, w, z, oversize, sigRequired ? 1 : 0,
-       pendingCode]
-    )
+  `INSERT INTO package (
+    Tracking_Number,
+    Sender_ID,
+    Recipient_ID,
+    Dim_X,
+    Dim_Y,
+    Dim_Z,
+    Package_Type_Code,
+    Weight,
+    Zone,
+    Oversize,
+    Requires_Signature,
+    Status_Code
+  )
+  VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
+  [
+    tracking,
+    senderId,
+    recipientId,
+    dx,
+    dy,
+    dz,
+    typeCode,
+    w,
+    z,
+    oversize,
+    sigRequired ? 1 : 0,
+    pendingCode
+  ]
+)
 
-    await conn.query(
-      `INSERT INTO payment (Customer_ID, Payment_Amount, Employee_ID, Tracking_Number)
-       VALUES (?,?,?,?)`,
-      [senderId, priceAmount, actingEmployeeId, tracking]
-    )
-
-   
-
-    await conn.query(
-      `INSERT INTO package (
-          Tracking_Number, Sender_ID, Recipient_ID,
-          Dim_X, Dim_Y, Dim_Z,
-          Package_Type_Code, Weight, Zone,
-          Oversize, Requires_Signature
-      )
-      VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
-      [
-        tracking,
-        senderId,
-        recipientId,
-        dx,
-        dy,
-        dz,
-        typeCode,
-        w,
-        z,
-        oversize,
-        sigRequired ? 1 : 0,
-      ]
-    )
+    // await conn.query(
+    //   `INSERT INTO package (
+    //       Tracking_Number, Sender_ID, Recipient_ID,
+    //       Dim_X, Dim_Y, Dim_Z,
+    //       Package_Type_Code, Weight, Zone,
+    //       Oversize, Requires_Signature
+    //   )
+    //   VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
+    //   [
+    //     tracking,
+    //     senderId,
+    //     recipientId,
+    //     dx,
+    //     dy,
+    //     dz,
+    //     typeCode,
+    //     w,
+    //     z,
+    //     oversize,
+    //     sigRequired ? 1 : 0,
+    //   ]
+    // )
 
     // const [shipRes] = await conn.query(
     //   `INSERT INTO shipment (Status_Code, Employee_ID, From_Address_ID, To_Address_ID)
