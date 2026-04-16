@@ -24,12 +24,21 @@ const statusOptions = [
   { value: 2, label: 'Closed' },
 ]
 
+function getStoredEmployeeId() {
+  const u = JSON.parse(localStorage.getItem('user'))
+  return Number(u?.Employee_ID ?? u?.employee_id) || null
+}
+
+function getStoredEmployeeRoleId() {
+  const u = JSON.parse(localStorage.getItem('user'))
+  return Number(u?.Role_ID ?? u?.role_id) || null
+}
+
 export default function EmployeeSupport() {
   const [tickets, setTickets] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [filterStatus, setFilterStatus] = useState('all')
-  /* Updated search bar*/
   const [searchTerm, setSearchTerm] = useState('')
 
   const [editTicket, setEditTicket] = useState(null)
@@ -38,9 +47,19 @@ export default function EmployeeSupport() {
   const [saving, setSaving] = useState(false)
   const [saveSuccess, setSaveSuccess] = useState(false)
 
+  // Helper to get current user info from localStorage
+  const getUserId = () => {
+    const u = JSON.parse(localStorage.getItem('user'))
+    return Number(u?.Employee_ID ?? u?.employee_id) || null
+  }
+
+  const getUserRole = () => {
+    const u = JSON.parse(localStorage.getItem('user'))
+    return Number(u?.Role_ID ?? u?.role_id) || null
+  }
+
   useEffect(() => {
     fetchTickets()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const fetchTickets = async () => {
@@ -104,10 +123,23 @@ export default function EmployeeSupport() {
   }
 
   const filtered = tickets.filter((ticket) => {
-    const matchesStatus = 
-    filterStatus === 'all' ||
-    String(ticket.Ticket_Status_Code) === filterStatus;
+    // 1. Role & Assignment Check
+    const currentId = getUserId();
+    const roleId = getUserRole();
+    const isAdmin = roleId === 5; // Admin role check
+    
+    // Check if assigned to the logged-in user (handling potential nulls/undefined)
+    const isAssignedToMe = Number(ticket.Assigned_Employee_ID) === currentId;
 
+    // Filter out if not an admin AND not assigned to current user
+    if (!isAdmin && !isAssignedToMe) return false;
+
+    // 2. Status Filter logic
+    const matchesStatus = 
+      filterStatus === 'all' ||
+      String(ticket.Ticket_Status_Code) === filterStatus;
+
+    // 3. Search Filter logic
     const searchLower = searchTerm.toLowerCase();
     const matchesSearch =
       ticket.Ticket_ID?.toString().includes(searchLower) ||
