@@ -276,10 +276,32 @@ function ClerkDashboard({ navigate, token }) {
 
             {/* Support tickets quick actions */}
             <div style={{ background: '#fff', borderRadius: 14, padding: '20px 24px', border: '1px solid #e2e8f0', boxShadow: '0 2px 8px rgba(15,23,42,0.05)' }}>
-              <div style={{ fontWeight: 700, fontSize: '0.88rem', color: '#0f172a', marginBottom: 16 }}>Support Tickets</div>
+              <div style={{ fontWeight: 700, fontSize: '0.88rem', color: '#0f172a', marginBottom: 16 }}>
+                Support Tickets
+              </div>
               <p style={{ margin: '0 0 16px', fontSize: '0.82rem', color: '#64748b', lineHeight: 1.5 }}>
                 Review and respond to open customer support requests assigned to you.
               </p>
+              <button
+                type="button"
+                onClick={() => navigate('/employee-support')}
+                style={{
+                  background: '#1a1f4e',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: 8,
+                  padding: '10px 20px',
+                  fontSize: '0.85rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  width: '100%',
+                  transition: 'background 0.2s'
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = '#2d3a8c'}
+                onMouseLeave={e => e.currentTarget.style.background = '#1a1f4e'}
+              >
+                Open Ticket Support
+              </button>
             </div>
           </div>
         </>
