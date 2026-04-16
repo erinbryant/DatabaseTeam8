@@ -30,6 +30,14 @@ const AdminRegister = () => {
     }));
   };
 
+  const handleBack = () => {
+    if (window.history.length > 1) {
+      navigate(-1);
+      return;
+    }
+    navigate('/employee_home');
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -87,6 +95,10 @@ const AdminRegister = () => {
       <div className="register-card">
         <h2>👤 Register New Employee</h2>
         <p className="subtitle">Management - Create Employee Account</p>
+
+        <button type="button" onClick={handleBack} className="back-button">
+          Back
+        </button>
 
         <form onSubmit={handleSubmit}>
           {error && <div className="error-message">{error}</div>}
