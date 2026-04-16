@@ -15,8 +15,9 @@ const revenueReportDB = require('./db/revenue_report')
 const lostNotifsDB = require('./db/lost_package_notifs')
 const { report } = require('process')
 const shipmentDB = require('./db/shipments')
+const operationsDB = require('./db/operations')
 
-// ΓöÇΓöÇ DB pool ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── DB pool ───────────────────────────────────────────────────────────────
 const pool = mysql.createPool({
   host: process.env.MYSQLHOST,
   port: process.env.MYSQLPORT,
@@ -29,20 +30,20 @@ const pool = mysql.createPool({
 })
 
 if (process.env.DEBUG_MYSQL === '1' || process.env.DEBUG_MYSQL === 'true') {
-  console.log('[db] MySQL TLS:', useSsl ? 'on' : 'off', 'host:', mysqlHost || '(empty)')
+  console.log('[db] MySQL host:', process.env.MYSQLHOST || '(empty)')
 }
 
 pool
   .getConnection()
   .then((c) => {
-    console.log('Γ£à MySQL connected')
+    console.log('✅ MySQL connected')
     c.release()
     // Initialize lost packages tracking column
     lostNotifsDB.ensureLostStatusColumn(pool).catch(err => {
-      console.error('ΓÜá∩╕Å Failed to initialize lost packages column:', err.message)
+      console.error('⚠️ Failed to initialize lost packages column:', err.message)
     })
   })
-  .catch((e) => console.error('Γ¥î MySQL connection failed:', e))
+  .catch((e) => console.error('❌ MySQL connection failed:', e))
 
 if (
   process.env.DISABLE_PACKAGE_PICKUP_JOB !== '1' &&
@@ -57,7 +58,7 @@ if (
   // })
 }
 
-// ΓöÇΓöÇ Helpers ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── Helpers ───────────────────────────────────────────────────────────────
 
 function getBody(req) {
   return new Promise((resolve, reject) => {
@@ -120,7 +121,7 @@ function getQueryParams(urlString) {
   return params
 }
 
-// ΓöÇΓöÇ Auth helpers ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── Auth helpers ──────────────────────────────────────────────────────────
 
 function authenticate(req, res) {
   const token = (req.headers['authorization'] || '').split(' ')[1]
@@ -152,7 +153,7 @@ function requireAdmin(user, res) {
   return true
 }
 
-// ΓöÇΓöÇ Business logic helpers ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── Business logic helpers ────────────────────────────────────────────────
 
 function normalizePackageTypeName(raw) {
   const t = String(raw || '').toLowerCase().trim()
@@ -176,7 +177,7 @@ function toMysqlDateTime(value) {
   return s
 }
 
-/** mysql2 Date or string ΓåÆ 'YYYY-MM-DD HH:MM:SS' for SQL parameters. */
+/** mysql2 Date or string → 'YYYY-MM-DD HH:MM:SS' for SQL parameters. */
 function dateToMysqlDateTime(value) {
   if (value == null) return null
   if (value instanceof Date && !Number.isNaN(value.getTime())) {
@@ -190,7 +191,7 @@ function dateToMysqlDateTime(value) {
   return toMysqlDateTime(value)
 }
 
-/** Form value wins if present; otherwise use shipment.Arrival_Time_Stamp (set when status ΓåÆ At Office). */
+/** Form value wins if present; otherwise use shipment.Arrival_Time_Stamp (set when status → At Office). */
 function resolveArrivalForPickup(shipmentArrivalStamp, bodyArrivalTime) {
   return (
     toMysqlDateTime(bodyArrivalTime) ||
@@ -245,7 +246,7 @@ async function nextTrackingNumber(conn) {
   return `TRK${String(n).padStart(7, '0')}`.slice(0, 10)
 }
 
-// ΓöÇΓöÇ Router ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── Router ────────────────────────────────────────────────────────────────
 
 async function router(req, res) {
   setCORSHeaders(req, res)
@@ -262,12 +263,12 @@ async function router(req, res) {
   const method = req.method
   const query = getQueryParams(req.url)
 
-  // // ΓöÇΓöÇ GET /api/health ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // // ── GET /api/health ──────────────────────────────────────────────────────
   // if (method === 'GET' && pathname === '/api/health') {
   //   return send(res, 200, { ok: true, service: 'postoffice-api', has_price: true })
   // }
 
-  // ΓöÇΓöÇ POST /api/auth/login ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ── POST /api/auth/login ─────────────────────────────────────────────────
   if (method === 'POST' && pathname === '/api/auth/login') {
     const { email, password } = await getBody(req)
     if (!email || !password) return send(res, 400, { message: 'Email and password required' })
@@ -303,13 +304,15 @@ async function router(req, res) {
     }
   }
 
-  // ΓöÇΓöÇ POST /api/auth/customer-login
+  // ── POST /api/auth/customer-login
   if (method === 'POST' && pathname === '/api/auth/customer-login') {
     const { email, password } = await getBody(req)
     if (!email || !password) return send(res, 400, { message: 'Email and password required' })
     try {
-      const [rows] = await pool.query('SELECT * FROM customer WHERE Email_Address = ? AND is_Active = 0',
-      [email.tri().toLowerCase()])
+      const [rows] = await pool.query(
+        'SELECT * FROM customer WHERE LOWER(Email_Address) = ? AND is_Active = 0',
+        [String(email).trim().toLowerCase()]
+      )
       if (!rows.length) return send(res, 401, { message: 'Invalid credentials' })
       const customer = rows[0]
       const valid = await bcrypt.compare(password, customer.Password_Hash)
@@ -328,7 +331,7 @@ async function router(req, res) {
     }
   }
 
-  // ΓöÇΓöÇ POST /api/customer/register ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ── POST /api/customer/register ──────────────────────────────────────────
   if (method === 'POST' && pathname === '/api/customer/register') {
     const body = await getBody(req)
     try {
@@ -349,7 +352,178 @@ async function router(req, res) {
     }
   }
 
-  // ΓöÇΓöÇ POST /api/auth/admin-register ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+  // ── GET /api/operations/post-offices ─────────────────────────────────────
+  if (method === 'GET' && pathname === '/api/operations/post-offices') {
+    const user = authenticate(req, res)
+    if (!user) return
+    if (!requireAdmin(user, res)) return
+    operationsDB.getPostOffices(pool, query, (err, results) => {
+      if (err) return send(res, 500, { error: err.message })
+      return send(res, 200, results)
+    })
+    return
+  }
+  
+  // ── GET /api/operations/departments ──────────────────────────────────────
+  if (method === 'GET' && pathname === '/api/operations/departments') {
+    const user = authenticate(req, res)
+    if (!user) return
+    if (!requireAdmin(user, res)) return
+    operationsDB.getDepartments(pool, (err, results) => {
+      if (err) return send(res, 500, { error: err.message })
+      return send(res, 200, results)
+    })
+    return
+  }
+  
+  // ── GET /api/operations/revenue ───────────────────────────────────────────
+  if (method === 'GET' && pathname === '/api/operations/revenue') {
+    const user = authenticate(req, res)
+    if (!user) return
+    if (!requireAdmin(user, res)) return
+    operationsDB.getRevenueData(pool, query, (err, results) => {
+      if (err) return send(res, 500, { error: err.message })
+      return send(res, 200, results)
+    })
+    return
+  }
+  
+  // ── GET /api/operations/revenue/stats ────────────────────────────────────
+  if (method === 'GET' && pathname === '/api/operations/revenue/stats') {
+    const user = authenticate(req, res)
+    if (!user) return
+    if (!requireAdmin(user, res)) return
+    operationsDB.getRevenueStats(pool, query, (err, results) => {
+      if (err) return send(res, 500, { error: err.message })
+      return send(res, 200, results)
+    })
+    return
+  }
+  
+  // ── GET /api/operations/employees ─────────────────────────────────────────
+  if (method === 'GET' && pathname === '/api/operations/employees') {
+    const user = authenticate(req, res)
+    if (!user) return
+    if (!requireAdmin(user, res)) return
+    operationsDB.getEmployeePerformance(pool, query, (err, results) => {
+      if (err) return send(res, 500, { error: err.message })
+      return send(res, 200, results)
+    })
+    return
+  }
+  
+  // ── GET /api/operations/employees/stats ──────────────────────────────────
+  if (method === 'GET' && pathname === '/api/operations/employees/stats') {
+    const user = authenticate(req, res)
+    if (!user) return
+    if (!requireAdmin(user, res)) return
+    operationsDB.getEmployeeStats(pool, query, (err, results) => {
+      if (err) return send(res, 500, { error: err.message })
+      return send(res, 200, results)
+    })
+    return
+  }
+  // ── OPERATIONS HUB ROUTES ─────────────────────────────────────────────────
+  // Add near top of server.js:
+  // const operationsDB = require('./db/operations')
+
+  // ── GET /api/operations/post-offices ─────────────────────────────────────
+  if (method === 'GET' && pathname === '/api/operations/post-offices') {
+    const user = authenticate(req, res)
+    if (!user) return
+    if (!requireAdmin(user, res)) return
+    operationsDB.getPostOffices(pool, query, (err, results) => {
+      if (err) return send(res, 500, { error: err.message })
+      return send(res, 200, results)
+    })
+    return
+  }
+
+  // ── GET /api/operations/departments ──────────────────────────────────────
+  if (method === 'GET' && pathname === '/api/operations/departments') {
+    const user = authenticate(req, res)
+    if (!user) return
+    if (!requireAdmin(user, res)) return
+    operationsDB.getDepartments(pool, (err, results) => {
+      if (err) return send(res, 500, { error: err.message })
+      return send(res, 200, results)
+    })
+    return
+  }
+
+  // ── GET /api/operations/revenue ───────────────────────────────────────────
+  if (method === 'GET' && pathname === '/api/operations/revenue') {
+    const user = authenticate(req, res)
+    if (!user) return
+    if (!requireAdmin(user, res)) return
+    operationsDB.getRevenueData(pool, query, (err, results) => {
+      if (err) return send(res, 500, { error: err.message })
+      return send(res, 200, results)
+    })
+    return
+  }
+
+  // ── GET /api/operations/revenue/stats ────────────────────────────────────
+  if (method === 'GET' && pathname === '/api/operations/revenue/stats') {
+    const user = authenticate(req, res)
+    if (!user) return
+    if (!requireAdmin(user, res)) return
+    operationsDB.getRevenueStats(pool, query, (err, results) => {
+      if (err) return send(res, 500, { error: err.message })
+      return send(res, 200, results)
+    })
+    return
+  }
+
+  // ── GET /api/operations/office-satisfaction ───────────────────────────────
+  if (method === 'GET' && pathname === '/api/operations/office-satisfaction') {
+    const user = authenticate(req, res)
+    if (!user) return
+    if (!requireAdmin(user, res)) return
+    operationsDB.getOfficeSatisfaction(pool, query, (err, results) => {
+      if (err) return send(res, 500, { error: err.message })
+      return send(res, 200, results)
+    })
+    return
+  }
+
+  // ── GET /api/operations/office-trend ─────────────────────────────────────
+  if (method === 'GET' && pathname === '/api/operations/office-trend') {
+    const user = authenticate(req, res)
+    if (!user) return
+    if (!requireAdmin(user, res)) return
+    operationsDB.getOfficeTrend(pool, query, (err, results) => {
+      if (err) return send(res, 500, { error: err.message })
+      return send(res, 200, results)
+    })
+    return
+  }
+
+  // ── GET /api/operations/office-employees ─────────────────────────────────
+  if (method === 'GET' && pathname === '/api/operations/office-employees') {
+    const user = authenticate(req, res)
+    if (!user) return
+    if (!requireAdmin(user, res)) return
+    operationsDB.getOfficeEmployees(pool, query, (err, results) => {
+      if (err) return send(res, 500, { error: err.message })
+      return send(res, 200, results)
+    })
+    return
+  }
+
+  if (method === 'GET' && pathname === '/api/operations/office-raw') {
+    const user = authenticate(req, res)
+    if (!user) return
+    if (!requireAdmin(user, res)) return
+    operationsDB.getOfficeRawData(pool, query, (err, results) => {
+      if (err) return send(res, 500, { error: err.message })
+      return send(res, 200, results)
+    })
+    return
+  }
+
+  // ── POST /api/auth/admin-register ────────────────────────────────────────
   if (method === 'POST' && pathname === '/api/auth/admin-register') {
     const user = authenticate(req, res)
     if (!user) return
@@ -367,7 +541,7 @@ async function router(req, res) {
       const tempPassword = Math.random().toString(36).slice(-10) + 'Temp1!'
       const hash = await bcrypt.hash(tempPassword, 10)
 
-      // Look up Department_ID by name (donΓÇÖt assume IDs)
+      // Look up Department_ID by name (don’t assume IDs)
       const [[deptRow]] = await pool.query(
         `SELECT Department_ID FROM department WHERE Department_Name = ? LIMIT 1`,
         [department]
@@ -375,7 +549,7 @@ async function router(req, res) {
       if (!deptRow) return send(res, 400, { message: `Invalid department: ${department}` })
       const department_id = Number(deptRow.Department_ID)
 
-      // Look up Role_ID by name (donΓÇÖt assume IDs)
+      // Look up Role_ID by name (don’t assume IDs)
       const [[roleRow]] = await pool.query(
         `SELECT Role_ID FROM role WHERE Role_Name = ? LIMIT 1`,
         [position]
@@ -416,7 +590,7 @@ async function router(req, res) {
     }
   }
 
-  // ΓöÇΓöÇ GET /api/admin/employees
+  // ── GET /api/admin/employees
   if (method === 'GET' && pathname === '/api/admin/employees') {
     const user = authenticate(req, res)
     if (!user) return
@@ -450,7 +624,7 @@ async function router(req, res) {
     }
   }
 
-  // ΓöÇΓöÇ PATCH /api/admin/employees/:employeeId/deactivate ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ── PATCH /api/admin/employees/:employeeId/deactivate ────────────────────
   {
     const m = matchPath('/api/admin/employees/:employeeId/deactivate', pathname)
     if (method === 'PATCH' && m.matched) {
@@ -475,7 +649,7 @@ async function router(req, res) {
     }
   }
 
-  // ΓöÇΓöÇ GET /api/auth/profile ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ── GET /api/auth/profile ────────────────────────────────────────────────
   if (method === 'GET' && pathname === '/api/auth/profile') {
     const user = authenticate(req, res)
     if (!user) return
@@ -504,7 +678,7 @@ async function router(req, res) {
     }
   }
 
-  // ΓöÇΓöÇ PUT /api/auth/profile ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ── PUT /api/auth/profile ────────────────────────────────────────────────
   if (method === 'PUT' && pathname === '/api/auth/profile') {
     const user = authenticate(req, res)
     if (!user) return
@@ -539,7 +713,7 @@ async function router(req, res) {
     }
   }
 
-  // ΓöÇΓöÇ POST /api/auth/change-password ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ── POST /api/auth/change-password ───────────────────────────────────────
   if (method === 'POST' && pathname === '/api/auth/change-password') {
     const user = authenticate(req, res)
     if (!user) return
@@ -571,7 +745,7 @@ async function router(req, res) {
     }
   }
 
-  // ΓöÇΓöÇ GET /api/customer/profile ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ── GET /api/customer/profile ────────────────────────────────────────────
   if (method === 'GET' && pathname === '/api/customer/profile') {
     const user = authenticate(req, res)
     if (!user) return
@@ -596,7 +770,7 @@ async function router(req, res) {
     }
   }
 
-  // ΓöÇΓöÇ PUT /api/customer/profile ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ── PUT /api/customer/profile ────────────────────────────────────────────
   if (method === 'PUT' && pathname === '/api/customer/profile') {
     const user = authenticate(req, res)
     if (!user) return
@@ -666,7 +840,7 @@ async function router(req, res) {
     }
   }
 
-  // ΓöÇΓöÇ GET /api/packages (PROTECTED: employee+admin) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ── GET /api/packages (PROTECTED: employee+admin) ────────────────────────
   if (method === 'GET' && pathname === '/api/packages') {
     const user = authenticate(req, res)
     if (!user) return
@@ -679,41 +853,9 @@ async function router(req, res) {
     return
   }
 
-  // ΓöÇΓöÇ GET /api/packages/track/:trackingNumber (PUBLIC tracking) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
-  // {
-  //   const m = matchPath('/api/packages/track/:trackingNumber', pathname)
-  //   const user = authenticate(req, res)
-  //   if (!user) return
-  //   if (method === 'GET' && m.matched) {
-  //     const trackingNumber = m.params.trackingNumber.trim()
-  //     if (!trackingNumber) return send(res, 400, { error: 'trackingNumber is required' })
+  
 
-  //     packagesDB.getPackageByTracking(pool, trackingNumber, (err, result) => {
-  //       if (err) return send(res, 500, { error: 'Database error' })
-  //       if (!result) return send(res, 404, { error: 'Package not found' })
-  //       return send(res, 200, result)
-  //     })
-  //     return
-  //   }
-  // }
-
-  // ΓöÇΓöÇ GET /qry_track_package (PUBLIC tracking) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
-  // if (method === 'GET' && pathname === '/qry_track_package') {
-  //   const user = authenticate(req, res)
-  //   if (!user) return
-
-  //   const trackingNumber = (query.tracking_number || query.trackingNumber || '').trim()
-  //   if (!trackingNumber) return send(res, 400, { error: 'tracking_number query parameter is required' })
-
-  //   packagesDB.getPackageByTracking(pool, trackingNumber, (err, result) => {
-  //     if (err) return send(res, 500, { error: 'Database error' })
-  //     if (!result) return send(res, 404, { error: 'Package not found' })
-  //     return send(res, 200, result)
-  //   })
-  //   return
-  // }
-
-  // ΓöÇΓöÇ GET /api/price (PUBLIC) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ── GET /api/price (PUBLIC) ──────────────────────────────────────────────
   if (method === 'GET' && pathname === '/api/price') {
     const { package_type, weight, zone, excess_fee, dim_x, dim_y, dim_z } = query
     const pt = normalizePackageTypeName(package_type)
@@ -750,7 +892,7 @@ async function router(req, res) {
     }
   }
 
-  // ΓöÇΓöÇ GET /api/customer/my-packages (customer-only) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ── GET /api/customer/my-packages (customer-only) ────────────────────────
   if (method === 'GET' && pathname === '/api/customer/my-packages') {
     const user = authenticate(req, res)
     if (!user) return
@@ -774,7 +916,6 @@ async function router(req, res) {
     return
   }
 
-  // ΓöÇΓöÇ POST /api/employee/packages ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
   if (method === 'POST' && pathname === '/api/employee/packages') {
     const user = authenticate(req, res)
     if (!user) return
@@ -782,19 +923,37 @@ async function router(req, res) {
 
     const b = await getBody(req)
     const {
-      sender_email, sender_first_name, sender_last_name,
-      sender_house_number, sender_street, sender_city, 
-      sender_state, sender_zip_first3, sender_zip_last2, sender_apt_number,sender_country,
+      sender_email,
+      sender_first_name,
+      sender_last_name,
+      sender_house_number,
+      sender_street,
+      sender_city,
+      sender_state,
+      sender_zip_first3,
+      sender_zip_last2,
+      sender_apt_number,
+      sender_country,
       sender_phone,
-      recipient_email, recipient_first_name, recipient_last_name,
-      recipient_house_number, recipient_street, recipient_city,
-      recipient_state, recipient_zip_first3, recipient_zip_last2, recipient_apt_number, recipient_country,
+      recipient_email,
+      recipient_first_name,
+      recipient_last_name,
+      recipient_house_number,
+      recipient_street,
+      recipient_city,
+      recipient_state,
+      recipient_zip_first3,
+      recipient_zip_last2,
+      recipient_apt_number,
+      recipient_country,
       recipient_phone,
       package_type,
       weight,
       zone,
       excess_fee,
-      dim_x, dim_y,dim_z,
+      dim_x,
+      dim_y,
+      dim_z,
     } = b
 
     const pt = normalizePackageTypeName(package_type)
@@ -803,12 +962,19 @@ async function router(req, res) {
 
     const w = Number(weight)
     const z = Number(zone)
-    if (Number.isNaN(w) || Number.isNaN(z)) return send(res, 400, { message: 'weight and zone must be numbers' })
+    if (!Number.isFinite(w) || w <= 0 || w > 70) {
+      return send(res, 400, { message: 'Weight must be a number greater than 0 and at most 70 lbs' })
+    }
+    if (!Number.isInteger(z) || z < 1 || z > 9) {
+      return send(res, 400, { message: 'Zone must be a whole number from 1 to 9' })
+    }
 
     const dx = dim_x != null && dim_x !== '' ? Number(dim_x) : 12
     const dy = dim_y != null && dim_y !== '' ? Number(dim_y) : 10
     const dz = dim_z != null && dim_z !== '' ? Number(dim_z) : 8
-    if (!(dx > 0 && dy > 0 && dz > 0)) return send(res, 400, { message: 'Dimensions must be positive numbers' })
+    if (!(dx > 0 && dy > 0 && dz > 0)) {
+      return send(res, 400, { message: 'Dimensions must be positive numbers' })
+    }
 
     const excessName = excess_fee && String(excess_fee).trim() ? String(excess_fee).trim() : null
     const sigRequired = excessName === 'Signature Required'
@@ -817,75 +983,88 @@ async function router(req, res) {
     try {
       priceAmount = await getPricePromise(pool, excessName, pt, w, z)
     } catch (err) {
-      return send(res, err.status === 400 ? 400 : 500, { message: err.message || 'Pricing failed' })
+      return send(res, err.status === 400 ? 400 : 500, {
+        message: err.message || 'Pricing failed',
+      })
     }
+
+    const senderZip5 =
+      String(sender_zip_first3 || '')
+        .replace(/\D/g, '')
+        .slice(0, 3) +
+      String(sender_zip_last2 || '')
+        .replace(/\D/g, '')
+        .slice(0, 2)
+    const recipientZip5 =
+      String(recipient_zip_first3 || '')
+        .replace(/\D/g, '')
+        .slice(0, 3) +
+      String(recipient_zip_last2 || '')
+        .replace(/\D/g, '')
+        .slice(0, 2)
 
     const senderEmail = (sender_email || '').trim().toLowerCase()
-    if (!senderEmail || !sender_first_name?.trim() || !sender_last_name?.trim()) {
-      return send(res, 400, { message: 'Sender email, first name, and last name are required' })
+    let recipientEmail = (recipient_email || '').trim().toLowerCase()
+
+    if (!sender_first_name?.trim() || !sender_last_name?.trim()) {
+      return send(res, 400, { message: 'Sender first name and last name are required' })
     }
-    if (!sender_house_number || !sender_street || !sender_city || !sender_state || !sender_zip_first3 || !sender_zip_last2) {
+    if (!sender_house_number || !sender_street || !sender_city || !sender_state || senderZip5.length !== 5) {
       return send(res, 400, { message: 'Sender address fields are required' })
     }
-
-    let recipientEmail = (recipient_email || '').trim().toLowerCase()
     if (!recipient_first_name?.trim() || !recipient_last_name?.trim()) {
       return send(res, 400, { message: 'Recipient first and last name are required' })
     }
-    if (!recipient_house_number || !recipient_street || !recipient_city || !recipient_state || !recipient_zip_first3 || !recipient_zip_last2) {
+    if (!recipient_house_number || !recipient_street || !recipient_city || !recipient_state || recipientZip5.length !== 5) {
       return send(res, 400, { message: 'Recipient address fields are required' })
+    }
+    if (!senderEmail) {
+      return send(res, 400, { message: 'Sender email is required' })
     }
     if (!recipientEmail) {
       recipientEmail = `recipient.${Date.now()}.${Math.random().toString(36).slice(2, 8)}@pkg.internal`
     }
     if (recipientEmail === senderEmail) {
-      return send(res, 400, { message: 'Sender and recipient must be different people (different emails)' })
+      return send(res, 400, { message: 'Sender and recipient must be different customers' })
     }
 
     const conn = await pool.getConnection()
     try {
       await conn.beginTransaction()
 
-      let senderId = (await customerDB.getCustomerByEmail(conn, senderEmail))?.Customer_ID
-      if (!senderId) {
-        const created = await customerDB.createCustomerMinimal(conn, {
-          first_name: sender_first_name,
-          last_name: sender_last_name,
-          email: senderEmail,
-          house_number: sender_house_number,
-          street: sender_street,
-          city: sender_city,
-          state: sender_state,
-          zip_first3: sender_zip_first3,
-          zip_last2: sender_zip_last2,
-          apt_number: sender_apt_number,
-          zip_plus4: b.sender_zip_plus4,
-          country: sender_country,
-          phone_number: sender_phone,
-        })
-        senderId = created.customerId
-        // created.initialPassword exists but unused in this server
-      }
+      const [[pendingRow]] = await conn.query(
+        `SELECT Status_Code FROM status_code WHERE Status_Name = 'Pending' LIMIT 1`
+      )
+      if (!pendingRow) throw new Error('Missing Pending status in status_code')
+      const pendingCode = pendingRow.Status_Code
 
-      let recipientId = (await customerDB.getCustomerByEmail(conn, recipientEmail))?.Customer_ID
-      if (!recipientId) {
-        const created = await customerDB.createCustomerMinimal(conn, {
-          first_name: recipient_first_name,
-          last_name: recipient_last_name,
-          email: recipientEmail,
-          house_number: recipient_house_number,
-          street: recipient_street,
-          city: recipient_city,
-          state: recipient_state,
-          zip_first3: recipient_zip_first3,
-          zip_last2: recipient_zip_last2,
-          apt_number: recipient_apt_number,
-          zip_plus4: b.recipient_zip_plus4,
-          country: recipient_country,
-          phone_number: recipient_phone,
-        })
-        recipientId = created.customerId
-      }
+      const { customerId: senderId, addressId: senderAddrId } = await customerDB.resolveParty(conn, {
+        first_name: sender_first_name,
+        last_name: sender_last_name,
+        email: senderEmail,
+        phone_number: sender_phone,
+        house_number: sender_house_number,
+        street: sender_street,
+        city: sender_city,
+        state: sender_state,
+        zip_code: senderZip5,
+        apt_number: sender_apt_number,
+        country: sender_country,
+      })
+
+      const { customerId: recipientId, addressId: recipientAddrId } = await customerDB.resolveParty(conn, {
+        first_name: recipient_first_name,
+        last_name: recipient_last_name,
+        email: recipientEmail,
+        phone_number: recipient_phone,
+        house_number: recipient_house_number,
+        street: recipient_street,
+        city: recipient_city,
+        state: recipient_state,
+        zip_code: recipientZip5,
+        apt_number: recipient_apt_number,
+        country: recipient_country,
+      })
 
       if (senderId === recipientId) {
         await conn.rollback()
@@ -901,75 +1080,58 @@ async function router(req, res) {
         return send(res, 401, { message: 'Invalid employee session' })
       }
 
-      const [empRows] = await conn.query(
-        `SELECT s.Store_ID FROM employee e
-         JOIN post_office p ON e.Post_Office_ID = p.Post_Office_ID
-         JOIN store s ON s.Post_Office_ID = p.Post_Office_ID
-         WHERE e.Employee_ID = ?`,
-        [actingEmployeeId]
-      )
-      if (!empRows.length) {
-        await conn.rollback()
-        return send(res, 404, { error: 'Employee or store not found' })
-      }
-      const sid = empRows[0].Store_ID
-
-      const [payRes] = await conn.query(
-        `INSERT INTO payment (Customer_ID, Store_ID, Items, Payment_Type, Payment_Amount, Payment_Status, Employee_ID)
-         VALUES (?,?,?,?,?,'completed',?)`,
-        [senderId, sid, 1, 1, priceAmount, actingEmployeeId]
-      )
-      const payId = payRes.insertId
+      const recipientName = `${String(recipient_first_name).trim()} ${String(recipient_last_name).trim()}`.slice(0, 100)
 
       await conn.query(
-        `INSERT INTO package (Tracking_Number, Sender_ID, Recipient_ID, Dim_X, Dim_Y, Dim_Z,
-          Package_Type_Code, Weight, Zone, Oversize, Requires_Signature, Price, Payment_ID)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-        [tracking, senderId, recipientId, dx, dy, dz, typeCode, w, z, oversize, sigRequired ? 1 : 0, priceAmount, payId]
-      )
-
-      const [[pending]] = await conn.query(`SELECT Status_Code FROM status_code WHERE Status_Name = 'Pending' LIMIT 1`)
-      if (!pending) throw new Error('Missing Pending status in status_code')
-      const pendingCode = pending.Status_Code
-
-      await conn.query(
-        `INSERT INTO delivery (Tracking_Number, Delivered_Date, Signature_Required, Signature_Received, Delivery_Status_Code, Delivered_By)
-         VALUES (?,NULL,?,NULL,?,NULL)`,
-        [tracking, sigRequired ? 1 : 0, pendingCode]
-      )
-
-      const [shipRes] = await conn.query(
-        `INSERT INTO shipment (Status_Code, Employee_ID,
-          From_Apt_Number, From_House_Number, From_Street, From_City, From_State, From_Zip_First3, From_Zip_Last2, From_Zip_Plus4, From_Country,
-          To_Apt_Number, To_House_Number, To_Street, To_City, To_State, To_Zip_First3, To_Zip_Last2, To_Zip_Plus4, To_Country,
-          Departure_Time_Stamp, Arrival_Time_Stamp)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NULL,NULL)`,
+        `INSERT INTO package (
+          Tracking_Number, Sender_ID, Recipient_ID,
+          Dim_X, Dim_Y, Dim_Z,
+          Package_Type_Code, Weight, Zone,
+          Oversize, Requires_Signature,
+          Status_Code, To_Address_ID, Recipient_Name
+        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
         [
+          tracking,
+          senderId,
+          recipientId,
+          dx,
+          dy,
+          dz,
+          typeCode,
+          w,
+          z,
+          oversize,
+          sigRequired ? 1 : 0,
           pendingCode,
-          actingEmployeeId,
-          sender_apt_number || null,
-          String(sender_house_number).slice(0, 10),
-          String(sender_street).slice(0, 100),
-          String(sender_city).slice(0, 100),
-          String(sender_state).slice(0, 50),
-          String(sender_zip_first3).replace(/\D/g, '').slice(0, 3),
-          String(sender_zip_last2).replace(/\D/g, '').slice(0, 2),
-          b.sender_zip_plus4 ? String(b.sender_zip_plus4).replace(/\D/g, '').slice(0, 4) : null,
-          (sender_country || 'USA').toString().slice(0, 50),
-          recipient_apt_number || null,
-          String(recipient_house_number).slice(0, 10),
-          String(recipient_street).slice(0, 100),
-          String(recipient_city).slice(0, 100),
-          String(recipient_state).slice(0, 50),
-          String(recipient_zip_first3).replace(/\D/g, '').slice(0, 3),
-          String(recipient_zip_last2).replace(/\D/g, '').slice(0, 2),
-          b.recipient_zip_plus4 ? String(b.recipient_zip_plus4).replace(/\D/g, '').slice(0, 4) : null,
-          (recipient_country || 'USA').toString().slice(0, 50),
+          recipientAddrId,
+          recipientName,
         ]
       )
 
-      const shipmentId = shipRes.insertId
-      await conn.query(`INSERT INTO shipment_package (Shipment_ID, Tracking_Number) VALUES (?,?)`, [shipmentId, tracking])
+      await conn.query(
+        `INSERT INTO payment (Customer_ID, Payment_Amount, Employee_ID, Tracking_Number)
+         VALUES (?,?,?,?)`,
+        [senderId, priceAmount, actingEmployeeId, tracking]
+      )
+
+      await conn.query(
+        `INSERT INTO delivery (Tracking_Number, Delivered_Date, Signature_Required, Signature_Received, Delivered_By)
+         VALUES (?,NULL,?,NULL,NULL)`,
+        [tracking, sigRequired ? 1 : 0]
+      )
+
+      const [shipHeader] = await conn.query(
+        `INSERT INTO shipment (
+          Status_Code, Employee_ID, Departure_Time_Stamp, Arrival_Time_Stamp,
+          From_Address_ID, To_Address_ID
+        ) VALUES (?,?,NULL,NULL,?,?)`,
+        [pendingCode, actingEmployeeId, senderAddrId, recipientAddrId]
+      )
+      const shipmentId = shipHeader.insertId
+      await conn.query(`INSERT INTO shipment_package (Shipment_ID, Tracking_Number) VALUES (?,?)`, [
+        shipmentId,
+        tracking,
+      ])
 
       await conn.commit()
       return send(res, 201, {
@@ -990,303 +1152,128 @@ async function router(req, res) {
     }
   }
 
-  // ΓöÇΓöÇ GET /api/reports/employee-performance ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ── PATCH /api/employee/packages/:trackingNumber/status ─────────────────
+  {
+    const m = matchPath('/api/employee/packages/:trackingNumber/status', pathname)
+    if (method === 'PATCH' && m.matched) {
+      const user = authenticate(req, res)
+      if (!user) return
+      if (!requireEmployee(user, res)) return
 
-if (method === 'GET' && pathname === '/api/reports/employee-performance') {
-  const user = authenticate(req, res)
-  if (!user) return
-  if (!requireAdmin(user, res)) return
+      const trackingNumber = (m.params.trackingNumber || '').trim()
+      const body = await getBody(req)
+      const { status_code } = body || {}
 
-  const { department_id, post_office_id, date_from, date_to } = query
-
-  try {
-    const conditions = ['e.Role_ID NOT IN (SELECT Role_ID FROM role WHERE Role_Name IN (\'Manager\', \'Admin\', \'Supervisor\'))']
-    const params = []
-
-    if (department_id)  { conditions.push('e.Department_ID = ?');               params.push(Number(department_id)) }
-    if (post_office_id) { conditions.push('e.Post_Office_ID = ?');              params.push(Number(post_office_id)) }
-    if (date_from)      { conditions.push('s.Departure_Time_Stamp >= ?');       params.push(date_from) }
-    if (date_to)        { conditions.push('s.Departure_Time_Stamp <= ?');       params.push(date_to + ' 23:59:59') }
-
-    const whereClause = `WHERE ${conditions.join(' AND ')}`
-
-    const [rows] = await pool.query(
-      `SELECT
-        e.Employee_ID,
-        CONCAT(e.First_Name, ' ', e.Last_Name) AS Employee_Name,
-        e.Email_Address,
-        r.Role_Name,
-        d.Department_Name,
-        po.City AS Office_City,
-        po.State AS Office_State,
-        COUNT(DISTINCT s.Shipment_ID) AS Total_Shipments,
-        COUNT(DISTINCT sp.Tracking_Number) AS Total_Packages,
-        ROUND(COUNT(DISTINCT sp.Tracking_Number) / NULLIF(COUNT(DISTINCT s.Shipment_ID), 0), 1) AS Avg_Packages_Per_Shipment,
-        (
-          SELECT COALESCE(SUM(pay2.Payment_Amount), 0)
-          FROM shipment s2
-          JOIN shipment_package sp2 ON sp2.Shipment_ID = s2.Shipment_ID
-          LEFT JOIN payment pay2 ON pay2.Tracking_Number = sp2.Tracking_Number
-          WHERE s2.Employee_ID = e.Employee_ID
-        ) AS Total_Revenue,
-        (
-          SELECT COALESCE(AVG(pay2.Payment_Amount), 0)
-          FROM shipment s2
-          JOIN shipment_package sp2 ON sp2.Shipment_ID = s2.Shipment_ID
-          LEFT JOIN payment pay2 ON pay2.Tracking_Number = sp2.Tracking_Number
-          WHERE s2.Employee_ID = e.Employee_ID
-        ) AS Avg_Revenue_Per_Shipment,
-        (
-          SELECT ROUND(
-            // COUNT(CASE WHEN d2.Delivery_Status_Code = 4 THEN 1 END) * 100.0 /
-            NULLIF(COUNT(*), 0), 1)
-          FROM shipment s2
-          JOIN shipment_package sp2 ON sp2.Shipment_ID = s2.Shipment_ID
-          JOIN delivery d2 ON d2.Tracking_Number = sp2.Tracking_Number
-          WHERE s2.Employee_ID = e.Employee_ID
-        ) AS Delivery_Success_Rate,
-        (
-          SELECT COUNT(*)
-          FROM shipment s2
-          JOIN shipment_package sp2 ON sp2.Shipment_ID = s2.Shipment_ID
-          JOIN package pkg2 ON pkg2.Tracking_Number = sp2.Tracking_Number
-          WHERE s2.Employee_ID = e.Employee_ID AND pkg2.Oversize = 1
-        ) AS Oversize_Packages,
-        MAX(s.Departure_Time_Stamp) AS Last_Shipment_Date
-      FROM employee e
-      JOIN role r ON e.Role_ID = r.Role_ID
-      JOIN department d ON e.Department_ID = d.Department_ID
-      JOIN post_office po ON e.Post_Office_ID = po.Post_Office_ID
-      LEFT JOIN shipment s ON s.Employee_ID = e.Employee_ID
-      LEFT JOIN shipment_package sp ON sp.Shipment_ID = s.Shipment_ID
-      LEFT JOIN package pkg ON pkg.Tracking_Number = sp.Tracking_Number
-      ${whereClause}
-      GROUP BY e.Employee_ID, e.First_Name, e.Last_Name, e.Email_Address,
-               r.Role_Name, d.Department_Name, po.City, po.State
-      ORDER BY Total_Packages DESC`,
-      params
-    )
-    return send(res, 200, { report: rows })
-  } catch (err) {
-    console.error(err)
-    return send(res, 500, { message: err.message || 'Server error' })
-  }
-}
-
-// /api/employee/packages/:trackingNumber/status
-{
-  const m = matchPath('/api/employee/packages/:trackingNumber/status', pathname)
-  if (method === 'PATCH' && m.matched) {
-    const user = authenticate(req, res)
-    if (!user) return
-    if (!requireEmployee(user, res)) return
-
-    const trackingNumber = (m.params.trackingNumber || '').trim()
-    const body = await getBody(req)
-    const { status_code } = body || {}
-
-    if (!trackingNumber)
-      return send(res, 400, { message: 'trackingNumber required' })
-    if (status_code === undefined || status_code === null)
-      return send(res, 400, { message: 'status_code is required' })
-
-    const code = Number(status_code)
-    if (Number.isNaN(code))
-      return send(res, 400, { message: 'status_code must be a number' })
-
-    const conn = await pool.getConnection()
-    try {
-      await conn.beginTransaction()
-
-      const [[d]] = await conn.query(
-        `SELECT Delivery_ID FROM delivery WHERE Tracking_Number = ?`,
-        [trackingNumber]
-      )
-      if (!d) {
-        await conn.rollback()
-        return send(res, 404, { message: 'Delivery record not found for this package' })
+      if (!trackingNumber) return send(res, 400, { message: 'trackingNumber required' })
+      if (status_code === undefined || status_code === null) {
+        return send(res, 400, { message: 'status_code is required' })
       }
 
-      await conn.query(
-        `UPDATE delivery SET Delivery_Status_Code = ? WHERE Tracking_Number = ?`,
-        [code, trackingNumber]
-      )
+      const code = Number(status_code)
+      if (Number.isNaN(code)) return send(res, 400, { message: 'status_code must be a number' })
 
-      await conn.query(
-        `UPDATE package SET Status_Code = ? WHERE Tracking_Number = ?`,
-        [code, trackingNumber]
-      )
+      const conn = await pool.getConnection()
+      try {
+        await conn.beginTransaction()
 
-      const [sp] = await conn.query(
-        `SELECT Shipment_ID FROM shipment_package WHERE Tracking_Number = ? LIMIT 1`,
-        [trackingNumber]
-      )
-      if (sp.length) {
-        await conn.query(
-          `UPDATE shipment SET Status_Code = ? WHERE Shipment_ID = ?`,
-          [code, sp[0].Shipment_ID]
+        const [[pkg]] = await conn.query(
+          `SELECT Tracking_Number FROM package WHERE Tracking_Number = ?`,
+          [trackingNumber]
         )
+        if (!pkg) {
+          await conn.rollback()
+          return send(res, 404, { message: 'Package not found' })
+        }
+
+        await conn.query(`UPDATE package SET Status_Code = ? WHERE Tracking_Number = ?`, [
+          code,
+          trackingNumber,
+        ])
+
+        const [sp] = await conn.query(
+          `SELECT Shipment_ID FROM shipment_package WHERE Tracking_Number = ? LIMIT 1`,
+          [trackingNumber]
+        )
+        if (sp.length) {
+          await conn.query(`UPDATE shipment SET Status_Code = ? WHERE Shipment_ID = ?`, [
+            code,
+            sp[0].Shipment_ID,
+          ])
+        }
+
+        await conn.commit()
+        return send(res, 200, { ok: true, tracking_number: trackingNumber, status_code: code })
+      } catch (err) {
+        await conn.rollback()
+        console.error(err)
+        return send(res, 500, { message: err.message || 'Update failed' })
+      } finally {
+        conn.release()
       }
-
-      await conn.commit()
-      return send(res, 200, { ok: true, tracking_number: trackingNumber, status_code: code })
-    } catch (err) {
-      await conn.rollback()
-      console.error(err)
-      return send(res, 500, { message: err.message || 'Update failed' })
-    } finally {
-      conn.release()
     }
   }
-}
 
-// ΓöÇΓöÇ GET /api/reports/location-stats ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
-if (method === 'GET' && pathname === '/api/reports/location-stats') {
-  const user = authenticate(req, res)
-  if (!user) return
-  if (!requireAdmin(user, res)) return
-
-  const { date_from, date_to } = query
-  const conditions = []
-  const params = []
-
-  if (date_from) { conditions.push('s.Departure_Time_Stamp >= ?'); params.push(date_from) }
-  if (date_to)   { conditions.push('s.Departure_Time_Stamp <= ?'); params.push(date_to + ' 23:59:59') }
-
-  const whereClause = conditions.length ? `AND ${conditions.join(' AND ')}` : ''
-
-  try {
-    const [rows] = await pool.query(
-      `SELECT
-        po.Post_Office_ID,
-        po.City,
-        po.State,
-        CONCAT(po.House_Number, ' ', po.Street, ', ', po.City, ', ', po.State) AS Full_Address,
-        COUNT(DISTINCT s.Shipment_ID) AS Total_Shipments,
-        COUNT(DISTINCT sp.Tracking_Number) AS Total_Packages,
-        COALESCE(SUM(pay.Payment_Amount), 0) AS Total_Revenue,
-        COALESCE(AVG(pay.Payment_Amount), 0) AS Avg_Package_Price,
-        COUNT(DISTINCT e.Employee_ID) AS Total_Employees
-      FROM post_office po
-      LEFT JOIN employee e ON e.Post_Office_ID = po.Post_Office_ID
-      LEFT JOIN shipment s ON s.Employee_ID = e.Employee_ID ${whereClause}
-      LEFT JOIN shipment_package sp ON sp.Shipment_ID = s.Shipment_ID
-      LEFT JOIN package pkg ON pkg.Tracking_Number = sp.Tracking_Number
-      LEFT JOIN payment pay ON pay.Tracking_Number = sp.Tracking_Number
-      GROUP BY po.Post_Office_ID, po.City, po.State, po.House_Number, po.Street
-      ORDER BY Total_Packages DESC`,
-      params
-    )
-    return send(res, 200, { locations: rows })
-  } catch (err) {
-    console.error(err)
-    return send(res, 500, { message: err.message || 'Server error' })
-  }
-}
-
-// ΓöÇΓöÇ GET /api/reports/department-stats ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
-if (method === 'GET' && pathname === '/api/reports/department-stats') {
-  const user = authenticate(req, res)
-  if (!user) return
-  if (!requireAdmin(user, res)) return
-
-  const { date_from, date_to } = query
-  const conditions = []
-  const params = []
-
-  if (date_from) { conditions.push('s.Departure_Time_Stamp >= ?'); params.push(date_from) }
-  if (date_to)   { conditions.push('s.Departure_Time_Stamp <= ?'); params.push(date_to + ' 23:59:59') }
-
-  const whereClause = conditions.length ? `AND ${conditions.join(' AND ')}` : ''
-
-  try {
-    const [rows] = await pool.query(
-      `SELECT
-        d.Department_ID,
-        d.Department_Name,
-        COUNT(DISTINCT e.Employee_ID) AS Total_Employees,
-        COUNT(DISTINCT s.Shipment_ID) AS Total_Shipments,
-        COUNT(DISTINCT sp.Tracking_Number) AS Total_Packages,
-        COALESCE(SUM(pay.Payment_Amount), 0) AS Total_Revenue,
-        ROUND(
-          COUNT(CASE WHEN del.Delivery_Status_Code = 4 THEN 1 END) * 100.0 /
-          NULLIF(COUNT(DISTINCT sp.Tracking_Number), 0), 1
-        ) AS Delivery_Success_Rate
-      FROM department d
-      LEFT JOIN employee e ON e.Department_ID = d.Department_ID
-      LEFT JOIN shipment s ON s.Employee_ID = e.Employee_ID ${whereClause}
-      LEFT JOIN shipment_package sp ON sp.Shipment_ID = s.Shipment_ID
-      LEFT JOIN package pkg ON pkg.Tracking_Number = sp.Tracking_Number
-      LEFT JOIN payment pay ON pay.Tracking_Number = sp.Tracking_Number
-      LEFT JOIN delivery del ON del.Tracking_Number = sp.Tracking_Number
-      GROUP BY d.Department_ID, d.Department_Name
-      ORDER BY Total_Packages DESC`,
-      params
-    )
-    return send(res, 200, { departments: rows })
-  } catch (err) {
-    console.error(err)
-    return send(res, 500, { message: err.message || 'Server error' })
-  }
-}
-
-// ΓöÇΓöÇ GET /api/employee/shipments-for-package/:trackingNumber ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
-{
-  const m = matchPath('/api/employee/shipments-for-package/:trackingNumber', pathname)
-  if (method === 'GET' && m.matched) {
-    const user = authenticate(req, res); if (!user) return
-    if (!requireEmployee(user, res)) return
-    const tn = m.params.trackingNumber.trim()
-    if (!tn) return send(res, 400, { message: 'trackingNumber is required' })
-    try {
-      const [rows] = await pool.query(
-        `SELECT
-           s.Shipment_ID,
-           s.Departure_Time_Stamp,
-           s.Arrival_Time_Stamp,
-           sc.Status_Name,
-           CONCAT(s.From_Street, ', ', s.From_City, ', ', s.From_State) AS From_Summary,
-           CONCAT(s.To_Street, ', ', s.To_City, ', ', s.To_State) AS To_Summary
-         FROM shipment_package sp
-         INNER JOIN shipment s ON sp.Shipment_ID = s.Shipment_ID
-         INNER JOIN status_code sc ON s.Status_Code = sc.Status_Code
-         WHERE sp.Tracking_Number = ?
-         ORDER BY s.Shipment_ID ASC`,
-        [tn]
-      )
-      return send(res, 200, rows)
-    } catch (err) {
-      console.error(err)
-      return send(res, 500, { message: err.sqlMessage || err.message || 'Database error' })
-    }
-  }
-}
-
-// ΓöÇΓöÇ GET /api/employee/shipment/:shipmentId/routing-events ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
-{
-  const m = matchPath('/api/employee/shipment/:shipmentId/routing-events', pathname)
-  if (method === 'GET' && m.matched) {
-    const user = authenticate(req, res); if (!user) return
-    if (!requireEmployee(user, res)) return
-    const sid = Number(m.params.shipmentId)
-    if (!Number.isFinite(sid)) return send(res, 400, { message: 'Invalid shipment id' })
-    try {
-      const rows = await queryRoutingEventsForShipmentId(pool, sid)
-      return send(res, 200, sortRoutingDeliveredLast(rows))
-    } catch (err) {
-      console.error(err)
-      if (err.code === 'ER_NO_SUCH_TABLE') {
-        return send(res, 500, {
-          message:
-            'Table shipment_routing_event is missing. Run backend/db/shipment_routing_schema.sql',
-        })
+  // ── GET /api/employee/shipments-for-package/:trackingNumber ────────────────
+  {
+    const m = matchPath('/api/employee/shipments-for-package/:trackingNumber', pathname)
+    if (method === 'GET' && m.matched) {
+      const user = authenticate(req, res)
+      if (!user) return
+      if (!requireEmployee(user, res)) return
+      const tn = m.params.trackingNumber.trim()
+      if (!tn) return send(res, 400, { message: 'trackingNumber is required' })
+      try {
+        const [rows] = await pool.query(
+          `SELECT
+             s.Shipment_ID,
+             s.Departure_Time_Stamp,
+             s.Arrival_Time_Stamp,
+             sc.Status_Name,
+             CONCAT(af.House_Number, ' ', af.Street, ', ', af.City, ', ', af.State) AS From_Summary,
+             CONCAT(at.House_Number, ' ', at.Street, ', ', at.City, ', ', at.State) AS To_Summary
+           FROM shipment_package sp
+           INNER JOIN shipment s ON sp.Shipment_ID = s.Shipment_ID
+           INNER JOIN status_code sc ON s.Status_Code = sc.Status_Code
+           INNER JOIN address af ON s.From_Address_ID = af.Address_ID
+           INNER JOIN address at ON s.To_Address_ID = at.Address_ID
+           WHERE sp.Tracking_Number = ?
+           ORDER BY s.Shipment_ID ASC`,
+          [tn]
+        )
+        return send(res, 200, rows)
+      } catch (err) {
+        console.error(err)
+        return send(res, 500, { message: err.sqlMessage || err.message || 'Database error' })
       }
-      return send(res, 500, { message: err.sqlMessage || err.message || 'Database error' })
     }
   }
-}
 
-// ΓöÇΓöÇ POST /api/employee/shipment/routing-event ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ── GET /api/employee/shipment/:shipmentId/routing-events ─────────────────
+  {
+    const m = matchPath('/api/employee/shipment/:shipmentId/routing-events', pathname)
+    if (method === 'GET' && m.matched) {
+      const user = authenticate(req, res)
+      if (!user) return
+      if (!requireEmployee(user, res)) return
+      const sid = Number(m.params.shipmentId)
+      if (!Number.isFinite(sid)) return send(res, 400, { message: 'Invalid shipment id' })
+      try {
+        const rows = await queryRoutingEventsForShipmentId(pool, sid)
+        return send(res, 200, sortRoutingDeliveredLast(rows))
+      } catch (err) {
+        console.error(err)
+        if (err.code === 'ER_NO_SUCH_TABLE') {
+          return send(res, 500, {
+            message:
+              'Table shipment_routing_event is missing. Run backend/db/shipment_routing_schema.sql',
+          })
+        }
+        return send(res, 500, { message: err.sqlMessage || err.message || 'Database error' })
+      }
+    }
+  }
+
+// ── POST /api/employee/shipment/routing-event ─────────────────────────────
 if (method === 'POST' && pathname === '/api/employee/shipment/routing-event') {
   const user = authenticate(req, res); if (!user) return
   if (!requireEmployee(user, res)) return
@@ -1327,7 +1314,7 @@ if (method === 'POST' && pathname === '/api/employee/shipment/routing-event') {
   }
 }
 
-// ΓöÇΓöÇ POST /api/employee/package-pickup-arrival (arrival only; not picked up yet) ΓöÇ
+// ── POST /api/employee/package-pickup-arrival (arrival only; not picked up yet) ─
 if (method === 'POST' && pathname === '/api/employee/package-pickup-arrival') {
   const user = authenticate(req, res); if (!user) return
   if (!requireEmployee(user, res)) return
@@ -1394,7 +1381,7 @@ if (method === 'POST' && pathname === '/api/employee/package-pickup-arrival') {
   }
 }
 
-// ΓöÇΓöÇ GET /api/employee/post-offices (dropdown) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── GET /api/employee/post-offices (dropdown) ───────────────────────────────
 if (method === 'GET' && pathname === '/api/employee/post-offices') {
   const user = authenticate(req, res); if (!user) return
   if (!requireEmployee(user, res)) return
@@ -1416,42 +1403,42 @@ if (method === 'GET' && pathname === '/api/employee/post-offices') {
   }
 }
 
-// ΓöÇΓöÇ GET /api/employee/packages-at-office (pickup dashboard) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── GET /api/employee/packages-at-office (pickup dashboard) ─────────────────
 if (method === 'GET' && pathname === '/api/employee/packages-at-office') {
   const user = authenticate(req, res); if (!user) return
   if (!requireEmployee(user, res)) return
   try {
     const [rows] = await pool.query(
       `SELECT
-         pkg.Tracking_Number,
-         pkg.Package_Type_Code,
-         pkg.Weight,
-         pkg.Recipient_ID,
-         CONCAT(r.First_Name, ' ', r.Last_Name) AS Recipient_Name,
-         sc.Status_Name,
-         pp.Arrival_Time AS Pickup_Arrival_Time,
-         MAX(sh.Arrival_Time_Stamp) AS Shipment_Arrival_Stamp
-       FROM package pkg
-       INNER JOIN delivery d ON d.Tracking_Number = pkg.Tracking_Number
-       INNER JOIN status_code sc ON sc.Status_Code = d.Delivery_Status_Code
-       LEFT JOIN customer r ON r.Customer_ID = pkg.Recipient_ID
-       LEFT JOIN package_pickup pp ON pp.Tracking_Number = pkg.Tracking_Number
-       LEFT JOIN shipment_package sp ON sp.Tracking_Number = pkg.Tracking_Number
-       LEFT JOIN shipment sh ON sh.Shipment_ID = sp.Shipment_ID
-       WHERE (
-         LOWER(TRIM(REPLACE(REPLACE(REPLACE(IFNULL(sc.Status_Name, ''), '-', ' '), '_', ' '), '  ', ' '))) = 'at office'
-         OR REPLACE(LOWER(TRIM(IFNULL(sc.Status_Name, ''))), ' ', '') LIKE '%atoffice%'
-       )
-         AND (pp.Is_picked_Up IS NULL OR TRIM(IFNULL(pp.Is_picked_Up, '0')) = '0')
-       GROUP BY
-         pkg.Tracking_Number,
-         pkg.Package_Type_Code,
-         pkg.Weight,
-         pkg.Recipient_ID,
-         Recipient_Name,
-         sc.Status_Name,
-         pp.Arrival_Time
-       ORDER BY pkg.Tracking_Number ASC`
+    pkg.Tracking_Number,
+    pkg.Package_Type_Code,
+    pkg.Weight,
+    pkg.Recipient_ID,
+    CONCAT(r.First_Name, ' ', r.Last_Name) AS Recipient_Name,
+    sc.Status_Name,
+    pp.Arrival_Time AS Pickup_Arrival_Time,
+    MAX(sh.Arrival_Time_Stamp) AS Shipment_Arrival_Stamp
+FROM package pkg
+LEFT JOIN delivery d ON d.Tracking_Number = pkg.Tracking_Number
+JOIN status_code sc ON sc.Status_Code = d.Delivery_Status_Code
+LEFT JOIN customer r ON r.Customer_ID = pkg.Recipient_ID
+LEFT JOIN package_pickup pp ON pp.Tracking_Number = pkg.Tracking_Number
+LEFT JOIN shipment_package sp ON sp.Tracking_Number = pkg.Tracking_Number
+LEFT JOIN shipment sh ON sh.Shipment_ID = sp.Shipment_ID
+WHERE (
+    LOWER(TRIM(REPLACE(REPLACE(REPLACE(IFNULL(sc.Status_Name, ''), '-', ' '), '_', ' '), '  ', ' '))) = 'at office'
+    OR REPLACE(LOWER(TRIM(IFNULL(sc.Status_Name, ''))), ' ', '') LIKE '%atoffice%'
+)
+  AND (pp.Is_picked_Up IS NULL OR TRIM(IFNULL(pp.Is_picked_Up, '0')) = '0')
+GROUP BY
+    pkg.Tracking_Number,
+    pkg.Package_Type_Code,
+    pkg.Weight,
+    pkg.Recipient_ID,
+    Recipient_Name,
+    sc.Status_Name,
+    pp.Arrival_Time
+ORDER BY pkg.Tracking_Number ASC`
     )
     return send(res, 200, rows)
   } catch (err) {
@@ -1460,7 +1447,19 @@ if (method === 'GET' && pathname === '/api/employee/packages-at-office') {
   }
 }
 
-// ΓöÇΓöÇ POST /api/employee/package-pickup (complete pickup) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+function pickupLateFeeFromArrivalAndPickup(arrivalTime, pickupTime) {
+  const arrival = new Date(arrivalTime)
+  const pickup = new Date(pickupTime)
+
+  if (isNaN(arrival.getTime()) || isNaN(pickup.getTime())) return 0
+
+  const msPerDay = 1000 * 60 * 60 * 24
+  const daysHeld = Math.max(0, Math.floor((pickup - arrival) / msPerDay))
+
+  return daysHeld * 5
+}
+
+// ── POST /api/employee/package-pickup (complete pickup) ─────────────────────
 if (method === 'POST' && pathname === '/api/employee/package-pickup') {
   const user = authenticate(req, res); if (!user) return
   if (!requireEmployee(user, res)) return
@@ -1525,10 +1524,13 @@ if (method === 'POST' && pathname === '/api/employee/package-pickup') {
 
     let status_updated = false
     if (pickedUpCode != null) {
-      await pool.query(`UPDATE delivery SET Delivery_Status_Code = ? WHERE Tracking_Number = ?`, [
-        pickedUpCode,
-        tracking_number,
-      ])
+    await pool.query(
+        `UPDATE delivery
+        SET Delivery_Status_Code = ?
+        WHERE Tracking_Number = ?`,
+        [pickedUpCode, tracking_number]
+    )
+
       if (sh?.Shipment_ID != null) {
         await pool.query(`UPDATE shipment SET Status_Code = ? WHERE Shipment_ID = ?`, [
           pickedUpCode,
@@ -1568,71 +1570,7 @@ if (method === 'POST' && pathname === '/api/employee/package-pickup') {
   }
 }
 
-// ΓöÇΓöÇ GET /api/reports/zone-stats ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
-if (method === 'GET' && pathname === '/api/reports/zone-stats') {
-  const user = authenticate(req, res)
-  if (!user) return
-  if (!requireAdmin(user, res)) return
-
-  const { date_from, date_to } = query
-  const conditions = []
-  const params = []
-
-  if (date_from) { conditions.push('pkg.Date_Created >= ?'); params.push(date_from) }
-  if (date_to)   { conditions.push('pkg.Date_Created <= ?'); params.push(date_to + ' 23:59:59') }
-
-  const whereClause = conditions.length ? `WHERE ${conditions.join(' AND ')}` : ''
-
-  try {
-    const [rows] = await pool.query(
-      `SELECT
-        pkg.Zone,
-        COUNT(*) AS Total_Packages,
-        COALESCE(SUM(pay.Payment_Amount), 0) AS Total_Revenue,
-        COALESCE(AVG(pay.Payment_Amount), 0) AS Avg_Price,
-        COALESCE(AVG(pkg.Weight), 0) AS Avg_Weight,
-        COUNT(CASE WHEN pkg.Oversize = 1 THEN 1 END) AS Oversize_Count
-      FROM package pkg
-      LEFT JOIN payment pay ON pay.Tracking_Number = pkg.Tracking_Number
-      ${whereClause}
-      GROUP BY pkg.Zone
-      ORDER BY pkg.Zone ASC`,
-      params
-    )
-    return send(res, 200, { zones: rows })
-  } catch (err) {
-    console.error(err)
-    return send(res, 500, { message: err.message || 'Server error' })
-  }
-}
-
-// ΓöÇΓöÇ GET /api/reports/departments (filter dropdown) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
-if (method === 'GET' && pathname === '/api/reports/departments') {
-  const user = authenticate(req, res)
-  if (!user) return
-  if (!requireAdmin(user, res)) return
-  try {
-    const [rows] = await pool.query('SELECT Department_ID, Department_Name FROM department ORDER BY Department_Name ASC')
-    return send(res, 200, rows)
-  } catch (err) {
-    return send(res, 500, { message: 'Server error' })
-  }
-}
-
-// ΓöÇΓöÇ GET /api/reports/post-offices (filter dropdown) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
-if (method === 'GET' && pathname === '/api/reports/post-offices') {
-  const user = authenticate(req, res)
-  if (!user) return
-  if (!requireEmployee(user, res)) return
-  try {
-    const [rows] = await pool.query('SELECT Post_Office_ID, City, State FROM post_office ORDER BY State, City ASC')
-    return send(res, 200, rows)
-  } catch (err) {
-    return send(res, 500, { message: 'Server error' })
-  }
-}
-
-// ΓöÇΓöÇ GET /api/packages/full
+// ── GET /api/packages/full
 
 if (method === 'GET' && pathname === '/api/packages/full') {
   const user = authenticate(req, res)
@@ -1654,63 +1592,61 @@ if (method === 'GET' && pathname === '/api/packages/full') {
 
     const [rows] = await pool.query(
       `SELECT
-        pkg.Tracking_Number,
-        pkg.Package_Type_Code,
-        pkg.Weight,
-        pkg.Zone,
-        pay.Payment_Amount AS Price,
-        pkg.Date_Created,
-        pkg.Oversize,
-        pkg.Requires_Signature,
-        pkg.Date_Updated,
-        pkg.Dim_X, pkg.Dim_Y, pkg.Dim_Z,
+    pkg.Tracking_Number,
+    pkg.Package_Type_Code,
+    pkg.Weight,
+    pkg.Zone,
+    pay.Payment_Amount AS Price,
+    pkg.Date_Created,
+    pkg.Oversize,
+    pkg.Requires_Signature,
+    pkg.Date_Updated,
+    pkg.Dim_X, pkg.Dim_Y, pkg.Dim_Z,
 
-        -- Sender info
-        pkg.Sender_ID,
-        CONCAT(s.First_Name, ' ', s.Last_Name) AS Sender_Name,
-        s.Email_Address AS Sender_Email,
+    -- Sender info
+    pkg.Sender_ID,
+    CONCAT(s.First_Name, ' ', s.Last_Name) AS Sender_Name,
+    s.Email_Address AS Sender_Email,
 
-        -- Recipient info
-        pkg.Recipient_ID,
-        CONCAT(r.First_Name, ' ', r.Last_Name) AS Recipient_Name,
-        r.Email_Address AS Recipient_Email,
+    -- Recipient info
+    pkg.Recipient_ID,
+    CONCAT(r.First_Name, ' ', r.Last_Name) AS Recipient_Name,
+    r.Email_Address AS Recipient_Email,
 
-        -- Delivery info
-        pkg.Status_Code,
-        d.Delivery_Status_Code,
-        d.Delivered_Date,
-        d.Signature_Required,
-        sc.Status_Name,
-        sc.Is_Final_Status,
+    -- Delivery info
+    d.Delivery_Status_Code,
+    d.Delivered_Date,
+    d.Signature_Required,
+    sc.Status_Name,
+    sc.Is_Final_Status,
 
-        -- Shipment info (Now joined from Address table)
-        addr_f.City AS From_City,
-        addr_f.State AS From_State,
-        addr_t.City AS To_City,
-        addr_t.State AS To_State,
+    -- Shipment info
+    addr_f.City AS From_City,
+    addr_f.State AS From_State,
+    addr_t.City AS To_City,
+    addr_t.State AS To_State,
 
-        -- Post Office info (Now joined from Address table)
-        addr_po.City AS Office_City,
-        po.Post_Office_ID,
+    -- Post Office info
+    addr_po.City AS Office_City,
+    po.Post_Office_ID,
 
-        -- Employee who handled it
-        CONCAT(e.First_Name, ' ', e.Last_Name) AS Handled_By
-      FROM package pkg
-      LEFT JOIN Payment pay ON pay.Tracking_Number =  pkg.Tracking_Number
-      LEFT JOIN customer s  ON s.Customer_ID  = pkg.Sender_ID
-      LEFT JOIN customer r  ON r.Customer_ID  = pkg.Recipient_ID
-      LEFT JOIN delivery d  ON d.Tracking_Number = pkg.Tracking_Number
-      LEFT JOIN status_code sc ON sc.Status_Code = pkg.Status_Code
-      LEFT JOIN shipment_package sp ON sp.Tracking_Number = pkg.Tracking_Number
-      LEFT JOIN shipment sh ON sh.Shipment_ID = sp.Shipment_ID
-      -- Joins for the new Address table
-      LEFT JOIN Address addr_f ON sh.From_Address_ID = addr_f.Address_ID
-      LEFT JOIN Address addr_t ON sh.To_Address_ID = addr_t.Address_ID
-      LEFT JOIN employee e  ON e.Employee_ID  = sh.Employee_ID
-      LEFT JOIN post_office po ON po.Post_Office_ID = e.Post_Office_ID
-      LEFT JOIN Address addr_po ON po.Address_ID = addr_po.Address_ID
-      WHERE 1=1 ${whereClause}
-      ORDER BY pkg.Tracking_Number ASC`,
+    -- Employee who handled it
+    CONCAT(e.First_Name, ' ', e.Last_Name) AS Handled_By
+FROM package pkg
+LEFT JOIN payment pay ON pay.Tracking_Number = pkg.Tracking_Number
+LEFT JOIN customer s  ON s.Customer_ID  = pkg.Sender_ID
+LEFT JOIN customer r  ON r.Customer_ID  = pkg.Recipient_ID
+LEFT JOIN delivery d  ON d.Tracking_Number = pkg.Tracking_Number
+LEFT JOIN status_code sc ON sc.Status_Code = d.Delivery_Status_Code
+LEFT JOIN shipment_package sp ON sp.Tracking_Number = pkg.Tracking_Number
+LEFT JOIN shipment sh ON sh.Shipment_ID = sp.Shipment_ID
+LEFT JOIN address addr_f ON sh.From_Address_ID = addr_f.Address_ID
+LEFT JOIN address addr_t ON sh.To_Address_ID = addr_t.Address_ID
+LEFT JOIN employee e  ON e.Employee_ID  = sh.Employee_ID
+LEFT JOIN post_office po ON po.Post_Office_ID = e.Post_Office_ID
+LEFT JOIN address addr_po ON po.Address_ID = addr_po.Address_ID
+WHERE 1=1 ${whereClause}
+ORDER BY pkg.Tracking_Number ASC`,
       params
     )
     return send(res, 200, rows)
@@ -1721,7 +1657,7 @@ if (method === 'GET' && pathname === '/api/packages/full') {
 }
 
 
-  // ΓöÇΓöÇ GET /api/status-codes ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ── GET /api/status-codes ────────────────────────────────────────────────
   if (method === 'GET' && pathname === '/api/status-codes') {
     const user = authenticate(req, res)
     if (!user) return
@@ -1737,7 +1673,7 @@ if (method === 'GET' && pathname === '/api/packages/full') {
     }
   }
 
-  // ΓöÇΓöÇ POST /api/tickets (PUBLIC submit) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ── POST /api/tickets (PUBLIC submit) ────────────────────────────────────
   if (method === 'POST' && pathname === '/api/tickets') {
     const user = authenticate(req, res)
     if (!user) return
@@ -1786,7 +1722,7 @@ if (method === 'GET' && pathname === '/api/packages/full') {
   }
 
   
-  // ΓöÇΓöÇ GET /api/customers (employee+admin) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ── GET /api/customers (employee+admin) ──────────────────────────────────
   if (method === 'GET' && pathname === '/api/customers') {
     const user = authenticate(req, res)
     if (!user) return
@@ -1799,7 +1735,7 @@ if (method === 'GET' && pathname === '/api/packages/full') {
     return
   }
 
-  // ΓöÇΓöÇ GET /api/customers/:id/packages (employee+admin) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ── GET /api/customers/:id/packages (employee+admin) ─────────────────────
   {
     const m = matchPath('/api/customers/:id/packages', pathname)
     // console.log("at customer/packages")
@@ -1816,7 +1752,7 @@ if (method === 'GET' && pathname === '/api/packages/full') {
     }
   }
 
-  // ΓöÇΓöÇ GET /api/shipments (employee+admin) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ── GET /api/shipments (employee+admin) ──────────────────────────────────
   if (method === 'GET' && pathname === '/api/shipments') {
     const user = authenticate(req, res)
     if (!user) return
@@ -1831,7 +1767,7 @@ if (method === 'GET' && pathname === '/api/packages/full') {
     return
   }
 
-  // ΓöÇΓöÇ GET /api/shipment/:id/packages (employee+admin) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ── GET /api/shipment/:id/packages (employee+admin) ─────────────────────
   {
     const m = matchPath('/api/shipment/:id/packages', pathname)
     // console.log("at customer/packages")
@@ -1850,7 +1786,7 @@ if (method === 'GET' && pathname === '/api/packages/full') {
     }
   }
 
-  // ΓöÇΓöÇ GET /api/packages/:tracking_number/tracking (employee+admin) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ── GET /api/packages/:tracking_number/tracking (employee+admin) ─────────
   {
     const m = matchPath('/api/packages/:tracking_number/tracking', pathname)
     if (method === 'GET' && m.matched) {
@@ -1866,7 +1802,7 @@ if (method === 'GET' && pathname === '/api/packages/full') {
     }
   }
 
-  // ΓöÇΓöÇ GET /api/customer/lookup (employee+admin) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ── GET /api/customer/lookup (employee+admin) ────────────────────────────
   if (method === 'GET' && pathname === '/api/customer/lookup') {
     const user = authenticate(req, res)
     if (!user) return
@@ -1900,7 +1836,7 @@ if (method === 'GET' && pathname === '/api/packages/full') {
   // ========================================
   
 
-  // ΓöÇΓöÇ GET /api/employee/tickets_comp (employee+admin) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ── GET /api/employee/tickets_comp (employee+admin) ──────────────────────
   if (method === 'GET' && pathname === '/api/employee/tickets_comp') {
     const user = authenticate(req, res)
     if (!user) return
@@ -1913,7 +1849,7 @@ if (method === 'GET' && pathname === '/api/packages/full') {
     }
   }
 
-  // ΓöÇΓöÇ GET /api/employee/:employee_id/tickets (employee+admin) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ── GET /api/employee/:employee_id/tickets (employee+admin) ──────────────
   // {
     const m = matchPath('/api/employee/:employee_id/tickets', pathname)
     if (method === 'GET' && m.matched) {
@@ -1930,7 +1866,7 @@ if (method === 'GET' && pathname === '/api/packages/full') {
   // }
 
 
-  // ΓöÇΓöÇ GET /api/employee/weeklyTickets ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ── GET /api/employee/weeklyTickets ─────────────────────────────────────
   if (method === 'GET' && pathname === '/api/employee/weeklyTickets') {
     const user = authenticate(req, res)
     if (!user) return
@@ -1944,7 +1880,7 @@ if (method === 'GET' && pathname === '/api/packages/full') {
     
   }
  
-  // ΓöÇΓöÇ GET /api/employee/net-tickets ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ── GET /api/employee/net-tickets ────────────────────────────────────────
   if (method === 'GET' && pathname === '/api/employee/net-tickets') {
     const user = authenticate(req, res)
     if (!user) return
@@ -1957,7 +1893,7 @@ if (method === 'GET' && pathname === '/api/packages/full') {
     }
   }
  
-  // ΓöÇΓöÇ GET /api/employee/week-net-tickets ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ── GET /api/employee/week-net-tickets ───────────────────────────────────
   if (method === 'GET' && pathname === '/api/employee/week-net-tickets') {
     const user = authenticate(req, res)
     if (!user) return
@@ -1970,7 +1906,7 @@ if (method === 'GET' && pathname === '/api/packages/full') {
     }
   }
  
-  // ΓöÇΓöÇ GET /api/employee/tickets-by-issue ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ── GET /api/employee/tickets-by-issue ───────────────────────────────────
   if (method === 'GET' && pathname === '/api/employee/tickets-by-issue') {
     const user = authenticate(req, res)
     if (!user) return
@@ -1983,7 +1919,7 @@ if (method === 'GET' && pathname === '/api/packages/full') {
     }
   }
 
-  // ΓöÇΓöÇ GET /api/support-tickets (employee+admin) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ── GET /api/support-tickets (employee+admin) ────────────────────────────
   if (method === 'GET' && pathname === '/api/support-tickets') {
     const user = authenticate(req, res)
     if (!user) return
@@ -2009,7 +1945,7 @@ if (method === 'GET' && pathname === '/api/packages/full') {
     }
   }
 
-  // ΓöÇΓöÇ PUT /api/support-tickets/:id (employee+admin) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ── PUT /api/support-tickets/:id (employee+admin) ────────────────────────
   {
     const m = matchPath('/api/support-tickets/:id', pathname)
     if (method === 'PUT' && m.matched) {
@@ -2036,7 +1972,7 @@ if (method === 'GET' && pathname === '/api/packages/full') {
     }
   }
 
-    // ΓöÇΓöÇ POST /api/support-tickets ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    // ── POST /api/support-tickets ────────────────────────────────────────────
   if (method === 'POST' && pathname === '/api/support-tickets') {
     const { User_ID, Package_ID, Assigned_Employee_ID, Issue_Type, Description } = await getBody(req)
     if (!User_ID || !Package_ID || !Assigned_Employee_ID || Issue_Type === undefined || !Description) {
@@ -2386,8 +2322,10 @@ if (method === 'GET' && pathname === '/api/packages/full') {
       )
       if (delivered?.Status_Code != null) {
         const deliveredCode = Number(delivered.Status_Code)
-        await conn.query(`UPDATE package SET Status_Code = ? WHERE Tracking_Number = ?`, [deliveredCode, trackingNumber])
-        await conn.query(`UPDATE delivery SET Delivery_Status_Code = ? WHERE Tracking_Number = ?`, [deliveredCode, trackingNumber])
+        await conn.query(`UPDATE package SET Status_Code = ? WHERE Tracking_Number = ?`, [
+          deliveredCode,
+          trackingNumber,
+        ])
         await conn.query(
           `UPDATE shipment s
            JOIN shipment_package sp ON sp.Shipment_ID = s.Shipment_ID
@@ -2408,26 +2346,27 @@ if (method === 'GET' && pathname === '/api/packages/full') {
     }
   }
 
+
   // Default
   return send(res, 404, { message: 'Not found' })
 }
 
 
-// ΓöÇΓöÇ Start ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ── Start ─────────────────────────────────────────────────────────────────
 console.log('Connecting to Database:', process.env.MYSQL_DATABASE)
 
 pool
   .getConnection()
   .then(async (c) => {
-    console.log('Γ£à MySQL connected')
+    console.log('✅ MySQL connected')
     const [results] = await c.query('SELECT CURRENT_USER() AS user')
     console.log('Connected as:', results[0].user)
     c.release()
   })
-  .catch((e) => console.error('Γ¥î MySQL connection failed:', e))
+  .catch((e) => console.error('❌ MySQL connection failed:', e))
 
 console.log('[api] admin routes: GET /api/admin/employees, PATCH /api/admin/employees/:employeeId/deactivate')
 const PORT = process.env.PORT || 5000
 http.createServer(router).listen(PORT, '0.0.0.0', () => 
-  console.log(`≡ƒÜÇ Server running on http://localhost:${PORT}`)
+  console.log(`🚀 Server running on http://localhost:${PORT}`)
 )
