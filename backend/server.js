@@ -1182,9 +1182,9 @@ async function router(req, res) {
 {
   const m = matchPath('/api/employee/packages/:trackingNumber/status', pathname)
   if (method === 'PATCH' && m.matched) {
-    // const user = authenticate(req, res)
-    // if (!user) return
-    // if (!requireEmployee(user, res)) return
+    const user = authenticate(req, res)
+    if (!user) return
+    if (!requireEmployee(user, res)) return
 
     const trackingNumber = (m.params.trackingNumber || '').trim()
     const body = await getBody(req)
@@ -1208,8 +1208,20 @@ async function router(req, res) {
         [trackingNumber]
       )
       if (!d) {
-        await conn.rollback()
-        return send(res, 404, { message: 'Delivery record not found for this package' })
+        const [[pkg]] = await conn.query(
+          `SELECT Requires_Signature FROM package WHERE Tracking_Number = ? LIMIT 1`,
+          [trackingNumber]
+        )
+        if (!pkg) {
+          await conn.rollback()
+          return send(res, 404, { message: 'Package not found' })
+        }
+
+        await conn.query(
+          `INSERT INTO delivery (Tracking_Number, Delivery_Status_Code, Delivered_Date, Signature_Required, Signature_Received, Delivered_By)
+           VALUES (?, ?, NULL, ?, NULL, NULL)`,
+          [trackingNumber, code, Number(pkg.Requires_Signature) ? 1 : 0]
+        )
       }
 
       await conn.query(

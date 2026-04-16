@@ -194,7 +194,7 @@ export default function AllPackages() {
   const [sigFilter,      setSigFilter]      = useState('')
 
   useEffect(() => {
-    if (userType !== 'employee') { navigate('/login'); return }
+    if (userType !== 'employee' && userType !== 'admin') { navigate('/login'); return }
 
     // Load packages, status codes, post offices in parallel
     Promise.all([
@@ -211,7 +211,7 @@ export default function AllPackages() {
       setLoading(false)
     })
     .catch(err => { setError(err.message); setLoading(false) })
-  }, [])
+  }, [navigate, token, userType])
 
   async function handleStatusChange(trackingNumber, statusCodeStr) {
     setStatusUpdating(trackingNumber); setError(null)
