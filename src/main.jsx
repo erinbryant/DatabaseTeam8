@@ -70,8 +70,8 @@ function App() {
         <Route path="/employee_home" element={<RequireEmployee><EmployeeHome /></RequireEmployee>} />
         <Route path="/employee/add-package" element={<RequireEmployee><AddPackage /></RequireEmployee>} />
         <Route path="/employee/package-pickup" element={<RequireEmployee><PackageForPickup /></RequireEmployee>} />
-        <Route path="/employee-support" element={<RequireAdmin><EmployeeSupport /></RequireAdmin>} />
-        <Route path="/employee/submit-ticket" element={<RequireAdmin><Employee_SubmitTicket/></RequireAdmin>} />
+        <Route path="/employee-support" element={<RequireEmployee><EmployeeSupport /></RequireEmployee>} />
+        <Route path="/employee/submit-ticket" element={<RequireEmployee><Employee_SubmitTicket/></RequireEmployee>} />
         <Route path="/customers" element={<RequireEmployee><AllCustomers /></RequireEmployee>} />
         <Route path="/admin-register" element={<RequireAdmin><AdminRegister /></RequireAdmin>} />
         <Route path="/profile" element={<RequireEmployee><Profile /></RequireEmployee>} />
