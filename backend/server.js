@@ -1879,14 +1879,11 @@ ORDER BY pkg.Tracking_Number ASC`,
   // ── GET /api/packages/:tracking_number/tracking (employee+admin) ─────────
   {
     const m = matchPath('/api/packages/:tracking_number/tracking', pathname)
-    // console.log('TRACKING ROUTE HIT')
     if (method === 'GET' && m.matched) {
-      const user = authenticate(req, res)
-      if (!user) return
-      // if (!requireEmployee(user, res)) return
-
       packageTrackDB.getPackageTracking(pool, m.params.tracking_number, (err, results) => {
         if (err) return send(res, 500, { error: 'Database error', details: err.message })
+        if (!results || results.length === 0)
+          return send(res, 404, { message: 'No Package Found With This Tracking Number' })
         return send(res, 200, results)
       })
       return
