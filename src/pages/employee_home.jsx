@@ -203,24 +203,7 @@ useEffect(() => {
               })}
             </div>
 
-            {/* Operations Hub */}
-            <div style={{ background: '#fff', borderRadius: 14, padding: '20px 24px', border: '1px solid #f0e8d8', boxShadow: '0 2px 8px rgba(15,23,42,0.05)', display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <span style={{ fontWeight: 700, fontSize: '0.88rem', color: '#0f172a' }}>Operations Hub</span>
-              <p style={{ margin: 0, fontSize: '0.78rem', color: '#64748b', lineHeight: 1.5, flex: 1 }}>
-                Employee performance, revenue reports, and ticket analytics all in one place.
-              </p>
-              <div>
-                <button
-                  type="button"
-                  onClick={() => navigate('/reports/employee-performance')}
-                  style={{ background: '#9b1c1c', color: '#fff', border: 'none', borderRadius: 8, padding: '9px 18px', fontSize: '0.84rem', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap', transition: 'background 0.2s' }}
-                  onMouseEnter={e => e.target.style.background = '#7f1d1d'}
-                  onMouseLeave={e => e.target.style.background = '#9b1c1c'}
-                >
-                  Open Operations Hub
-                </button>
-              </div>
-            </div>
+            
 
           </div>
         </>

@@ -204,8 +204,8 @@
 }
 
 .tracking-page .status-badge.status-transit {
-  background: #dbeafe;
-  color: #1e40af;
+  background: #fff3e0;
+  color: #c2410c;
 }
 
 .tracking-page .status-badge.status-pending {

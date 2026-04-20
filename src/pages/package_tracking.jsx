@@ -83,7 +83,7 @@ export default function PackageTracking() {
       </div>
 
       <div className="tracking-content">
-        <h2>Package tracking</h2>
+        <h2>Package Tracking</h2>
         <p className="tracking-subtitle">Enter your tracking number to see status and delivery information.</p>
 
         <div className="tracking-search-card">
@@ -111,7 +111,7 @@ export default function PackageTracking() {
 
         {shipments.length > 0 && (
           <>
-            <h3 className="tracking-section-title">Package details</h3>
+            <h3 className="tracking-section-title">Package Transit Details</h3>
             <div className="table-wrapper">
               <table className="data-table">
                 <thead>
