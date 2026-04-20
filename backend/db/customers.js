@@ -113,22 +113,22 @@ const [addrRows] = await conn.query(
 
     addressId = addrRes.insertId
 
-    console.log("INSERT RESULT:", addrRes)
-    console.log("INSERT ID:", addrRes.insertId)
+    // console.log("INSERT RESULT:", addrRes)
+    // console.log("INSERT ID:", addrRes.insertId)
 
     const [db] = await conn.query("SELECT DATABASE() AS db")
-    console.log("DB IN USE:", db[0].db)
+    // console.log("DB IN USE:", db[0].db)
 
     const [row] = await conn.query(
       "SELECT * FROM address WHERE Address_ID = ?",
       [addressId]
     )
 
-    console.log("ROW INSIDE SAME CONNECTION:", row)
+    // console.log("ROW INSIDE SAME CONNECTION:", row)
 
   } else {
     addressId = addrRows[0].Address_ID
-    console.log("FOUND EXISTING ADDRESS ID:", addressId)
+    // console.log("FOUND EXISTING ADDRESS ID:", addressId)
   }
 
   return addressId

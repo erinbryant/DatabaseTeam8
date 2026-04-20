@@ -576,7 +576,7 @@ async function router(req, res) {
         ]
       )
 
-      console.log(`[TODO] Send email to ${email} with temporary password: ${tempPassword}`)
+      // console.log(`[TODO] Send email to ${email} with temporary password: ${tempPassword}`)
       return send(res, 201, {
         message: 'Employee registered successfully',
         employee_id: result.insertId,
@@ -1879,7 +1879,7 @@ ORDER BY pkg.Tracking_Number ASC`,
   // ── GET /api/packages/:tracking_number/tracking (employee+admin) ─────────
   {
     const m = matchPath('/api/packages/:tracking_number/tracking', pathname)
-    console.log('TRACKING ROUTE HIT')
+    // console.log('TRACKING ROUTE HIT')
     if (method === 'GET' && m.matched) {
       const user = authenticate(req, res)
       if (!user) return
@@ -2199,11 +2199,11 @@ ORDER BY pkg.Tracking_Number ASC`,
     if (!user) return
 
     const customerId = pathname.split('/').pop()
-    console.log(`[lost-notif] customerId=${customerId}, user.customer_id=${user.customer_id}`)
+    // console.log(`[lost-notif] customerId=${customerId}, user.customer_id=${user.customer_id}`)
 
     try {
       const results = await lostNotifsDB.getLostPackagesByCustomer(pool, customerId)
-      console.log(`[lost-notif] results count=${results.length}`, results)
+      // console.log(`[lost-notif] results count=${results.length}`, results)
       return send(res, 200, results)
     } catch (err) {
       return send(res, 500, { error: err.message })

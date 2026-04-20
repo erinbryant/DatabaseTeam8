@@ -116,7 +116,9 @@ export default function PackageTracking() {
               <table className="data-table">
                 <thead>
                   <tr>
-                    <th>Shipment_ID</th><th>Status</th><th>From Address</th>
+                    <th>Shipment_ID</th>
+                    {/* <th>Status</th> */}
+                    <th>From Address</th>
                     <th>To Address</th><th>Departed</th><th>Arrived</th>
                   </tr>
                 </thead>
@@ -124,7 +126,7 @@ export default function PackageTracking() {
                   {shipments.map(s => (
                     <tr key={s.Shipment_ID}>
                       <td><code>{s.Shipment_ID}</code></td>
-                      <td>{statusBadge(s.Status_Name)}</td>
+                      {/* <td>{statusBadge(s.Status_Name)}</td> */}
                       <td>{s.From_Full_Address || '—'}</td>
                       <td>{s.To_Full_Address   || '—'}</td>
                       <td>{s.Departure_Time_Stamp ? new Date(s.Departure_Time_Stamp).toLocaleString() : '—'}</td>

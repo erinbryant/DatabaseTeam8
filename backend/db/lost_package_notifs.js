@@ -1,8 +1,4 @@
-// lost_package_notifs.js
 
-/**
- * Ensure Lost_Status column exists; create it if missing
- */
 async function ensureLostStatusColumn(pool) {
   try {
     await pool.query(
@@ -22,7 +18,7 @@ async function ensureLostStatusColumn(pool) {
       `CREATE INDEX idx_lost_status ON package (Lost_Status, Recipient_ID)`
     );
   } catch (err) {
-    // Index might already exist
+
     if (!err.message.includes('Duplicate key')) {
       console.warn('⚠️ Index creation warning:', err.message);
     }
@@ -30,7 +26,7 @@ async function ensureLostStatusColumn(pool) {
 }
 
 async function getLostPackagesByCustomer(pool, customerId) {
-  // Primary: use Lost_Status column (exists if migration ran)
+
   try {
     const [rows] = await pool.query(
       `SELECT
@@ -46,7 +42,6 @@ async function getLostPackagesByCustomer(pool, customerId) {
     );
     if (rows.length > 0) return rows;
 
-    // Also catch packages marked lost by delivery status but before Lost_Status was set
     const [fallbackRows] = await pool.query(
       `SELECT
           pkg.Tracking_Number,
@@ -62,7 +57,6 @@ async function getLostPackagesByCustomer(pool, customerId) {
     );
     return fallbackRows;
   } catch (err) {
-    // Lost_Status column may not exist — fall back to delivery status only
     try {
       const [rows] = await pool.query(
         `SELECT

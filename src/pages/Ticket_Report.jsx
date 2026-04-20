@@ -108,7 +108,7 @@ export default function TicketReport() {
           <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 16 }}>Filters</div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16, marginBottom: 20 }}>
 
-            <div>
+            <div  style={{ gridColumn: 'span 2' }}>
               <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b', marginBottom: 6 }}>Date Range</div>
               <div style={{ display: 'flex', gap: 6 }}>
                 <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}

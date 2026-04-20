@@ -96,8 +96,6 @@ export default function CustomerHome() {
               </ul>
               <p className="lost-action">
                 <a href="#" onClick={e => { e.preventDefault(); navigate('/submit_ticket') }}>Submit a support ticket</a>
-                {' '}or{' '}
-                <a href="#" onClick={e => { e.preventDefault(); navigate('/customer_packages') }}>view package details</a>
               </p>
             </div>
             <button className="lost-dismiss" onClick={() => setShowLostBanner(false)}>

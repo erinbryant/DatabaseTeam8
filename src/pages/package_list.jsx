@@ -203,8 +203,8 @@ export default function AllPackages() {
       authFetch(`${API_BASE}/api/reports/post-offices`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()).catch(() => []),
     ])
     .then(([pkgs, codes, offices]) => {
-      console.log('PACKAGES:', pkgs)
-  console.log('STATUS CODES:', codes)
+      // console.log('PACKAGES:', pkgs)
+  // console.log('STATUS CODES:', codes)
       setPackages(Array.isArray(pkgs) ? pkgs : [])
       setStatusCodes(Array.isArray(codes) ? codes : [])
       setPostOffices(Array.isArray(offices) ? offices : [])

@@ -3,7 +3,7 @@
 // Admin only (Role_ID = 5)
 // Azure MySQL strict only_full_group_by safe
 
-console.log('operations.js loaded - version 3')
+// console.log('operations.js loaded - version 3')
 
 // ── POST OFFICES ──────────────────────────────────────────────────────────
 function getPostOffices(pool, { search } = {}, callback) {
