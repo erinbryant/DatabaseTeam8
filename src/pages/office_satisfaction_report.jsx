@@ -321,7 +321,7 @@ export default function OfficeSatisfactionReport() {
 
       <div style={{ maxWidth: 1280, width: '100%', margin: '0 auto', padding: '32px 28px 64px', flex: 1, boxSizing: 'border-box' }}>
         <div style={{ marginBottom: 28 }}>
-          <h1 style={{ margin: '0 0 4px', fontSize: '1.6rem', fontWeight: 800, color: '#0f172a' }}>Office Satisfaction Report</h1>
+          <h1 style={{ margin: '0 0 4px', fontSize: '1.6rem', fontWeight: 800, color: '#0f172a' }}>Office Performance Report</h1>
           <p style={{ margin: 0, color: '#64748b', fontSize: '0.9rem' }}>Delivery success rates and performance by post office location</p>
         </div>
 

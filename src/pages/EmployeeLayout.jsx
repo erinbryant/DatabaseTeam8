@@ -47,7 +47,7 @@ const NAV_ITEMS = [
   { label: 'Employees',         path: '/employees',                 section: 'admin' },
   { label: 'Register Employee', path: '/admin-register',            section: 'admin' },
   { label: 'Revenue Report',    path: '/revenue-report',            section: 'admin' },
-  { label: 'Satisfaction Report', path: '/office-satisfaction',     section: 'admin' },
+  { label: 'Performance Report', path: '/office-satisfaction',     section: 'admin' },
   { label: 'Ticket Report',     path: '/ticket-report',         section: 'admin' },
 ]
 

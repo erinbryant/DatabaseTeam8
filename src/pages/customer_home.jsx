@@ -3,34 +3,28 @@ import { useState, useEffect } from 'react'
 import './css/home.css'
 import './css/customer_home.css'
 import skyline from '../assets/houston-skyline.jpeg'
-import { authFetch } from '../authFetch'
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
-/** Name from localStorage `user` (customer login / register API shape). */
 function getStoredCustomerFullName() {
   try {
     const raw = localStorage.getItem('user')
     if (!raw) return null
     const u = JSON.parse(raw)
     const first = (u.First_Name ?? u.first_name ?? '').toString().trim()
-    const last = (u.Last_Name ?? u.last_name ?? '').toString().trim()
-    const full = [first, last].filter(Boolean).join(' ')
-    return full || null
-  } catch {
-    return null
-  }
+    const last  = (u.Last_Name  ?? u.last_name  ?? '').toString().trim()
+    return [first, last].filter(Boolean).join(' ') || null
+  } catch { return null }
 }
 
 export default function CustomerHome() {
   const navigate = useNavigate()
-  const [lostPackages, setLostPackages] = useState([])
+  const [lostPackages,   setLostPackages]   = useState([])
   const [showLostBanner, setShowLostBanner] = useState(true)
 
   useEffect(() => {
-    const user = JSON.parse(localStorage.getItem('user') || '{}')
+    const user  = JSON.parse(localStorage.getItem('user') || '{}')
     const token = localStorage.getItem('token')
-    
     if (user.Customer_ID && token) {
       fetch(`${API_BASE}/api/packages/lost/${user.Customer_ID}`, {
         headers: { Authorization: `Bearer ${token}` }
@@ -55,21 +49,24 @@ export default function CustomerHome() {
         method: 'PATCH',
         headers: { Authorization: `Bearer ${token}` }
       })
-      setLostPackages(lostPackages.filter(pkg => pkg.Tracking_Number !== trackingNumber))
+      setLostPackages(lostPackages.filter(p => p.Tracking_Number !== trackingNumber))
     } catch (err) {
       console.error('Failed to dismiss lost package:', err)
     }
   }
 
+  // Placeholder — swap for real notifications when system is ready
+  const notifications = []
+
   return (
     <div className="customer-home">
       <header className="site-header">
         <div className="header-inner">
-          <Link className="logo" to="/"> National Postal Service</Link>
+          <Link className="logo" to="/">National Postal Service</Link>
           <nav className="top-nav">
             <span className="nav-current" aria-current="page">Customer Home</span>
-            <a href="#" onClick={(e) => { e.preventDefault(); navigate('/price_calculator') }}>Calculator</a>
-            <a href="#" onClick={(e) => { e.preventDefault(); navigate('/customer_profile') }}>Profile</a>
+            <a href="#" onClick={e => { e.preventDefault(); navigate('/price_calculator') }}>Calculator</a>
+            <a href="#" onClick={e => { e.preventDefault(); navigate('/customer_profile') }}>Profile</a>
             <a href="#" onClick={handleLogout}>Logout</a>
           </nav>
         </div>
@@ -87,9 +84,7 @@ export default function CustomerHome() {
               </svg>
             </div>
             <div className="lost-content">
-              <p className="lost-title">
-                One or more of your packages have been marked as lost
-              </p>
+              <p className="lost-title">One or more of your packages have been marked as lost</p>
               <ul className="lost-list">
                 {lostPackages.map(pkg => (
                   <li key={pkg.Tracking_Number}>
@@ -100,13 +95,9 @@ export default function CustomerHome() {
                 ))}
               </ul>
               <p className="lost-action">
-                <a href="#" onClick={(e) => { e.preventDefault(); navigate('/submit_ticket') }}>
-                  Submit a support ticket
-                </a>
+                <a href="#" onClick={e => { e.preventDefault(); navigate('/submit_ticket') }}>Submit a support ticket</a>
                 {' '}or{' '}
-                <a href="#" onClick={(e) => { e.preventDefault(); navigate('/customer_packages') }}>
-                  view package details
-                </a>
+                <a href="#" onClick={e => { e.preventDefault(); navigate('/customer_packages') }}>view package details</a>
               </p>
             </div>
             <button className="lost-dismiss" onClick={() => setShowLostBanner(false)}>
@@ -124,68 +115,102 @@ export default function CustomerHome() {
         </div>
 
         <section className="customer-welcome">
-          <h2>
-            Welcome, {getStoredCustomerFullName() ?? 'Customer'}
-          </h2>
+          <h2>Welcome, {getStoredCustomerFullName() ?? 'Customer'}</h2>
           <p className="customer-welcome-sub">Manage shipments and your account from one place.</p>
         </section>
 
         <section className="customer-dashboard">
-          <div className="cards">
-            <div className="card">
-              <h3>Track a package</h3>
-              <p>See where your package is in real time.</p>
-              <button
-                type="button"
-                className="btn primary"
-                onClick={() => navigate('/package_tracking')}
-              >
-                Track now
-              </button>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: 24, alignItems: 'start' }}>
+
+            {/* ── Left: cards ── */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+
+              {/* Row 1 */}
+              <div className="card">
+                <h3>Track a Package</h3>
+                <p>See where your package is in real time.</p>
+                <button type="button" className="btn primary" onClick={() => navigate('/package_tracking')}>
+                  Track now
+                </button>
+              </div>
+
+              <div className="card">
+                <h3>My Packages</h3>
+                <p>View your current and past packages.</p>
+                <button type="button" className="btn primary" onClick={() => navigate('/customer_packages')}>
+                  View now
+                </button>
+              </div>
+
+              {/* Row 2 — single card centered */}
+              <div className="card" style={{ gridColumn: '1 / -1', maxWidth: '50%', margin: '0 auto', width: '100%' }}>
+                <h3>Support Ticket</h3>
+                <p>Submit a ticket for issues with your package.</p>
+                <button type="button" className="btn primary" onClick={() => navigate('/submit_ticket')}>
+                  Send now
+                </button>
+              </div>
+
             </div>
 
-            {/* <div className="card">
-              <h3>Account info</h3>
-              <p>View your address, saved packages, and profile settings.</p>
-              <button
-                type="button"
-                className="btn primary"
-                onClick={() => navigate('/customer_profile')}
-              >
-                View account
-              </button>
-            </div> */}
-            <div className="card">
-              <h3>Submit Support Ticket</h3>
-              <p>Submit a Support ticket for issues with your package.</p>
-              <button
-                type="button"
-                className="btn primary"
-                onClick={() => navigate('/submit_ticket')}
-              >
-                Send now
-              </button>
+            {/* ── Right: notifications ── */}
+            <div style={{
+              background: '#fff',
+              borderRadius: 16,
+              border: '1px solid #e2e8f0',
+              boxShadow: '0 2px 8px rgba(15,23,42,0.05)',
+              overflow: 'hidden',
+            }}>
+              <div style={{
+                padding: '14px 20px',
+                borderBottom: '1px solid #f1f5f9',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+              }}>
+                <span style={{ fontWeight: 700, fontSize: '0.95rem', color: '#1d4ed8' }}>Notifications</span>
+                {notifications.length > 0 && (
+                  <span style={{ background: '#9b1c1c', color: '#fff', borderRadius: 20, padding: '1px 8px', fontSize: '0.72rem', fontWeight: 700 }}>
+                    {notifications.length}
+                  </span>
+                )}
+              </div>
+
+              <div style={{ padding: '16px 20px' }}>
+                {notifications.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '28px 0' }}>
+                    <div style={{ fontSize: '0.85rem', color: '#94a3b8', fontWeight: 500 }}>
+                      No current notifications
+                    </div>
+                  </div>
+                ) : (
+                  <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    {notifications.map((n, i) => (
+                      <li key={i} style={{
+                        padding: '10px 14px',
+                        background: '#f8fafc',
+                        borderRadius: 10,
+                        borderLeft: '3px solid #1a1f4e',
+                        fontSize: '0.84rem',
+                        color: '#374151',
+                        lineHeight: 1.5,
+                      }}>
+                        {n.message}
+                        {n.date && <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: 4 }}>{n.date}</div>}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             </div>
 
-            <div className="card">
-              <h3>My packages</h3>
-              <p>View your current packages.</p>
-              <button
-                type="button"
-                className="btn primary"
-                onClick={() => navigate('/customer_packages')}
-              >
-                View now
-              </button>
-            </div>
-            
           </div>
         </section>
       </main>
 
       <footer className="site-footer">
         <div className="footer-inner">
-          <div>© National Postal Service</div>
+          <div>© {new Date().getFullYear()} National Postal Service</div>
           <div className="footer-links">
             <a href="#">Privacy</a>
             <a href="#">Contact</a>
